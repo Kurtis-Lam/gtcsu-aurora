@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About Us — Aurora Candidate Cabinet No. 1</title>
+<link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
+
+<!-- Asset Preloading -->
+<link rel="preload" href="assets/aurora-logo.png" as="image">
+<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,500&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void: #050b12;
+    --deep: #0a1a20;
+    --ink: #dff6f2;
+    --aurora-teal: #2fe6b8;
+    --aurora-green: #6ee89a;
+    --aurora-cyan: #7fe9f0;
+    --aurora-violet: #8f8cf0;
+    --star: #ffffff;
+    --line: rgba(223, 246, 242, 0.18);
+    --glass-bg: rgba(10, 26, 32, 0.55);
+    --glass-border: rgba(127, 233, 240, 0.2);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html,body{
+    min-height:100%;
+    background:var(--void);
+    color:var(--ink);
+    font-family:'Manrope', sans-serif;
+    overflow-x:hidden;
+  }
+
+  /* ---------- Solid Black Preloader Overlay ---------- */
+  #preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #000000;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+
+  body.is-loaded #preloader {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  /* ---------- Initial Hidden UI States ---------- */
+  .navbar, 
+  .header-section,
+  .section-block,
+  footer,
+  .lang-toggle {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.35s ease-in, transform 0.35s ease-in;
+    pointer-events: none;
+  }
+
+  /* Reveal sequence after preloader fades */
+  body.is-loaded .navbar,
+  body.is-loaded .header-section,
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.is-loaded .navbar { transition-delay: 0.15s; }
+  body.is-loaded .header-section { transition-delay: 0.35s; }
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+
+  /* ---------- Fade-in Scroll Reveal Effect ---------- */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  .fade-in.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .card-grid .glass-card:nth-child(1) { transition-delay: 0.05s; }
+  .card-grid .glass-card:nth-child(2) { transition-delay: 0.15s; }
+  .card-grid .glass-card:nth-child(3) { transition-delay: 0.25s; }
+  .card-grid .glass-card:nth-child(4) { transition-delay: 0.35s; }
+  .card-grid .glass-card:nth-child(5) { transition-delay: 0.45s; }
+  .card-grid .glass-card:nth-child(6) { transition-delay: 0.55s; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; }
+    .navbar, .header-section, .section-block, .fade-in, footer, .lang-toggle { 
+      transition: none !important; 
+      opacity: 1 !important; 
+      transform: none !important; 
+    }
+  }
+
+  /* ---------- Top Navigation Panel ---------- */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 4vw;
+    background: rgba(6, 13, 22, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(223, 246, 242, 0.12);
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+
+  .nav-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(127, 233, 240, 0.4);
+    box-shadow: 0 0 12px rgba(46, 230, 184, 0.25);
+  }
+
+  .nav-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 1.15rem;
+    color: #eafffb;
+    letter-spacing: 0.05em;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .nav-btn {
+    color: rgba(223, 246, 242, 0.85);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+  }
+
+  .nav-btn:hover, .nav-btn.active {
+    color: #ffffff;
+    border-color: rgba(127, 233, 240, 0.4);
+    background: rgba(127, 233, 240, 0.1);
+    box-shadow: 0 0 12px rgba(127, 233, 240, 0.2);
+  }
+
+  /* ---------- Floating Bottom-Right Language Button ---------- */
+  .lang-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #eafffb;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+  }
+
+  .lang-toggle:hover {
+    border-color: rgba(127, 233, 240, 0.8);
+    background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .lang-toggle svg {
+    width: 16px;
+    height: 16px;
+    stroke: rgba(223, 246, 242, 0.85);
+  }
+
+  /* ---------- Video Background ---------- */
+  .sky{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    overflow:hidden;
+    background: var(--void);
+  }
+
+  .bg-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+    filter: brightness(1);
+  }
+
+  .sky-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.2) 0%, rgba(5, 11, 18, 0.6) 100%),
+                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.7) 100%);
+    pointer-events: none;
+  }
+
+  /* ---------- Layout & Content ---------- */
+  .page-container {
+    position: relative;
+    z-index: 1;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 140px 6vw 80px;
+  }
+
+  .header-section {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  .page-subtitle {
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    color: var(--aurora-cyan);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    color: #ffffff;
+    margin-bottom: 16px;
+    text-shadow: 0 0 20px rgba(127, 233, 240, 0.3);
+  }
+
+  .page-description {
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: rgba(223, 246, 242, 0.8);
+  }
+
+  .section-block {
+    margin-bottom: 70px;
+  }
+
+  .section-heading {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem;
+    color: var(--aurora-teal);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+  }
+
+  .glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 28px;
+    transition: transform 0.3s ease, border-color 0.3s ease, opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-card:hover {
+    transform: translateY(-4px) !important;
+    border-color: rgba(127, 233, 240, 0.5);
+  }
+
+  .team-card {
+    text-align: center;
+  }
+
+  .avatar-placeholder {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    background: linear-gradient(135deg, rgba(46, 230, 184, 0.3), rgba(143, 140, 240, 0.3));
+    border: 2px solid var(--aurora-cyan);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    color: #ffffff;
+  }
+
+  .member-role {
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    color: var(--aurora-teal);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .member-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }
+
+  .member-desc {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: rgba(223, 246, 242, 0.7);
+  }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 0 6vw 40px;
+    font-size: 0.78rem;
+    color: rgba(223, 246, 242, 0.4);
+  }
+
+  @media (max-width: 600px) {
+    .nav-title { display: none; }
+    .nav-links { gap: 0.3rem; }
+    .nav-btn { font-size: 0.8rem; padding: 6px 10px; }
+    .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Black Preloader Overlay -->
+  <div id="preloader"></div>
+
+  <!-- Floating Bottom-Right Language Toggle Button -->
+  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="2" y1="12" x2="22" y2="12"></line>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+    </svg>
+    <span id="lang-text">繁體中文</span>
+  </button>
+
+  <header class="navbar">
+    <a href="index.html" class="nav-brand">
+      <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo" onerror="this.style.display='none'">
+      <span class="nav-title">Aurora</span>
+    </a>
+    <nav class="nav-links">
+      <a href="aboutus.html" class="nav-btn active i18n" data-en="About Us" data-zh="關於我們">About Us</a>
+      <a href="offers.html" class="nav-btn i18n" data-en="What We Offer" data-zh="我們的政綱">What We Offer</a>
+      <a href="schedule.html" class="nav-btn i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
+    </nav>
+  </header>
+
+  <!-- Video Background -->
+  <div class="sky">
+    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
+      <source src="assets/background.mp4" type="video/mp4">
+    </video>
+    <div class="sky-overlay"></div>
+  </div>
+
+  <main class="page-container">
+    <div class="header-section">
+      <p class="page-subtitle i18n" data-en="Cabinet Introduction" data-zh="內閣簡介">Cabinet Introduction</p>
+      <h1 class="page-title i18n" data-en="About Aurora" data-zh="關於 Aurora">About Aurora</h1>
+      <p class="page-description i18n" data-en="&ldquo;Sparked by Aurora, united with Harmonia&rdquo;<br>As Candidate Cabinet No. 1 for G.T. (Ellen Yeung) College 2026–27, we are dedicated to bringing a vibrant and warm campus experience to all students." data-zh="「Sparked by Aurora, united with Harmonia」<br>作為 2026–27 年度優才（楊殷有娣）書院 1 號候選內閣，我們致力為全體同學帶來充滿活力與溫度的校園體驗。">
+        "Sparked by Aurora, united with Harmonia"<br>
+        As Candidate Cabinet No. 1 for G.T. (Ellen Yeung) College 2026–27, we are dedicated to bringing a vibrant and warm campus experience to all students.
+      </p>
+    </div>
+
+    <!-- Cabinet Vision -->
+    <div class="section-block fade-in">
+      <h2 class="section-heading i18n" data-en="Cabinet Vision & Core Pillars" data-zh="內閣願景與核心理念">Cabinet Vision & Core Pillars</h2>
+      <div class="card-grid">
+        <div class="glass-card fade-in">
+          <h3 class="i18n" data-en="✦ Listen & Connect" data-zh="✦ 傾聽與連結" style="color:#ffffff; margin-bottom:12px;">✦ Listen & Connect</h3>
+          <p class="i18n" data-en="Building multi-channel feedback platforms to ensure every student's voice receives meaningful responses and actions." data-zh="構建多渠道意見反饋平台，確保每一位學生的聲音都能獲得實質回應與變革。" style="font-size:0.95rem; line-height:1.7; color:rgba(223,246,242,0.75);">
+            Building multi-channel feedback platforms to ensure every student's voice receives meaningful responses and actions.
+          </p>
+        </div>
+        <div class="glass-card fade-in">
+          <h3 class="i18n" data-en="✦ Welfare & Innovation" data-zh="✦ 福利與創新" style="color:#ffffff; margin-bottom:12px;">✦ Welfare & Innovation</h3>
+          <p class="i18n" data-en="Expanding merchant discounts and optimizing item rental services to create a practical, valuable welfare system." data-zh="拓展校外商戶優惠陣容，優化校內借用物品服務，打造實用有感的福利體系。" style="font-size:0.95rem; line-height:1.7; color:rgba(223,246,242,0.75);">
+            Expanding merchant discounts and optimizing item rental services to create a practical, valuable welfare system.
+          </p>
+        </div>
+        <div class="glass-card fade-in">
+          <h3 class="i18n" data-en="✦ Unity & Vitality" data-zh="✦ 凝聚與精彩" style="color:#ffffff; margin-bottom:12px;">✦ Unity & Vitality</h3>
+          <p class="i18n" data-en="Hosting diverse themed events and competitions to enrich campus life and foster a true sense of belonging." data-zh="舉辦多樣化主題活動與社群比賽，豐富校園生活，建立專屬於優才人的歸屬感。" style="font-size:0.95rem; line-height:1.7; color:rgba(223,246,242,0.75);">
+            Hosting diverse themed events and competitions to enrich campus life and foster a true sense of belonging.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cabinet Executive Team -->
+    <div class="section-block fade-in">
+      <h2 class="section-heading i18n" data-en="Executive Cabinet" data-zh="常務內閣">Executive Cabinet</h2>
+      <div class="card-grid">
+        <div class="glass-card team-card fade-in">
+          <div class="avatar-placeholder">P</div>
+          <div class="member-role i18n" data-en="President" data-zh="主席">President</div>
+          <div class="member-name i18n" data-en="President" data-zh="主席">President</div>
+          <p class="member-desc i18n" data-en="Leads overall cabinet affairs and represents the student body in liaising with the school for rights and welfare." data-zh="統領內閣整體事務，代表學生會與校方溝通爭取權益。">Leads overall cabinet affairs and represents the student body in liaising with the school for rights and welfare.</p>
+        </div>
+
+        <div class="glass-card team-card fade-in">
+          <div class="avatar-placeholder">VP</div>
+          <div class="member-role i18n" data-en="Vice President" data-zh="副主席">Vice President</div>
+          <div class="member-name i18n" data-en="Vice President" data-zh="副主席">Vice President</div>
+          <p class="member-desc i18n" data-en="Coordinates department operations, internal management, and execution of major projects." data-zh="協調各部門運作，主理內部管理與大型項目執行。">Coordinates department operations, internal management, and execution of major projects.</p>
+        </div>
+
+        <div class="glass-card team-card fade-in">
+          <div class="avatar-placeholder">W</div>
+          <div class="member-role i18n" data-en="Welfare Officer" data-zh="福利幹事">Welfare Officer</div>
+          <div class="member-name i18n" data-en="Welfare Officer" data-zh="福利幹事">Welfare Officer</div>
+          <p class="member-desc i18n" data-en="Negotiates external merchant discounts and maintains campus welfare facilities." data-zh="對外洽談商家折扣，對內維護及更新學生福利設施。">Negotiates external merchant discounts and maintains campus welfare facilities.</p>
+        </div>
+
+        <div class="glass-card team-card fade-in">
+          <div class="avatar-placeholder">E</div>
+          <div class="member-role i18n" data-en="Event Coordinator" data-zh="活動幹事">Event Coordinator</div>
+          <div class="member-name i18n" data-en="Event Coordinator" data-zh="活動幹事">Event Coordinator</div>
+          <p class="member-desc i18n" data-en="Plans diverse campus activities to create engaging recreational experiences." data-zh="策劃多樣化校園活動，打造極致文娛體驗。">Plans diverse campus activities to create engaging recreational experiences.</p>
+        </div>
+
+        <div class="glass-card team-card fade-in">
+          <div class="avatar-placeholder">PR</div>
+          <div class="member-role i18n" data-en="Public Relations" data-zh="公關幹事">Public Relations</div>
+          <div class="member-name i18n" data-en="PR Officer" data-zh="公關幹事">PR Officer</div>
+          <p class="member-desc i18n" data-en="Manages social media platforms to ensure transparent and prompt communication." data-zh="營運社群平台，確保內閣資訊透明且快速送達。">Manages social media platforms to ensure transparent and prompt communication.</p>
+        </div>
+
+        <div class="glass-card team-card fade-in">
+          <div class="avatar-placeholder">IT</div>
+          <div class="member-role i18n" data-en="IT & Design" data-zh="資訊及設計幹事">IT & Design</div>
+          <div class="member-name i18n" data-en="IT & Design Officer" data-zh="資訊及設計幹事">IT & Design Officer</div>
+          <p class="member-desc i18n" data-en="Develops the cabinet website and maintains digital service platforms and visual designs." data-zh="開發內閣網站，維護數位服務平台與視覺設計。">Develops the cabinet website and maintains digital service platforms and visual designs.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
+
+  <script>
+    // Retrieve saved language preference or default to 'en'
+    let currentLang = localStorage.getItem('aurora_lang') || 'en';
+    let isSwitching = false;
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('aurora_lang', lang);
+      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+
+      document.querySelectorAll('.i18n').forEach(el => {
+        const text = el.getAttribute(`data-${lang}`);
+        if (text) el.innerHTML = text;
+      });
+
+      const langText = document.getElementById('lang-text');
+      if (langText) {
+        langText.textContent = lang === 'en' ? '繁體中文' : 'English';
+      }
+    }
+
+    // Apply language preference immediately as script runs
+    setLanguage(currentLang);
+
+    document.getElementById('lang-btn').addEventListener('click', () => {
+      if (isSwitching) return;
+      isSwitching = true;
+
+      document.body.classList.remove('is-loaded');
+
+      setTimeout(() => {
+        setLanguage(currentLang === 'en' ? 'zh' : 'en');
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            document.body.classList.add('is-loaded');
+            setTimeout(() => { isSwitching = false; }, 1200);
+          });
+        });
+      }, 350);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const video = document.getElementById('bg-video');
+      let pageRevealed = false;
+
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px 0px -40px 0px',
+        threshold: 0.1
+      };
+
+      const fadeObserver = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+
+      function revealPage() {
+        if (pageRevealed) return;
+        pageRevealed = true;
+
+        if (video) {
+          video.play().catch(() => {});
+        }
+
+        document.body.classList.add('is-loaded');
+        document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+      }
+
+      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
+
+      const logoImage = new Image();
+      logoImage.src = 'assets/aurora-logo.png';
+      const logoLoaded = new Promise((resolve) => {
+        if (logoImage.complete) resolve();
+        else {
+          logoImage.onload = resolve;
+          logoImage.onerror = resolve;
+        }
+      });
+
+      const videoLoaded = new Promise((resolve) => {
+        if (!video) return resolve();
+        if (video.readyState >= 3) {
+          resolve();
+        } else {
+          const onCanPlay = () => {
+            video.removeEventListener('canplaythrough', onCanPlay);
+            video.removeEventListener('loadeddata', onCanPlay);
+            resolve();
+          };
+          video.addEventListener('canplaythrough', onCanPlay);
+          video.addEventListener('loadeddata', onCanPlay);
+        }
+      });
+
+      const fallbackTimer = new Promise((resolve) => setTimeout(resolve, 3000));
+
+      Promise.race([
+        Promise.all([fontsLoaded, logoLoaded, videoLoaded]),
+        fallbackTimer
+      ]).then(() => {
+        revealPage();
+      });
+    });
+  </script>
+</body>
+</html>
