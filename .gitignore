@@ -1,5 +1,5 @@
 .firebase/
 .firebaserc
 firebase.json
-.DS_Store
 keys.txt
+.DS_Store
