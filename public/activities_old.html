@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora - Activities</title>
+<link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
+
+<link rel="preload" href="assets/aurora-logo.png" as="image">
+<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --void: #050b12;
+    --deep: #0a1a20;
+    --ink: #dff6f2;
+    --aurora-teal: #2fe6b8;
+    --aurora-cyan: #7fe9f0;
+    --aurora-violet: #8f8cf0;
+    --line: rgba(223, 246, 242, 0.18);
+    --glass-bg: rgba(10, 26, 32, 0.65);
+    --glass-border: rgba(127, 233, 240, 0.22);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    min-height: 100%;
+    background: var(--void);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+  }
+
+  body {
+    min-height: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  #preloader {
+    position: fixed; inset: 0; z-index: 9999; background: #000000;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+
+  body.is-loaded #preloader { opacity: 0; visibility: hidden; }
+
+  .navbar, .page-container, footer, .lang-toggle {
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 0.35s ease-in, transform 0.35s ease-in; pointer-events: none;
+  }
+
+  body.is-loaded .navbar,
+  body.is-loaded .page-container,
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle {
+    opacity: 1; transform: translateY(0); pointer-events: auto;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.is-loaded .navbar { transition-delay: 0.15s; }
+  body.is-loaded .page-container { transition-delay: 0.35s; }
+  body.is-loaded footer, body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+
+  .fade-in {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+  .fade-in.is-visible { opacity: 1; transform: translateY(0); }
+
+  .navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 4vw; background: rgba(6, 13, 22, 0.75); backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(223, 246, 242, 0.12);
+  }
+
+  .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .nav-logo { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(127, 233, 240, 0.4); }
+  .nav-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 1.15rem; color: #eafffb; }
+  .nav-links { display: flex; align-items: center; gap: 1rem; }
+  .nav-btn {
+    color: rgba(223, 246, 242, 0.85); text-decoration: none; font-size: 0.9rem;
+    font-weight: 500; padding: 8px 16px; border-radius: 999px; border: 1px solid transparent; transition: all 0.3s ease;
+  }
+  .nav-btn:hover, .nav-btn.active {
+    color: #ffffff; border-color: rgba(127, 233, 240, 0.4); background: rgba(127, 233, 240, 0.1);
+  }
+
+  .lang-toggle {
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    display: flex; align-items: center; gap: 8px; padding: 10px 18px;
+    border-radius: 999px; border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.75); backdrop-filter: blur(12px);
+    color: #eafffb; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); transition: all 0.35s ease;
+  }
+  .lang-toggle:hover {
+    border-color: rgba(127, 233, 240, 0.8); background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3); transform: translateY(-2px);
+  }
+  .lang-toggle svg { width: 16px; height: 16px; stroke: rgba(223, 246, 242, 0.85); }
+
+  .sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--void); }
+  .bg-video { position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); object-fit: cover; }
+  .sky-overlay {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.25) 0%, rgba(5, 11, 18, 0.75) 100%),
+                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.8) 100%);
+    pointer-events: none;
+  }
+
+  .page-container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 140px 5vw 80px; }
+  .header-section { text-align: center; margin-bottom: 50px; }
+  .page-subtitle { font-size: 0.85rem; letter-spacing: 0.2em; color: var(--aurora-cyan); text-transform: uppercase; margin-bottom: 12px; }
+  .page-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 5vw, 3.8rem); color: #ffffff; margin-bottom: 16px; }
+  .page-description { max-width: 680px; margin: 0 auto; font-size: 1.05rem; line-height: 1.8; color: rgba(223, 246, 242, 0.85); }
+
+  .section-block { margin-bottom: 50px; }
+  .section-heading {
+    font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--aurora-teal); margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+  .act-card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px); border-radius: 14px; padding: 20px;
+    margin-bottom: 16px; cursor: pointer; transition: all 0.3s ease;
+  }
+  .act-card:hover { border-color: var(--aurora-cyan); }
+
+  .act-title { font-size: 1.1rem; color: #ffffff; font-weight: 600; margin-bottom: 6px; }
+  .act-brief { font-size: 0.9rem; color: rgba(223, 246, 242, 0.8); line-height: 1.5; }
+
+  .act-details {
+    display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .act-card.expanded .act-details { grid-template-rows: 1fr; }
+  .act-details-inner { overflow: hidden; }
+  .act-content {
+    margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(223, 246, 242, 0.2);
+    font-size: 0.88rem; color: rgba(223, 246, 242, 0.9); line-height: 1.6;
+  }
+  .act-content strong { color: var(--aurora-cyan); }
+
+  .act-toggle { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600; }
+  .act-toggle svg { width: 14px; height: 14px; transition: transform 0.3s ease; }
+  .act-card.expanded .act-toggle svg { transform: rotate(180deg); }
+
+  footer { position: relative; z-index: 1; text-align: center; padding: 0 6vw 40px; font-size: 0.78rem; color: rgba(223, 246, 242, 0.4); }
+
+  @media (max-width: 600px) {
+    .nav-title { display: none; }
+    .nav-btn { font-size: 0.8rem; padding: 6px 10px; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="preloader"></div>
+
+  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="2" y1="12" x2="22" y2="12"></line>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+    </svg>
+    <span id="lang-text">繁體中文</span>
+  </button>
+
+  <header class="navbar">
+    <a href="index.html" class="nav-brand">
+      <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo" onerror="this.style.display='none'">
+      <span class="nav-title">Aurora</span>
+    </a>
+    <nav class="nav-links">
+      <a href="aboutus.html" class="nav-btn i18n" data-en="About Us" data-zh="關於我們">About Us</a>
+      <a href="activities.html" class="nav-btn active i18n" data-en="Activities" data-zh="活動">Activities</a>
+      <a href="welfare.html" class="nav-btn i18n" data-en="Welfare" data-zh="福利">Welfare</a>
+      <a href="schedule.html" class="nav-btn i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
+      <a href="feedbacks.html" class="nav-btn i18n" data-en="Feedback" data-zh="意見反饋">Feedback</a>
+    </nav>
+  </header>
+
+  <div class="sky">
+    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
+      <source src="assets/background.mp4" type="video/mp4">
+    </video>
+    <div class="sky-overlay"></div>
+  </div>
+
+  <main class="page-container">
+    <div class="header-section fade-in">
+      <p class="page-subtitle i18n" data-en="Campus Events & Initiatives" data-zh="校園活動與企劃">Campus Events & Initiatives</p>
+      <h1 class="page-title i18n" data-en="Campus Activities" data-zh="校內活動">Campus Activities</h1>
+      <p class="page-description i18n" data-en="Explore Aurora's diverse lineup of festive, regular, and post-exam activities. Click any card to expand for complete descriptions and objectives." data-zh="探索 Aurora 籌辦的豐富節日活動、常規校園活動及試後活動，點擊任意活動卡片可展開查看詳細介紹與目的。">
+        Explore Aurora's diverse lineup of festive, regular, and post-exam activities. Click any card to expand for complete descriptions and objectives.
+      </p>
+    </div>
+
+    <!-- Festival Activities Breakdown -->
+    <div class="section-block">
+      <h2 class="section-heading i18n" data-en="I. Festive Activities" data-zh="I. 節日活動">I. Festive Activities</h2>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Halloween Celebrations" data-zh="萬聖節活動 (Halloween)">Halloween Celebrations</h3>
+        <p class="act-brief i18n" data-en="Trick or Treat booths, Teacher Cosplay, and Instant Photo Booth." data-zh="攤位遊戲派糖、老師特色 Cosplay 展現不同樣貌，以及免費即影即有。">Trick or Treat booths, Teacher Cosplay, and Instant Photo Booth.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Trick or Treat:</strong> Distributing candies through game booths to build festive spirit.<br>• <strong>Teacher Cosplay:</strong> Inviting teachers to wear Halloween outfits to boost teacher-student bonds.<br>• <strong>Photo Booth:</strong> Free Polaroid photo service with Halloween decorations."
+              data-zh="• <strong>Trick or treat：</strong>在萬聖節通過攤位遊戲形式發放糖果，感受濃厚氛圍。<br>• <strong>老師 Cosplay 活動：</strong>邀請老師穿上特色服飾，促進師生交流和情誼。<br>• <strong>即影即有 Booth：</strong>免費即影即有服務，幫助同學保留歡樂時刻的回憶。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Christmas Festival" data-zh="聖誕節系列活動 (Christmas)">Christmas Festival</h3>
+        <p class="act-brief i18n" data-en="Singing Contest, Dance Showcase, Wishing Tree, Movie Night, and Card Design." data-zh="歌唱及舞蹈大賽、Casual Day 便服日、4樓聖誕許願樹、Movie Night 電影之夜。">Singing Contest, Dance Showcase, Wishing Tree, Movie Night, and Card Design.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Singing Contest:</strong> Auditions held prior; finals before Christmas break with top 5 prizes & lucky draw grand prizes.<br>• <strong>Dancing Contest:</strong> Auditions before finals to let dance lovers shine on stage.<br>• <strong>Casual Dress Day:</strong> Wear favorite comfortable casual outfits back to school.<br>• <strong>Christmas Wishing Tree:</strong> Set up outside 4/F hall for wishes and feedback cards to SU.<br>• <strong>Movie Night:</strong> Cozy Christmas movie screening in the school hall."
+              data-zh="• <strong>Singing Contest：</strong>初賽選拔，聖誕假前夕決賽，學生組首5名獲獎，設3份神秘大獎大抽獎。<br>• <strong>Dancing Contest：</strong>舉辦初賽選拔, 表現出色者將於決賽展現舞姿"<br>• <strong>便服日：</strong>可穿著自己喜歡及舒適的便服回校展現自我。<br>• <strong>聖誕許願樹：</strong>在4樓禮堂外設立小型聖誕樹，通過卡片收集對SU的意見。<br>• <strong>Movie Night：</strong>於禮堂地面鋪墊，席地而坐欣賞聖誕主題電影。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Chinese New Year & Easter" data-zh="農曆新年與復活節 (CNY & Easter)">Chinese New Year & Easter</h3>
+        <p class="act-brief i18n" data-en="Recycling drive, CNY Card Design, Egg Hunt, and Photo Booth." data-zh="舊書文具慈善回收、新年賀卡比賽、3-7樓 Easter Egg 尋蛋比賽與拍立得。">Recycling drive, CNY Card Design, Egg Hunt, and Photo Booth.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>CNY Book & Stationery Drive:</strong> Collect unused stationery & books for charity donation.<br>• <strong>CNY Card Design Competition:</strong> Showcase artistic talent with Chinese New Year and G.T.-themed card designs.<br>• <strong>GT Easter Egg Hunt:</strong> 15 hidden Easter eggs across 3-7/F; top 15 solvers win chocolate eggs.<br>• <strong>Easter Photo Booth:</strong> Free instant photography with festive backdrop."
+              data-zh="• <strong>二手書&文具回收：</strong>響應新年辭舊迎新，將舊書文具整理全數捐贈慈善機構。<br>• <strong>農曆新年賀卡比賽：</strong>以農曆新年和 GT 為主題，讓擅長美術的同學一展身手。<br>• <strong>GT尋蛋比賽：</strong>15隻復活蛋放置於 3-7/F，最快記錄密碼的前15名可換領朱古力蛋。<br>• <strong>復活節即影即有 Booth：</strong>為師生記錄歡樂節日時刻。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+    </div>
+
+    <!-- Regular Campus Activities Breakdown -->
+    <div class="section-block">
+      <h2 class="section-heading i18n" data-en="II. Campus Regular Activities" data-zh="II. 校園常規活動">II. Campus Regular Activities</h2>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Sports & E-Sports Tournaments" data-zh="體育與電競賽事">Sports & E-Sports Tournaments</h3>
+        <p class="act-brief i18n" data-en="Inter-class ball games, open sports teams, and school-wide E-Sports contest." data-zh="班際足球籃球賽、跨班自由組隊體育賽事、全校投票電競大賽。">Inter-class ball games, open sports teams, and school-wide E-Sports contest.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Inter-class Sports:</strong> Football & basketball leagues for every form.<br>• <strong>Open Team Sports:</strong> Cross-class custom teams to join sports competitions freely.<br>• <strong>E-Sports Competition:</strong> Voted game titles, knockout format with prizes for top 3."
+              data-zh="• <strong>班際球類比賽：</strong>每級進行足球及籃球比賽，設初賽、季軍及冠軍賽。<br>• <strong>自由組隊球類比賽：</strong>項目自選，不同班別級別均可自由組隊。<br>• <strong>電競比賽：</strong>投票選出熱門遊戲，淘汰制競技，冠亞季軍頒發獎品。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Culture, Music & Arts" data-zh="文化、音樂與創意">Culture, Music & Arts</h3>
+        <p class="act-brief i18n" data-en="Random Dance, Song Requests, Photography Contest, Class T-Shirt Design." data-zh="午間 Random Dance、校園廣播點歌、校園攝影比賽、班 T 及冊封設計。">Random Dance, Song Requests, Photography Contest, Class T-Shirt Design.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Random Dance:</strong> K-pop/pop random dance sessions in the hall during recess.<br>• <strong>Campus Song Request:</strong> Play student-voted songs over central speakers during long recess.<br>• <strong>Photography Contest:</strong> Capture beautiful campus moments.<br>• <strong>Class T & Booklet Cover Design:</strong> Boost class solidarity and artistic creativity.<br>• <strong>SU Activity Design Experience:</strong> Student teams pitch campus event ideas, and SU helps co-host the winning proposal!"
+              data-zh="• <strong>Random Dance：</strong>大息/放學後於禮堂播放隨機音樂，自由隨拍舞動。<br>• <strong>校園點歌：</strong>大息時段播放同學投票選出的歌曲。<br>• <strong>校園攝影比賽：</strong>捕捉校園美麗瞬間並評選優秀作品。<br>• <strong>班T與小冊子封面設計：</strong>凝聚班級團結，展現視藝才華。<br>• <strong>SU活動設計體驗：</strong>鼓勵同學自主組隊設計活動，獲選組別將與 SU 攜手合辦該活動！">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Mind Games & Skill Competitions" data-zh="益智競賽與校園體驗">Mind Games & Skill Competitions</h3>
+        <p class="act-brief i18n" data-en="Chess, Rubik's Cube, Beyblade, Tongue Twister, Academic Friendly Quiz." data-zh="棋類大賽、扭計骰速疊、童年爆旋陀螺大賽、15秒急口令與選科 Kahoot 競賽。">Chess, Rubik's Cube, Beyblade, Tongue Twister, Academic Friendly Quiz.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Chess & Rubik's Cube:</strong> Knockout mind battles and speed solving.<br>• <strong>Beyblade Tournament:</strong> Revisit childhood memories with exciting Beyblade battles.<br>• <strong>Tongue Twister Contest:</strong> Read designated twisters in 15 seconds.<br>• <strong>Academic Friendly Competition:</strong> Assembly Kahoot quiz to help G9 students understand subject choices."
+              data-zh="• <strong>棋類與扭計骰比賽：</strong>考驗記憶、計算與反應手速，決出腦力之王。<br>• <strong>爆旋陀螺大賽：</strong>重拾童年回憶，享受緊張刺激的對戰。<br>• <strong>急口令比賽：</strong>15秒內清晰正確朗讀最多遍者獲勝。<br>• <strong>學科友誼競賽：</strong>於 Assembly 時段以 Kahoot 搶答，幫助 G9 同學了解選科方向。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+    </div>
+
+    <!-- Post-Exam Activities Breakdown -->
+    <div class="section-block">
+      <h2 class="section-heading i18n" data-en="III. Post-Exam Activities" data-zh="III. 試後活動">III. Post-Exam Activities</h2>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="GT Water Fight Festival" data-zh="GT 水戰">GT Water Fight Festival</h3>
+        <p class="act-brief i18n" data-en="A classic GT tradition to beat the heat and relieve exam stress." data-zh="延續傳統水戰遊戲，消暑解壓，增進跨班級友誼。">A classic GT tradition to beat the heat and relieve exam stress.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="<strong>Brief:</strong> Continuing GT's iconic water fight tradition with fun team games.<br><strong>Purpose:</strong> Beat the summer heat, release stress after hard studying, and boost bonds across classes."
+              data-zh="<strong>簡介：</strong>延續 GT 水戰傳統，設計不同遊戲環節，玩樂同時增加凝聚力。<br><strong>目的：</strong>通過水戰消暑，緩解一年學習壓力，團體活動增進班級間友誼。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Campus Life Simulator" data-zh="校園人生模擬器">Campus Life Simulator</h3>
+        <p class="act-brief i18n" data-en="Class-based interactive simulation of high school life decisions." data-zh="以班級為單位模擬中學選擇，累積金錢與技能，應對突發事件。">Class-based interactive simulation of high school life decisions.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="<strong>Brief:</strong> Class-based simulation of secondary school life choices, accumulating stats like 'Wealth' and 'Skills'.<br><strong>Purpose:</strong> Inspire students to cherish campus life and take ownership of their choices."
+              data-zh="<strong>簡介：</strong>以每班為單位，模擬中學生涯選擇，累積『金錢』、『技能』等指數，面臨突發事件。<br><strong>目的：</strong>令同學明白每人都有獨特人生，鼓勵積極享受校園生活並勇於承擔責任。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora" data-zh="優才（楊殷有娣）書院  -  2026–27 1號候選內閣 Aurora">
+    G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora
+  </footer>
+
+  <script>
+    let currentLang = localStorage.getItem('aurora_lang') || 'en';
+    let isSwitching = false;
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('aurora_lang', lang);
+      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+
+      document.querySelectorAll('.i18n').forEach(el => {
+        const text = el.getAttribute(`data-${lang}`);
+        if (text) el.innerHTML = text;
+      });
+
+      const langText = document.getElementById('lang-text');
+      if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
+    }
+
+    setLanguage(currentLang);
+
+    document.getElementById('lang-btn').addEventListener('click', () => {
+      if (isSwitching) return;
+      isSwitching = true;
+
+      document.body.classList.remove('is-loaded');
+
+      setTimeout(() => {
+        setLanguage(currentLang === 'en' ? 'zh' : 'en');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            document.body.classList.add('is-loaded');
+            setTimeout(() => { isSwitching = false; }, 1200);
+          });
+        });
+      }, 350);
+    });
+
+    function toggleAct(card) {
+      card.classList.toggle('expanded');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const video = document.getElementById('bg-video');
+      let pageRevealed = false;
+
+      const fadeObserver = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08 });
+
+      function revealPage() {
+        if (pageRevealed) return;
+        pageRevealed = true;
+        if (video) video.play().catch(() => {});
+        document.body.classList.add('is-loaded');
+        document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+      }
+
+      const fallbackTimer = setTimeout(revealPage, 2500);
+
+      Promise.all([
+        document.fonts ? document.fonts.ready : Promise.resolve(),
+        new Promise(res => {
+          if (!video || video.readyState >= 3) res();
+          else { video.addEventListener('canplaythrough', res, {once:true}); }
+        })
+      ]).then(() => {
+        clearTimeout(fallbackTimer);
+        revealPage();
+      });
+    });
+  </script>
+</body>
+</html>
