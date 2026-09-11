@@ -1,6 +1,7 @@
 {
   "hosting": {
     "public": "public",
+    "cleanUrls": true,
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -8,9 +9,11 @@
     ],
     "rewrites": [
       { "source": "/home", "destination": "/index.html" },
-      { "source": "about-us", "destination": "/aboutus.html" },
-      { "source": "offers", "destination": "/offers.html" },
-      { "source": "schedule", "destination": "/schedule.html" }
+      { "source": "/about-us", "destination": "/aboutus.html" },
+      { "source": "/offers", "destination": "/offers.html" },
+      { "source": "/schedule", "destination": "/schedule.html" },
+      { "source": "/feedbacks", "destination": "/feedbacks.html" },
+      { "source": "/admin", "destination": "/admin.html" }
     ]
   }
 }

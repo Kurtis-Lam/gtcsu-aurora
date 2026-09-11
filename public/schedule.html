@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Schedule — Aurora Candidate Cabinet No. 1</title>
+<title>Aurora - Schedule & Activities</title>
 <link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
 
-<!-- Asset Preloading -->
 <link rel="preload" href="assets/aurora-logo.png" as="image">
 <link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
   :root{
     --void: #050b12;
@@ -21,73 +21,64 @@
     --aurora-teal: #2fe6b8;
     --aurora-cyan: #7fe9f0;
     --aurora-violet: #8f8cf0;
-    --star: #ffffff;
     --line: rgba(223, 246, 242, 0.18);
-    --glass-bg: rgba(10, 26, 32, 0.55);
-    --glass-border: rgba(127, 233, 240, 0.2);
+    --glass-bg: rgba(10, 26, 32, 0.65);
+    --glass-border: rgba(127, 233, 240, 0.22);
   }
 
   *{ margin:0; padding:0; box-sizing:border-box; }
 
-  html,body{
-    min-height:100%;
-    background:var(--void);
-    color:var(--ink);
-    font-family:'Manrope', sans-serif;
-    overflow-x:hidden;
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    min-height: 100%;
+    background: var(--void);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
   }
 
-  /* ---------- Solid Black Preloader Overlay ---------- */
+  body {
+    min-height: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
   #preloader {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: #000000;
+    position: fixed; inset: 0; z-index: 9999; background: #000000;
     transition: opacity 0.8s ease, visibility 0.8s ease;
   }
 
-  body.is-loaded #preloader {
-    opacity: 0;
-    visibility: hidden;
+  body.is-loaded #preloader { opacity: 0; visibility: hidden; }
+
+  .navbar, .page-container, footer, .lang-toggle {
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 0.35s ease-in, transform 0.35s ease-in; pointer-events: none;
   }
 
-  /* ---------- Initial Hidden UI States ---------- */
-  .navbar, 
-  .page-container, 
-  footer,
-  .lang-toggle {
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.35s ease-in, transform 0.35s ease-in;
-    pointer-events: none;
-  }
-
-  /* Reveal sequence after preloader fades */
   body.is-loaded .navbar,
   body.is-loaded .page-container,
   body.is-loaded footer,
   body.is-loaded .lang-toggle {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+    opacity: 1; transform: translateY(0); pointer-events: auto;
     transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   body.is-loaded .navbar { transition-delay: 0.15s; }
   body.is-loaded .page-container { transition-delay: 0.35s; }
-  body.is-loaded footer,
-  body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+  body.is-loaded footer, body.is-loaded .lang-toggle { transition-delay: 0.55s; }
 
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; }
-    .navbar, .page-container, footer, .lang-toggle { transition: none !important; opacity: 1 !important; transform: none !important; }
+  .fade-in {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
   }
+  .fade-in.is-visible { opacity: 1; transform: translateY(0); }
 
   .navbar {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 1rem 4vw; background: rgba(6, 13, 22, 0.65);
-    backdrop-filter: blur(14px); border-bottom: 1px solid rgba(223, 246, 242, 0.12);
+    padding: 1rem 4vw; background: rgba(6, 13, 22, 0.75); backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(223, 246, 242, 0.12);
   }
 
   .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
@@ -102,150 +93,96 @@
     color: #ffffff; border-color: rgba(127, 233, 240, 0.4); background: rgba(127, 233, 240, 0.1);
   }
 
-  /* ---------- Floating Bottom-Right Language Button ---------- */
   .lang-toggle {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border-radius: 999px;
-    border: 1px solid rgba(127, 233, 240, 0.35);
-    background: rgba(10, 26, 32, 0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: #eafffb;
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    display: flex; align-items: center; gap: 8px; padding: 10px 18px;
+    border-radius: 999px; border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.75); backdrop-filter: blur(12px);
+    color: #eafffb; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); transition: all 0.35s ease;
   }
-
   .lang-toggle:hover {
-    border-color: rgba(127, 233, 240, 0.8);
-    background: rgba(18, 42, 50, 0.85);
-    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3);
-    transform: translateY(-2px);
+    border-color: rgba(127, 233, 240, 0.8); background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3); transform: translateY(-2px);
   }
-
   .lang-toggle svg { width: 16px; height: 16px; stroke: rgba(223, 246, 242, 0.85); }
 
-  /* ---------- Video Background ---------- */
-  .sky{
-    position:fixed;
-    inset:0;
-    z-index:0;
-    overflow:hidden;
-    background: var(--void);
-  }
-
-  .bg-video {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    min-width: 100%;
-    min-height: 100%;
-    width: auto;
-    height: auto;
-    transform: translate(-50%, -50%);
-    object-fit: cover;
-    filter: brightness(1);
-  }
-
+  .sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--void); }
+  .bg-video { position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); object-fit: cover; }
   .sky-overlay {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.2) 0%, rgba(5, 11, 18, 0.6) 100%),
-                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.7) 100%);
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.25) 0%, rgba(5, 11, 18, 0.75) 100%),
+                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.8) 100%);
     pointer-events: none;
   }
 
-  .page-container { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 140px 6vw 80px; }
-
+  .page-container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 140px 5vw 80px; }
   .header-section { text-align: center; margin-bottom: 50px; }
   .page-subtitle { font-size: 0.85rem; letter-spacing: 0.2em; color: var(--aurora-cyan); text-transform: uppercase; margin-bottom: 12px; }
   .page-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 5vw, 3.8rem); color: #ffffff; margin-bottom: 16px; }
-  .page-description { max-width: 600px; margin: 0 auto; font-size: 1.05rem; line-height: 1.8; color: rgba(223, 246, 242, 0.8); }
+  .page-description { max-width: 680px; margin: 0 auto; font-size: 1.05rem; line-height: 1.8; color: rgba(223, 246, 242, 0.85); }
 
-  /* Timeline */
-  .timeline {
-    position: relative;
-    padding-left: 20px;
+  .section-block { margin-bottom: 50px; }
+  .section-heading {
+    font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--aurora-teal); margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
   }
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 10px; bottom: 10px;
-    width: 2px;
-    background: linear-gradient(180deg, var(--aurora-teal), var(--aurora-violet));
-  }
+  .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 
-  .timeline-item {
-    position: relative;
-    margin-bottom: 32px;
-    padding-left: 28px;
-  }
+  .month-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 
-  .timeline-dot {
-    position: absolute;
-    left: -25px;
-    top: 4px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--aurora-cyan);
-    box-shadow: 0 0 10px var(--aurora-cyan);
+  .month-card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px); border-radius: 14px; padding: 18px; cursor: pointer;
+    transition: all 0.3s ease;
   }
+  .month-card:hover { border-color: var(--aurora-cyan); transform: translateY(-2px); }
 
-  .timeline-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    border-radius: 14px;
-    padding: 20px 24px;
-  }
+  .month-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .month-title { font-size: 1.15rem; color: #ffffff; font-weight: 600; }
+  .month-badge { font-size: 0.72rem; color: var(--aurora-teal); background: rgba(46, 230, 184, 0.12); padding: 3px 8px; border-radius: 999px; }
 
-  .event-date {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--aurora-teal);
-    letter-spacing: 0.05em;
-    margin-bottom: 6px;
-  }
+  .event-list { list-style: none; }
+  .event-item { font-size: 0.88rem; color: rgba(223, 246, 242, 0.85); padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+  .event-item::before { content: '•'; color: var(--aurora-cyan); font-weight: bold; }
 
-  .event-title {
-    font-size: 1.2rem;
-    color: #ffffff;
-    margin-bottom: 8px;
+  .act-card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px); border-radius: 14px; padding: 20px;
+    margin-bottom: 16px; cursor: pointer; transition: all 0.3s ease;
   }
+  .act-card:hover { border-color: var(--aurora-cyan); }
 
-  .event-desc {
-    font-size: 0.9rem;
-    color: rgba(223, 246, 242, 0.75);
-    line-height: 1.6;
+  .act-title { font-size: 1.1rem; color: #ffffff; font-weight: 600; margin-bottom: 6px; }
+  .act-brief { font-size: 0.9rem; color: rgba(223, 246, 242, 0.8); line-height: 1.5; }
+
+  .act-details {
+    display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  .act-card.expanded .act-details { grid-template-rows: 1fr; }
+  .act-details-inner { overflow: hidden; }
+  .act-content {
+    margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(223, 246, 242, 0.2);
+    font-size: 0.88rem; color: rgba(223, 246, 242, 0.9); line-height: 1.6;
+  }
+  .act-content strong { color: var(--aurora-cyan); }
+
+  .act-toggle { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600; }
+  .act-toggle svg { width: 14px; height: 14px; transition: transform 0.3s ease; }
+  .act-card.expanded .act-toggle svg { transform: rotate(180deg); }
 
   footer { position: relative; z-index: 1; text-align: center; padding: 0 6vw 40px; font-size: 0.78rem; color: rgba(223, 246, 242, 0.4); }
 
   @media (max-width: 600px) {
     .nav-title { display: none; }
     .nav-btn { font-size: 0.8rem; padding: 6px 10px; }
-    .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
   }
 </style>
 </head>
 <body>
 
-  <!-- Black Preloader Overlay -->
   <div id="preloader"></div>
 
-  <!-- Floating Bottom-Right Language Toggle Button -->
   <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"></circle>
@@ -264,10 +201,10 @@
       <a href="aboutus.html" class="nav-btn i18n" data-en="About Us" data-zh="關於我們">About Us</a>
       <a href="offers.html" class="nav-btn i18n" data-en="What We Offer" data-zh="我們的政綱">What We Offer</a>
       <a href="schedule.html" class="nav-btn active i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
+      <a href="feedbacks.html" class="nav-btn i18n" data-en="Feedback" data-zh="意見反饋">Feedback</a>
     </nav>
   </header>
 
-  <!-- Video Background -->
   <div class="sky">
     <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
       <source src="assets/background.mp4" type="video/mp4">
@@ -276,48 +213,301 @@
   </div>
 
   <main class="page-container">
-    <div class="header-section">
-      <p class="page-subtitle i18n" data-en="Campaign Timeline" data-zh="競選日程">Campaign Timeline</p>
-      <h1 class="page-title i18n" data-en="Election Schedule" data-zh="日程表">Election Schedule</h1>
-      <p class="page-description i18n" data-en="Stay tuned to Aurora's election period timeline. You are welcome to join all events and Q&amp;A sessions!" data-zh="緊貼 Aurora 宣傳期重要日程，歡迎參與各項活動與問答會！">
-        Stay tuned to Aurora's election period timeline. You are welcome to join all events and Q&A sessions!
+    <div class="header-section fade-in">
+      <p class="page-subtitle i18n" data-en="2026–2027 Calendar & Initiatives" data-zh="2026–2027 活動總覽與日程">2026–2027 Calendar & Initiatives</p>
+      <h1 class="page-title i18n" data-en="Campus Schedule" data-zh="校內活動時間表">Campus Schedule</h1>
+      <p class="page-description i18n" data-en="Explore Aurora's full annual schedule and activity details. Click any card to expand for complete descriptions and objectives." data-zh="探索 Aurora 整年度的精彩活動規劃，點擊任意活動項目可展開查看活動簡介與目的。">
+        Explore Aurora's full annual schedule and activity details. Click any card to expand for complete descriptions and objectives.
       </p>
     </div>
 
-    <div class="timeline">
-      <div class="timeline-item">
-        <div class="timeline-dot"></div>
-        <div class="timeline-card">
-          <div class="event-date i18n" data-en="September 15, 2026" data-zh="2026年 9月 15日">September 15, 2026</div>
-          <h3 class="event-title i18n" data-en="Campaign Launch" data-zh="宣傳期正式開啟 (Campaign Launch)">Campaign Launch</h3>
-          <p class="event-desc i18n" data-en="Official posters and website launch, releasing detailed platforms and welfare plans." data-zh="內閣宣傳海報及網站正式上線，發布政綱及福利詳情。">Official posters and website launch, releasing detailed platforms and welfare plans.</p>
+    <!-- Monthly Calendar -->
+    <div class="section-block">
+      <h2 class="section-heading i18n" data-en="Academic Year Calendar (2026-2027)" data-zh="校內活動時間表 (2026-2027)">Academic Year Calendar (2026-2027)</h2>
+      <div class="month-grid">
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="October 2026" data-zh="十月 2026">October 2026</span>
+            <span class="month-badge i18n" data-en="5 Events" data-zh="5 項活動">5 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Community Chest Dress Casual Day" data-zh="便服日">Casual Dress Day</li>
+            <li class="event-item i18n" data-en="Trick or Treat" data-zh="Trick or treat 派糖">Trick or Treat</li>
+            <li class="event-item i18n" data-en="Sports Day Booklet Cover Competition" data-zh="陸運會小冊子封面設計比賽">Sports Day Booklet Cover Competition</li>
+            <li class="event-item i18n" data-en="Teacher Cosplay Event" data-zh="老師 Cosplay 活動">Teacher Cosplay Event</li>
+            <li class="event-item i18n" data-en="Instant Photo Booth" data-zh="即影即有 Booth">Instant Photo Booth</li>
+          </ul>
         </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="November 2026" data-zh="十一月 2026">November 2026</span>
+            <span class="month-badge i18n" data-en="2 Events" data-zh="2 項活動">2 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Handmade Accessories Workshop" data-zh="手作飾品工作坊">Handmade Accessories Workshop</li>
+            <li class="event-item i18n" data-en="Beyblade Tournament" data-zh="爆旋陀螺大賽">Beyblade Tournament</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="December 2026" data-zh="十二月 2026">December 2026</span>
+            <span class="month-badge i18n" data-en="5 Events" data-zh="5 項活動">5 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Singing Contest Finals" data-zh="Singing Contest 決賽">Singing Contest Finals</li>
+            <li class="event-item i18n" data-en="Christmas Wishing Tree" data-zh="聖誕許願樹">Christmas Wishing Tree</li>
+            <li class="event-item i18n" data-en="Christmas Card Design Contest" data-zh="聖誕賀卡設計比賽">Christmas Card Design Contest</li>
+            <li class="event-item i18n" data-en="Rubik's Cube Speed Competition" data-zh="扭計骰比賽">Rubik's Cube Speed Competition</li>
+            <li class="event-item i18n" data-en="Movie Night" data-zh="Movie Night 聖誕電影之夜">Movie Night</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="January 2027" data-zh="一月 2027">January 2027</span>
+            <span class="month-badge i18n" data-en="4 Events" data-zh="4 項活動">4 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Dancing Contest" data-zh="Dancing Contest 舞蹈大賽">Dancing Contest</li>
+            <li class="event-item i18n" data-en="Academic Friendly Comp 1" data-zh="學科友誼競賽 1">Academic Friendly Comp 1</li>
+            <li class="event-item i18n" data-en="G12 Inter-class Ball Games" data-zh="G12 班際球類比賽">G12 Inter-class Ball Games</li>
+            <li class="event-item i18n" data-en="Public Exam Cheer Station" data-zh="公開試打氣站">Public Exam Cheer Station</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="February 2027" data-zh="二月 2027">February 2027</span>
+            <span class="month-badge i18n" data-en="4 Events" data-zh="4 項活動">4 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Gamebooth Day" data-zh="Gamebooth Day 攤位遊戲日">Gamebooth Day</li>
+            <li class="event-item i18n" data-en="SU Activity Design Contest (Launch)" data-zh="SU活動設計比賽 (開始)">SU Activity Design Contest (Launch)</li>
+            <li class="event-item i18n" data-en="CNY Book & Stationery Recycling" data-zh="二手書&文具回收活動">CNY Book & Stationery Recycling</li>
+            <li class="event-item i18n" data-en="CNY Card Design Competition" data-zh="農曆新年賀卡設計比賽">CNY Card Design Competition</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="March 2027" data-zh="三月 2027">March 2027</span>
+            <span class="month-badge i18n" data-en="4 Events" data-zh="4 項活動">4 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Sports Competition" data-zh="球類比賽">Sports Competition</li>
+            <li class="event-item i18n" data-en="Campus Song Broadcast" data-zh="校園點歌">Campus Song Broadcast</li>
+            <li class="event-item i18n" data-en="Inter-class Ball Games" data-zh="班際球類比賽">Inter-class Ball Games</li>
+            <li class="event-item i18n" data-en="GT Easter Egg Hunt" data-zh="GT 尋蛋比賽">GT Easter Egg Hunt</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="April 2027" data-zh="四月 2027">April 2027</span>
+            <span class="month-badge i18n" data-en="6 Events" data-zh="6 項活動">6 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Inter-class Ball Games" data-zh="班際球類比賽">Inter-class Ball Games</li>
+            <li class="event-item i18n" data-en="Sports Competition" data-zh="球類比賽">Sports Competition</li>
+            <li class="event-item i18n" data-en="E-Sports Tournament" data-zh="電競比賽">E-Sports Tournament</li>
+            <li class="event-item i18n" data-en="Chess Tournament" data-zh="棋類比賽">Chess Tournament</li>
+            <li class="event-item i18n" data-en="Academic Friendly Comp 2" data-zh="學科友誼競賽 2">Academic Friendly Comp 2</li>
+            <li class="event-item i18n" data-en="Easter Instant Photo Booth" data-zh="復活節即影即有 Booth">Easter Instant Photo Booth</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="May 2027" data-zh="五月 2027">May 2027</span>
+            <span class="month-badge i18n" data-en="5 Events" data-zh="5 項活動">5 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="SU Activity Design (Execution)" data-zh="SU活動設計體驗 (舉辦)">SU Activity Design (Execution)</li>
+            <li class="event-item i18n" data-en="Tongue Twister Competition" data-zh="急口令比賽">Tongue Twister Competition</li>
+            <li class="event-item i18n" data-en="Inter-class Ball Games" data-zh="班際球類比賽">Inter-class Ball Games</li>
+            <li class="event-item i18n" data-en="Campus Photography Contest" data-zh="校園攝影比賽">Campus Photography Contest</li>
+            <li class="event-item i18n" data-en="Random Dance Session" data-zh="Random Dance 隨機舞蹈">Random Dance Session</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="June 2027" data-zh="六月 2027">June 2027</span>
+            <span class="month-badge i18n" data-en="1 Event" data-zh="1 項活動">1 Event</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Ice Cream Distribution Day" data-zh="免費雪糕派發">Ice Cream Distribution Day</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="July 2027" data-zh="七月 2027">July 2027</span>
+            <span class="month-badge i18n" data-en="2 Events" data-zh="2 項活動">2 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="GT Water Fight Festival" data-zh="GT 水戰">GT Water Fight Festival</li>
+            <li class="event-item i18n" data-en="Campus Life Simulator" data-zh="校園人生模擬器">Campus Life Simulator</li>
+          </ul>
+        </div>
+
+        <div class="month-card fade-in">
+          <div class="month-header">
+            <span class="month-title i18n" data-en="September 2027" data-zh="九月 2027">September 2027</span>
+            <span class="month-badge i18n" data-en="6 Events" data-zh="6 項活動">6 Events</span>
+          </div>
+          <ul class="event-list">
+            <li class="event-item i18n" data-en="Watermelon Treat Day" data-zh="西瓜免費派發">Watermelon Treat Day</li>
+            <li class="event-item i18n" data-en="Class T-Shirt Design Contest" data-zh="班T設計比賽">Class T-Shirt Design Contest</li>
+            <li class="event-item i18n" data-en="Mid-Autumn Riddle Guessing" data-zh="猜燈謎活動">Mid-Autumn Riddle Guessing</li>
+            <li class="event-item i18n" data-en="Mid-Autumn Poster Contest" data-zh="中秋節海報設計比賽">Mid-Autumn Poster Contest</li>
+            <li class="event-item i18n" data-en="Random Dance Session" data-zh="Random Dance 隨機舞蹈">Random Dance Session</li>
+            <li class="event-item i18n" data-en="Teachers' Day Appreciation" data-zh="敬師日活動">Teachers' Day Appreciation</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Festival Activities Breakdown -->
+    <div class="section-block">
+      <h2 class="section-heading i18n" data-en="I. Festive Activities" data-zh="I. 節日活動">I. Festive Activities</h2>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Halloween Celebrations" data-zh="萬聖節活動 (Halloween)">Halloween Celebrations</h3>
+        <p class="act-brief i18n" data-en="Trick or Treat booths, Teacher Cosplay, and Instant Photo Booth." data-zh="攤位遊戲派糖、老師特色 Cosplay 展現不同樣貌，以及免費即影即有。">Trick or Treat booths, Teacher Cosplay, and Instant Photo Booth.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Trick or Treat:</strong> Distributing candies through game booths to build festive spirit.<br>• <strong>Teacher Cosplay:</strong> Inviting teachers to wear Halloween outfits to boost teacher-student bonds.<br>• <strong>Photo Booth:</strong> Free Polaroid photo service with Halloween decorations."
+              data-zh="• <strong>Trick or treat：</strong>在萬聖節通過攤位遊戲形式發放糖果，感受濃厚氛圍。<br>• <strong>老師 Cosplay 活動：</strong>邀請老師穿上特色服飾，促進師生交流和情誼。<br>• <strong>即影即有 Booth：</strong>免費即影即有服務，幫助同學保留歡樂時刻的回憶。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
       </div>
 
-      <div class="timeline-item">
-        <div class="timeline-dot"></div>
-        <div class="timeline-card">
-          <div class="event-date i18n" data-en="September 20, 2026" data-zh="2026年 9月 20日">September 20, 2026</div>
-          <h3 class="event-title i18n" data-en="Q&amp;A Forum" data-zh="學生會諮詢論壇 (Q&amp;A Forum)">Q&amp;A Forum</h3>
-          <p class="event-desc i18n" data-en="Location: School Hall. Answering questions in person about our platform, welfare, and cabinet operations." data-zh="地點：學校大禮堂。現場回答同學們對於政綱、福利與內閣運作的疑問。">Location: School Hall. Answering questions in person about our platform, welfare, and cabinet operations.</p>
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Christmas Festival" data-zh="聖誕節系列活動 (Christmas)">Christmas Festival</h3>
+        <p class="act-brief i18n" data-en="Singing Contest, Dance Showcase, Wishing Tree, Movie Night, and Card Design." data-zh="歌唱及舞蹈大賽、Casual Day 便服日、4樓聖誕許願樹、Movie Night 電影之夜。">Singing Contest, Dance Showcase, Wishing Tree, Movie Night, and Card Design.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Singing Contest:</strong> Auditions held prior; finals before Christmas break with top 5 prizes & lucky draw grand prizes.<br>• <strong>Dancing Contest:</strong> Auditions before finals to let dance lovers shine on stage.<br>• <strong>Casual Dress Day:</strong> Wear favorite comfortable casual outfits back to school.<br>• <strong>Christmas Wishing Tree:</strong> Set up outside 4/F hall for wishes and feedback cards to SU.<br>• <strong>Card Design Competition:</strong> GT & Christmas themed card designs printed by SU.<br>• <strong>Movie Night:</strong> Cozy Christmas movie screening in the school hall."
+              data-zh="• <strong>Singing Contest：</strong>初賽選拔，聖誕假前夕決賽，學生組首5名獲獎，設3份神秘大獎大抽獎。<br>• <strong>Dancing Contest：</strong>舉辦初賽選拔，於正式舞台展現舞姿。<br>• <strong>便服日：</strong>可穿著自己喜歡及舒適的便服回校展現自我。<br>• <strong>聖誕許願樹：</strong>在4樓禮堂外設立小型聖誕樹，掛上祈願卡並收集對SU的意見。<br>• <strong>聖誕賀卡設計比賽：</strong>以聖誕和GT為主題，評選最佳作品由SU印製。<br>• <strong>Movie Night：</strong>於禮堂地面鋪墊，席地而坐欣賞聖誕主題電影。">
+            </div>
+          </div>
         </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
       </div>
 
-      <div class="timeline-item">
-        <div class="timeline-dot"></div>
-        <div class="timeline-card">
-          <div class="event-date i18n" data-en="September 25, 2026" data-zh="2026年 9月 25日">September 25, 2026</div>
-          <h3 class="event-title i18n" data-en="Polling Day" data-zh="全校投票日 (Polling Day)">Polling Day</h3>
-          <p class="event-desc i18n" data-en="Cast your vote for Candidate Cabinet No. 1, Aurora, to create a better campus together!" data-zh="請投下神聖的一票予 1號候選內閣 Aurora，共創更好的校園體驗！">Cast your vote for Candidate Cabinet No. 1, Aurora, to create a better campus together!</p>
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Chinese New Year & Easter" data-zh="農曆新年與復活節 (CNY & Easter)">Chinese New Year & Easter</h3>
+        <p class="act-brief i18n" data-en="Recycling drive, CNY Card Design, Egg Hunt, and Photo Booth." data-zh="舊書文具慈善回收、新年賀卡比賽、3-7樓 Easter Egg 尋蛋比賽與拍立得。">Recycling drive, CNY Card Design, Egg Hunt, and Photo Booth.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>CNY Book & Stationery Drive:</strong> Collect unused stationery & books for charity donation.<br>• <strong>GT Easter Egg Hunt:</strong> 15 hidden Easter eggs across 3-7/F; top 15 solvers win chocolate eggs.<br>• <strong>Easter Photo Booth:</strong> Free instant photography with festive backdrop."
+              data-zh="• <strong>二手書&文具回收：</strong>響應新年辭舊迎新，將舊書文具整理全數捐贈慈善機構。<br>• <strong>農曆新年賀卡比賽：</strong>以農曆新年和 GT 為主題，讓美術好手一展身手。<br>• <strong>GT尋蛋比賽：</strong>15隻復活蛋放置於 3-7/F，最快記錄密碼的前15名可換領朱古力蛋。<br>• <strong>復活節即影即有 Booth：</strong>為師生記錄歡樂節日時刻。">
+            </div>
+          </div>
         </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
       </div>
+
+    </div>
+
+    <!-- Regular Campus Activities Breakdown -->
+    <div class="section-block">
+      <h2 class="section-heading i18n" data-en="II. Campus Regular Activities" data-zh="II. 校園常規活動">II. Campus Regular Activities</h2>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Sports & E-Sports Tournaments" data-zh="體育與電競賽事">Sports & E-Sports Tournaments</h3>
+        <p class="act-brief i18n" data-en="Inter-class ball games, open sports teams, and school-wide E-Sports contest." data-zh="班際足球籃球賽、跨班自由組隊體育賽事、全校投票電競大賽。">Inter-class ball games, open sports teams, and school-wide E-Sports contest.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Inter-class Sports:</strong> Football & basketball leagues for every form.<br>• <strong>Open Team Sports:</strong> Cross-class custom teams to join sports competitions freely.<br>• <strong>E-Sports Competition:</strong> Voted game titles, knockout format with prizes for top 3."
+              data-zh="• <strong>班際球類比賽：</strong>每級進行足球及籃球比賽，設初賽、季軍及冠軍賽。<br>• <strong>自由組隊球類比賽：</strong>項目自選，不同班別級別均可自由組隊。<br>• <strong>電競比賽：</strong>投票選出熱門遊戲，淘汰制競技，冠亞季軍頒發獎品。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Culture, Music & Arts" data-zh="文化、音樂與創意">Culture, Music & Arts</h3>
+        <p class="act-brief i18n" data-en="Random Dance, Song Requests, Photography Contest, Class T-Shirt Design." data-zh="午間 Random Dance、校園廣播點歌、校園攝影比賽、班 T 及冊封設計。">Random Dance, Song Requests, Photography Contest, Class T-Shirt Design.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Random Dance:</strong> K-pop/pop random dance sessions in the hall during recess.<br>• <strong>Campus Song Request:</strong> Play student-voted songs over central speakers during long recess.<br>• <strong>Photography Contest:</strong> Capture beautiful campus moments.<br>• <strong>Class T & Booklet Cover Design:</strong> Boost class solidarity and artistic creativity.<br>• <strong>SU Activity Design Experience:</strong> Student teams pitch campus event ideas, and SU helps co-host the winning proposal!"
+              data-zh="• <strong>Random Dance：</strong>大息/放學後於禮堂播放隨機音樂，自由隨拍舞動。<br>• <strong>校園點歌：</strong>大息時段播放同學投票選出的歌曲。<br>• <strong>校園攝影比賽：</strong>捕捉校園美麗瞬間並評選優秀作品。<br>• <strong>班T與小冊子封面設計：</strong>凝聚班級團結，展現視藝才華。<br>• <strong>SU活動設計體驗：</strong>鼓勵同學自主組隊設計活動，獲選組別將與 SU 攜手合辦該活動！">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Mind Games & Skill Competitions" data-zh="益智競賽與校園體驗">Mind Games & Skill Competitions</h3>
+        <p class="act-brief i18n" data-en="Chess, Rubik's Cube, Beyblade, Tongue Twister, Academic Friendly Quiz." data-zh="棋類大賽、扭計骰速疊、童年爆旋陀螺大賽、15秒急口令與選科 Kahoot 競賽。">Chess, Rubik's Cube, Beyblade, Tongue Twister, Academic Friendly Quiz.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="• <strong>Chess & Rubik's Cube:</strong> Knockout mind battles and speed solving.<br>• <strong>Beyblade Tournament:</strong> Revisit childhood memories with exciting Beyblade battles.<br>• <strong>Tongue Twister Contest:</strong> Read designated twisters in 15 seconds.<br>• <strong>Academic Friendly Competition:</strong> Assembly Kahoot quiz to help G9 students understand subject choices."
+              data-zh="• <strong>棋類與扭計骰比賽：</strong>考驗記憶、計算與反應手速，決出腦力之王。<br>• <strong>爆旋陀螺大賽：</strong>重拾童年回憶，享受緊張刺激的對戰。<br>• <strong>急口令比賽：</strong>15秒內清晰正確朗讀最多遍者獲勝。<br>• <strong>學科友誼競賽：</strong>於 Assembly 時段以 Kahoot 搶答，幫助 G9 同學了解選科方向。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+    </div>
+
+    <!-- Post-Exam Activities Breakdown -->
+    <div class="section-block">
+      <h2 class="section-heading i18n" data-en="III. Post-Exam Activities" data-zh="III. 試後活動">III. Post-Exam Activities</h2>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="GT Water Fight Festival" data-zh="GT 水戰">GT Water Fight Festival</h3>
+        <p class="act-brief i18n" data-en="A classic GT tradition to beat the heat and relieve exam stress." data-zh="延續傳統水戰遊戲，消暑解壓，增進跨班級友誼。">A classic GT tradition to beat the heat and relieve exam stress.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="<strong>Brief:</strong> Continuing GT's iconic water fight tradition with fun team games.<br><strong>Purpose:</strong> Beat the summer heat, release stress after hard studying, and boost bonds across classes."
+              data-zh="<strong>簡介：</strong>延續 GT 水戰傳統，設計不同遊戲環節，玩樂同時增加凝聚力。<br><strong>目的：</strong>通過水戰消暑，緩解一年學習壓力，團體活動增進班級間友誼。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
+      <div class="act-card fade-in" onclick="toggleAct(this)">
+        <h3 class="act-title i18n" data-en="Campus Life Simulator" data-zh="校園人生模擬器">Campus Life Simulator</h3>
+        <p class="act-brief i18n" data-en="Class-based interactive simulation of high school life decisions." data-zh="以班級為單位模擬中學選擇，累積金錢與技能，應對突發事件。">Class-based interactive simulation of high school life decisions.</p>
+        <div class="act-details">
+          <div class="act-details-inner">
+            <div class="act-content i18n"
+              data-en="<strong>Brief:</strong> Class-based simulation of secondary school life choices, accumulating stats like 'Wealth' and 'Skills'.<br><strong>Purpose:</strong> Inspire students to cherish campus life and take ownership of their choices."
+              data-zh="<strong>簡介：</strong>以每班為單位，模擬中學生涯選擇，累積『金錢』、『技能』等指數，面臨突發事件。<br><strong>目的：</strong>令同學明白每人都有獨特人生，鼓勵積極享受校園生活並勇於承擔責任。">
+            </div>
+          </div>
+        </div>
+        <div class="act-toggle"><span class="i18n" data-en="View Details" data-zh="展開詳情">View Details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      </div>
+
     </div>
   </main>
 
-  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
+  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora" data-zh="優才（楊殷有娣）書院  -  2026–27 1號候選內閣 Aurora">
+    G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora
+  </footer>
 
   <script>
-    // Retrieve saved language preference or default to 'en'
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
 
@@ -332,12 +522,9 @@
       });
 
       const langText = document.getElementById('lang-text');
-      if (langText) {
-        langText.textContent = lang === 'en' ? '繁體中文' : 'English';
-      }
+      if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
     }
 
-    // Apply language preference immediately as script runs
     setLanguage(currentLang);
 
     document.getElementById('lang-btn').addEventListener('click', () => {
@@ -348,7 +535,6 @@
 
       setTimeout(() => {
         setLanguage(currentLang === 'en' ? 'zh' : 'en');
-
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             document.body.classList.add('is-loaded');
@@ -358,15 +544,13 @@
       }, 350);
     });
 
+    function toggleAct(card) {
+      card.classList.toggle('expanded');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const video = document.getElementById('bg-video');
       let pageRevealed = false;
-
-      const observerOptions = {
-        root: null,
-        rootMargin: '0px 0px -40px 0px',
-        threshold: 0.1
-      };
 
       const fadeObserver = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
@@ -375,53 +559,26 @@
             obs.unobserve(entry.target);
           }
         });
-      }, observerOptions);
+      }, { threshold: 0.08 });
 
       function revealPage() {
         if (pageRevealed) return;
         pageRevealed = true;
-
-        if (video) {
-          video.play().catch(() => {});
-        }
-
+        if (video) video.play().catch(() => {});
         document.body.classList.add('is-loaded');
         document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
       }
 
-      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
+      const fallbackTimer = setTimeout(revealPage, 2500);
 
-      const logoImage = new Image();
-      logoImage.src = 'assets/aurora-logo.png';
-      const logoLoaded = new Promise((resolve) => {
-        if (logoImage.complete) resolve();
-        else {
-          logoImage.onload = resolve;
-          logoImage.onerror = resolve;
-        }
-      });
-
-      const videoLoaded = new Promise((resolve) => {
-        if (!video) return resolve();
-        if (video.readyState >= 3) {
-          resolve();
-        } else {
-          const onCanPlay = () => {
-            video.removeEventListener('canplaythrough', onCanPlay);
-            video.removeEventListener('loadeddata', onCanPlay);
-            resolve();
-          };
-          video.addEventListener('canplaythrough', onCanPlay);
-          video.addEventListener('loadeddata', onCanPlay);
-        }
-      });
-
-      const fallbackTimer = new Promise((resolve) => setTimeout(resolve, 3000));
-
-      Promise.race([
-        Promise.all([fontsLoaded, logoLoaded, videoLoaded]),
-        fallbackTimer
+      Promise.all([
+        document.fonts ? document.fonts.ready : Promise.resolve(),
+        new Promise(res => {
+          if (!video || video.readyState >= 3) res();
+          else { video.addEventListener('canplaythrough', res, {once:true}); }
+        })
       ]).then(() => {
+        clearTimeout(fallbackTimer);
         revealPage();
       });
     });

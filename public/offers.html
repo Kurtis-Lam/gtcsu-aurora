@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>What We Offer — Aurora Candidate Cabinet No. 1</title>
+<title>Aurora - Offers</title>
 <link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
 
-<!-- Asset Preloading -->
 <link rel="preload" href="assets/aurora-logo.png" as="image">
 <link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
   :root{
     --void: #050b12;
@@ -23,21 +23,27 @@
     --aurora-violet: #8f8cf0;
     --star: #ffffff;
     --line: rgba(223, 246, 242, 0.18);
-    --glass-bg: rgba(10, 26, 32, 0.55);
-    --glass-border: rgba(127, 233, 240, 0.2);
+    --glass-bg: rgba(10, 26, 32, 0.65);
+    --glass-border: rgba(127, 233, 240, 0.22);
   }
 
   *{ margin:0; padding:0; box-sizing:border-box; }
 
-  html,body{
-    min-height:100%;
-    background:var(--void);
-    color:var(--ink);
-    font-family:'Manrope', sans-serif;
-    overflow-x:hidden;
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    min-height: 100%;
+    background: var(--void);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
   }
 
-  /* ---------- Solid Black Preloader Overlay ---------- */
+  body {
+    min-height: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
   #preloader {
     position: fixed;
     inset: 0;
@@ -51,18 +57,13 @@
     visibility: hidden;
   }
 
-  /* ---------- Initial Hidden UI States ---------- */
-  .navbar, 
-  .page-container, 
-  footer,
-  .lang-toggle {
+  .navbar, .page-container, footer, .lang-toggle {
     opacity: 0;
     transform: translateY(16px);
     transition: opacity 0.35s ease-in, transform 0.35s ease-in;
     pointer-events: none;
   }
 
-  /* Reveal sequence after preloader fades */
   body.is-loaded .navbar,
   body.is-loaded .page-container,
   body.is-loaded footer,
@@ -75,27 +76,24 @@
 
   body.is-loaded .navbar { transition-delay: 0.15s; }
   body.is-loaded .page-container { transition-delay: 0.35s; }
-  body.is-loaded footer,
-  body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+  body.is-loaded footer, body.is-loaded .lang-toggle { transition-delay: 0.55s; }
 
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; }
-    .navbar, .page-container, footer, .lang-toggle { transition: none !important; opacity: 1 !important; transform: none !important; }
+  .fade-in {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+  .fade-in.is-visible {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 4vw;
-    background: rgba(6, 13, 22, 0.65);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 4vw; background: rgba(6, 13, 22, 0.75);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid rgba(223, 246, 242, 0.12);
   }
 
@@ -111,123 +109,99 @@
     color: #ffffff; border-color: rgba(127, 233, 240, 0.4); background: rgba(127, 233, 240, 0.1);
   }
 
-  /* ---------- Floating Bottom-Right Language Button ---------- */
   .lang-toggle {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border-radius: 999px;
-    border: 1px solid rgba(127, 233, 240, 0.35);
-    background: rgba(10, 26, 32, 0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: #eafffb;
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    display: flex; align-items: center; gap: 8px; padding: 10px 18px;
+    border-radius: 999px; border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    color: #eafffb; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); transition: all 0.35s ease;
   }
-
   .lang-toggle:hover {
-    border-color: rgba(127, 233, 240, 0.8);
-    background: rgba(18, 42, 50, 0.85);
-    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3);
-    transform: translateY(-2px);
+    border-color: rgba(127, 233, 240, 0.8); background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3); transform: translateY(-2px);
   }
-
   .lang-toggle svg { width: 16px; height: 16px; stroke: rgba(223, 246, 242, 0.85); }
 
-  /* ---------- Video Background ---------- */
-  .sky{
-    position:fixed;
-    inset:0;
-    z-index:0;
-    overflow:hidden;
-    background: var(--void);
-  }
-
+  .sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--void); }
   .bg-video {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    min-width: 100%;
-    min-height: 100%;
-    width: auto;
-    height: auto;
-    transform: translate(-50%, -50%);
-    object-fit: cover;
-    filter: brightness(1);
+    position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%;
+    transform: translate(-50%, -50%); object-fit: cover;
   }
-
   .sky-overlay {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.2) 0%, rgba(5, 11, 18, 0.6) 100%),
-                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.7) 100%);
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.25) 0%, rgba(5, 11, 18, 0.75) 100%),
+                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.8) 100%);
     pointer-events: none;
   }
 
-  .page-container {
-    position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 140px 6vw 80px;
-  }
-
+  .page-container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 140px 5vw 80px; }
   .header-section { text-align: center; margin-bottom: 50px; }
   .page-subtitle { font-size: 0.85rem; letter-spacing: 0.2em; color: var(--aurora-cyan); text-transform: uppercase; margin-bottom: 12px; }
   .page-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 5vw, 3.8rem); color: #ffffff; margin-bottom: 16px; }
-  .page-description { max-width: 680px; margin: 0 auto; font-size: 1.05rem; line-height: 1.8; color: rgba(223, 246, 242, 0.8); }
+  .page-description { max-width: 720px; margin: 0 auto; font-size: 1.05rem; line-height: 1.8; color: rgba(223, 246, 242, 0.85); }
 
   .section-block { margin-bottom: 60px; }
   .section-heading {
-    font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--aurora-teal); margin-bottom: 24px;
+    font-family: 'Cinzel', serif; font-size: 1.6rem; color: var(--aurora-teal); margin-bottom: 24px;
     display: flex; align-items: center; gap: 12px;
   }
   .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 
-  .offers-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;
-  }
+  .offers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
 
   .offer-card {
     background: var(--glass-bg); border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px); border-radius: 16px; padding: 24px;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px; padding: 22px; cursor: pointer;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     display: flex; flex-direction: column; justify-content: space-between;
-    transition: transform 0.3s ease;
   }
-  .offer-card:hover { transform: translateY(-4px); border-color: var(--aurora-cyan); }
+  .offer-card:hover { transform: translateY(-3px); border-color: var(--aurora-cyan); box-shadow: 0 6px 20px rgba(46, 230, 184, 0.12); }
 
   .badge {
     display: inline-block; padding: 4px 10px; border-radius: 999px;
     font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
     background: rgba(46, 230, 184, 0.15); color: var(--aurora-teal);
-    border: 1px solid rgba(46, 230, 184, 0.3); margin-bottom: 14px;
+    border: 1px solid rgba(46, 230, 184, 0.3); margin-bottom: 12px; width: fit-content;
   }
 
-  .offer-title { font-size: 1.2rem; color: #ffffff; margin-bottom: 10px; }
-  .offer-detail { font-size: 0.9rem; color: rgba(223, 246, 242, 0.75); line-height: 1.6; }
+  .offer-title { font-size: 1.15rem; color: #ffffff; margin-bottom: 8px; font-weight: 600; }
+  .offer-brief { font-size: 0.9rem; color: rgba(223, 246, 242, 0.8); line-height: 1.5; }
+
+  .details-wrapper {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .offer-card.expanded .details-wrapper { grid-template-rows: 1fr; }
+
+  .details-inner { overflow: hidden; }
+  .details-content {
+    margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(223, 246, 242, 0.2);
+    font-size: 0.88rem; color: rgba(223, 246, 242, 0.9); line-height: 1.6;
+  }
+  .details-content strong { color: var(--aurora-cyan); font-weight: 600; display: block; margin-top: 6px; }
+
+  .expand-indicator {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 16px; font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600;
+  }
+  .expand-indicator svg { width: 16px; height: 16px; transition: transform 0.3s ease; stroke: var(--aurora-cyan); }
+  .offer-card.expanded .expand-indicator svg { transform: rotate(180deg); }
 
   footer { position: relative; z-index: 1; text-align: center; padding: 0 6vw 40px; font-size: 0.78rem; color: rgba(223, 246, 242, 0.4); }
 
   @media (max-width: 600px) {
     .nav-title { display: none; }
     .nav-btn { font-size: 0.8rem; padding: 6px 10px; }
-    .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
+    .offers-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 
-  <!-- Black Preloader Overlay -->
   <div id="preloader"></div>
 
-  <!-- Floating Bottom-Right Language Toggle Button -->
   <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"></circle>
@@ -246,10 +220,10 @@
       <a href="aboutus.html" class="nav-btn i18n" data-en="About Us" data-zh="關於我們">About Us</a>
       <a href="offers.html" class="nav-btn active i18n" data-en="What We Offer" data-zh="我們的政綱">What We Offer</a>
       <a href="schedule.html" class="nav-btn i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
+      <a href="feedbacks.html" class="nav-btn i18n" data-en="Feedback" data-zh="意見反饋">Feedback</a>
     </nav>
   </header>
 
-  <!-- Video Background -->
   <div class="sky">
     <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
       <source src="assets/background.mp4" type="video/mp4">
@@ -258,79 +232,296 @@
   </div>
 
   <main class="page-container">
-    <div class="header-section">
-      <p class="page-subtitle i18n" data-en="Welfare & Services" data-zh="福利與服務">Welfare & Services</p>
-      <h1 class="page-title i18n" data-en="What We Offer" data-zh="我們的政綱">What We Offer</h1>
-      <p class="page-description i18n" data-en="Aurora promises to provide a comprehensive range of practical welfare and quality services to make campus life more convenient and rich." data-zh="Aurora 承諾為同學們提供全方位的實用福利與優質服務，讓校園生活更方便、更豐富。">
-        Aurora promises to provide a comprehensive range of practical welfare and quality services to make campus life more convenient and rich.
+    <div class="header-section fade-in">
+      <p class="page-subtitle i18n" data-en="Platform & Benefits" data-zh="政綱與福利">Platform & Benefits</p>
+      <h1 class="page-title i18n" data-en="What We Offer" data-zh="我們的政綱與福利">What We Offer</h1>
+      <p class="page-description i18n" data-en="Click on any card to expand full details. Aurora is committed to serving GT students with practical welfare and enriching activities." data-zh="點擊任意卡片即可展開查看完整詳情。Aurora 承諾為優才同學提供最貼心的福利與精彩校園活動。">
+        Click on any card to expand full details. Aurora is committed to serving GT students with practical welfare and enriching activities.
       </p>
     </div>
 
-    <!-- Campus Welfare Services -->
+    <!-- Section 1: Campus Welfare -->
     <div class="section-block">
-      <h2 class="section-heading i18n" data-en="Campus Welfare Services" data-zh="校內福利服務">Campus Welfare Services</h2>
+      <h2 class="section-heading i18n" data-en="Campus Welfare" data-zh="校內福利">Campus Welfare</h2>
       <div class="offers-grid">
-        <div class="offer-card">
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
-            <span class="badge i18n" data-en="Campus Rentals" data-zh="校內物品借用">Campus Rentals</span>
-            <h3 class="offer-title i18n" data-en="Umbrella & Power Bank Rental" data-zh="雨傘與流動充電寶借用">Umbrella & Power Bank Rental</h3>
-            <p class="offer-detail i18n" data-en="No worry about sudden rain or low battery! The Student Union will offer free umbrella and power bank rental during regular hours." data-zh="雨天突發狀況免煩惱！學生會將於常規時段提供免費借雨傘及外置充電寶服務。">No worry about sudden rain or low battery! The Student Union will offer free umbrella and power bank rental during regular hours.</p>
+            <span class="badge i18n" data-en="Winter Welfare" data-zh="冬季福利">Winter Welfare</span>
+            <h3 class="offer-title i18n" data-en="Heat Pack Distribution" data-zh="贈送暖包">Heat Pack Distribution</h3>
+            <p class="offer-brief i18n" data-en="Free heat packs handed out on cold winter mornings." data-zh="於冬季一天早上，向同學免費贈送暖包。">Free heat packs handed out on cold winter mornings.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Brief:</strong> Distributed for free on a winter morning (limited quantity, first come first served).<br><strong>Purpose:</strong> Bring warmth to students during cold weather to help them focus in class."
+                data-zh="<strong>簡介：</strong>於冬季一天早上，向同學免費贈送暖包（數量有限，送完即止）。<br><strong>目的：</strong>於寒冬為同學送上溫暖，讓大家能更專注上課。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
         </div>
 
-        <div class="offer-card">
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
-            <span class="badge i18n" data-en="Stationery & Printing" data-zh="文具與列印">Stationery & Printing</span>
-            <h3 class="offer-title i18n" data-en="Emergency Stationery & Free Print Allowance" data-zh="急救文具與免費列印配額">Emergency Stationery & Free Print Allowance</h3>
-            <p class="offer-detail i18n" data-en="Provides emergency stationery support (correction tape, calculators, staplers) and strives for additional print quotas for every student." data-zh="提供緊急文具支援（修正帶、計算機、裝訂工具），並爭取為每位同學提供額外列印配額。">Provides emergency stationery support (correction tape, calculators, staplers) and strives for additional print quotas for every student.</p>
+            <span class="badge i18n" data-en="Summer Welfare" data-zh="夏季福利">Summer Welfare</span>
+            <h3 class="offer-title i18n" data-en="Ice Cream Treat" data-zh="雪糕派發">Ice Cream Treat</h3>
+            <p class="offer-brief i18n" data-en="Free ice cream distributed on a hot summer day." data-zh="夏季時於一天免費贈送雪糕給同學解署。">Free ice cream distributed on a hot summer day.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Brief:</strong> Free ice cream given out during summer to cool off students (limited quantity).<br><strong>Purpose:</strong> Bring cool treats in hot summer and add joy to campus life."
+                data-zh="<strong>簡介：</strong>夏季時於一天免費贈送雪糕給同學，為學生解暑（數量有限）。<br><strong>目的：</strong>在炎夏帶來涼快的甜品，增添校園生活的歡樂氣氛。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
         </div>
 
-        <div class="offer-card">
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
-            <span class="badge i18n" data-en="Health & Care" data-zh="健康與關懷">Health & Care</span>
-            <h3 class="offer-title i18n" data-en="Exam Care Packages & Health Corner" data-zh="考試加油包與健康角">Exam Care Packages & Health Corner</h3>
-            <p class="offer-detail i18n" data-en="Distributing care packages during exam seasons, and setting up a first-aid kit and personal hygiene area in the Student Union room." data-zh="於考試季派發關懷加油包，並在學生會室設置急救箱與個人衛生用品專區。">Distributing care packages during exam seasons, and setting up a first-aid kit and personal hygiene area in the Student Union room.</p>
+            <span class="badge i18n" data-en="Summer Welfare" data-zh="夏季福利">Summer Welfare</span>
+            <h3 class="offer-title i18n" data-en="Watermelon Treat" data-zh="西瓜派發">Watermelon Treat</h3>
+            <p class="offer-brief i18n" data-en="Fresh watermelon slices distributed during summer." data-zh="夏季免費派發切塊西瓜，沁涼消暑。">Fresh watermelon slices distributed during summer.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Brief:</strong> Free watermelon distribution on a summer day (limited quantity).<br><strong>Purpose:</strong> Provide diversified summer treats for students to enjoy refreshing fruits."
+                data-zh="<strong>簡介：</strong>夏季時於一天免費派發西瓜給同學，為學生解暑（數量有限）。<br><strong>目的：</strong>提供多元化的夏日解暑福利，讓同學享受消暑食品。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
         </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Winter Welfare" data-zh="冬季福利">Winter Welfare</span>
+            <h3 class="offer-title i18n" data-en="Hot Drink Distribution" data-zh="熱飲派發">Hot Drink Distribution</h3>
+            <p class="offer-brief i18n" data-en="Hot beverages provided during cold lunch hours." data-zh="於寒冷天氣為留在校內用膳的同學提供熱飲。">Hot beverages provided during cold lunch hours.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Brief:</strong> Served to grades staying on campus for lunch during cold weather.<br><strong>Purpose:</strong> Care for students dining at school, delivering warmth during winter lunchtimes."
+                data-zh="<strong>簡介：</strong>於寒冷天氣為未能外出用膳的級別提供熱飲。<br><strong>目的：</strong>照顧留校午餐同學的實際需要，在冬日午膳時間送上一份暖意與關懷。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Daily Care" data-zh="日常關懷">Daily Care</span>
+            <h3 class="offer-title i18n" data-en="Umbrella Loan Service" data-zh="借傘服務">Umbrella Loan Service</h3>
+            <p class="offer-brief i18n" data-en="Free umbrella rental for rainy days." data-zh="雨天提供雨傘借用服務，方便同學放學。">Free umbrella rental for rainy days.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Brief:</strong> Rain umbrellas available for students in need (limited quantity).<br><strong>Purpose:</strong> Convenience for students who forgot to bring umbrellas on rainy days."
+                data-zh="<strong>簡介：</strong>在雨天時提供雨傘予有需要的同學（數量有限）。<br><strong>目的：</strong>方便無帶雨傘的同學放學時使用。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Sports Day" data-zh="陸運會福利">Sports Day</span>
+            <h3 class="offer-title i18n" data-en="Sports Day Drink Welfare" data-zh="陸運會冷飲福利">Sports Day Drink Welfare</h3>
+            <p class="offer-brief i18n" data-en="Sports drinks provided for cover design competition winners." data-zh="為陸運會封面設計得獎班別提供冷飲。">Sports drinks provided for cover design competition winners.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Brief:</strong> Sports drinks provided for winning classes on Sports Day.<br><strong>Purpose:</strong> Encourage class creativity and hydrate athletes and cheering squads."
+                data-zh="<strong>簡介：</strong>為陸運會小冊子封面設計比賽得獎班別提供運動飲料。<br><strong>目的：</strong>鼓勵班級發揮創意並投入陸運會，同時為健兒與打氣團隊補充水分。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Sports Day" data-zh="陸運會福利">Sports Day</span>
+            <h3 class="offer-title i18n" data-en="Water Transfer Tattoos" data-zh="陸運會水印貼紙">Water Transfer Tattoos</h3>
+            <p class="offer-brief i18n" data-en="Fun 1-day washable tattoos provided during Sports Day." data-zh="提供一日即可洗淨的水印貼紙，升溫陸運會氣氛。">Fun 1-day washable tattoos provided during Sports Day.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Brief:</strong> One-day washable tattoos distributed to enhance event atmosphere.<br><strong>Purpose:</strong> Increase student engagement and enjoyment during Sports Day."
+                data-zh="<strong>簡介：</strong>提供水印貼紙 (一日即洗落)，提升同學參與度。<br><strong>目的：</strong>提升同學在運動會的投入感，營造獨特的現場氣氛。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Festive Special" data-zh="節日限定">Festive Special</span>
+            <h3 class="offer-title i18n" data-en="Instant Photo Booth" data-zh="即影即有 Booth">Instant Photo Booth</h3>
+            <p class="offer-brief i18n" data-en="Free photo booth service during Halloween & Easter." data-zh="於萬聖節及復活節期間提供免費即影即有服務。">Free photo booth service during Halloween & Easter.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Brief:</strong> Free Polaroid photo sessions with festive decorations.<br><strong>Purpose:</strong> Capture precious festive moments and preserve campus memories."
+                data-zh="<strong>簡介：</strong>在萬聖節和復活節提供即影即有拍攝服務與精美裝飾。<br><strong>目的：</strong>幫同學記錄節日的美好時刻，留下獨一無二的校園回憶。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
       </div>
     </div>
 
-    <!-- Partner Merchants & Discounts -->
+    <!-- Section 2: External Merchant Discounts -->
     <div class="section-block">
-      <h2 class="section-heading i18n" data-en="Partner Merchants & Discounts" data-zh="特約商戶優惠">Partner Merchants & Discounts</h2>
+      <h2 class="section-heading i18n" data-en="Merchant Discounts & External Welfare" data-zh="校外福利與特約商戶">Merchant Discounts & External Welfare</h2>
       <div class="offers-grid">
-        <div class="offer-card">
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
-            <span class="badge i18n" data-en="Dining Discounts" data-zh="餐飲折扣">Dining Discounts</span>
-            <h3 class="offer-title i18n" data-en="Up to 15% Off Nearby Food & Drinks" data-zh="周邊美食商戶 85 折起">Up to 15% Off Nearby Food & Drinks</h3>
-            <p class="offer-detail i18n" data-en="Negotiated exclusive student discounts with local drink shops and restaurants—present your student ID to enjoy." data-zh="已與學校周邊多家手搖飲品店、餐廳洽談專屬學生折扣，憑學生證即可享有優惠。">Negotiated exclusive student discounts with local drink shops and restaurants—present your student ID to enjoy.</p>
+            <span class="badge i18n" data-en="Theme Parks" data-zh="主題樂園">Theme Parks</span>
+            <h3 class="offer-title i18n" data-en="KKday Theme Parks Discount" data-zh="Theme Park 平台優惠">KKday Theme Parks Discount</h3>
+            <p class="offer-brief i18n" data-en="Extra 5% off tickets for HK Disneyland, Ocean Park, Ngong Ping 360." data-zh="經 KKday 購買迪士尼、海洋公園及昂坪360門票享額外95折。">Extra 5% off tickets for HK Disneyland, Ocean Park, Ngong Ping 360.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Partners:</strong> HK Disneyland, Ocean Park, Ngong Ping 360<br><strong>Offer:</strong> Extra 5% off via KKday platform using exclusive promo code (released after election)."
+                data-zh="<strong>商戶：</strong>香港迪士尼樂園、香港海洋公園、昂坪360纜車<br><strong>福利：</strong>通過 KKday 平台購票輸入專屬優惠碼可額外享 95 折優惠（優惠碼將於當選後發放）。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
         </div>
 
-        <div class="offer-card">
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
-            <span class="badge i18n" data-en="Bookstores & Supplies" data-zh="文具書店">Bookstores & Supplies</span>
-            <h3 class="offer-title i18n" data-en="Bookstore & Stationery Special Offers" data-zh="連鎖書店及文具特約優惠">Bookstore & Stationery Special Offers</h3>
-            <p class="offer-detail i18n" data-en="Exclusive promo codes or in-store discounts for supplementary workbooks and stationery supplies." data-zh="購買指定補充練習、文具用品享專屬內閣優惠碼或現場折扣。">Exclusive promo codes or in-store discounts for supplementary workbooks and stationery supplies.</p>
+            <span class="badge i18n" data-en="Food & Drinks" data-zh="餐飲美食">Food & Drinks</span>
+            <h3 class="offer-title i18n" data-en="Dining & Drink Special Offers" data-zh="周邊美食與茶飲優惠">Dining & Drink Special Offers</h3>
+            <p class="offer-brief i18n" data-en="Exclusive student discounts across 15+ popular food & beverage shops." data-zh="超過15間特色餐廳及手搖飲品專享學生折扣。">Exclusive student discounts across 15+ popular food & beverage shops.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="• <strong>宏富雲南米線:</strong> Free cold/hot drink with regular noodle dish.<br>• <strong>厚興瑜記手撕雞:</strong> Free extra noodles/rice.<br>• <strong>豪大大雞排:</strong> Free boxed drink on orders over $50.<br>• <strong>茶魚飯后:</strong> Student meals / weekday student discounts.<br>• <strong>腸粉王:</strong> $2 off over $35.<br>• <strong>三寳車仔麵:</strong> $5 off over $60.<br>• <strong>桂花小幸 / milkshahk / @kr_cafe_hk:</strong> $5 off.<br>• <strong>秋田冰室 / More yogurt / 佐賀燒肉谷:</strong> 10% OFF.<br>• <strong>茶大椰:</strong> 15% OFF.<br>• <strong>萬波:</strong> $3 off."
+                data-zh="• <strong>宏富雲南米線：</strong>凡正價購買麵食送冷/熱飲一杯<br>• <strong>厚興瑜記手撕雞專門店：</strong>飯麵免費加底<br>• <strong>豪大大雞排：</strong>消費滿$50送紙包飲品一包<br>• <strong>茶魚飯后：</strong>平日學生優惠及優才專屬學生餐<br>• <strong>腸粉王：</strong>消費滿$35減$2<br>• <strong>三寳車仔麵：</strong>消費滿$60減$5<br>• <strong>桂花小幸 / milkshahk / @kr_cafe_hk：</strong>立減$5<br>• <strong>秋田冰室 / More yogurt / 佐賀燒肉谷：</strong>全單9折<br>• <strong>茶大椰：</strong>學生 85 折<br>• <strong>萬波：</strong>學生減$3">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
         </div>
 
-        <div class="offer-card">
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
-            <span class="badge i18n" data-en="Leisure & Recreation" data-zh="娛樂休閒">Leisure & Recreation</span>
-            <h3 class="offer-title i18n" data-en="Cultural & Sports Venue Discounts" data-zh="文藝與運動場地優惠">Cultural & Sports Venue Discounts</h3>
-            <p class="offer-detail i18n" data-en="Securing group discounts for local sports venues and cultural workshops." data-zh="爭取本地休閒運動場地及文藝工作坊團體體驗優惠。">Securing group discounts for local sports venues and cultural workshops.</p>
+            <span class="badge i18n" data-en="Class Apparel" data-zh="班衫班T">Class Apparel</span>
+            <h3 class="offer-title i18n" data-en="Class T-Shirt Printing Discounts" data-zh="班T團購專屬優惠">Class T-Shirt Printing Discounts</h3>
+            <p class="offer-brief i18n" data-en="Up to 25% off class tees from 10+ printing partners." data-zh="超過10間知名班T印製公司提供低至75折與跨班滿減。">Up to 25% off class tees from 10+ printing partners.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="• <strong>@inbudget_printing:</strong> $100 off per class, $200 off for 2 classes, $360 off for 3.<br>• <strong>@once_clothing__:</strong> 20% OFF.<br>• <strong>@ohlook_hk:</strong> Combined classes up to $1100 off.<br>• <strong>@printyeala:</strong> 15% off + free tee for class teacher.<br>• <strong>@ttfortee_hk:</strong> $100 off T-shirts / $200 off Hoodies per class.<br>• <strong>@class3hk / @marking_printing:</strong> 15% OFF."
+                data-zh="• <strong>@inbudget_printing：</strong>一班減$100，兩班減$200，三班減$360<br>• <strong>@once_clothing__：</strong>8折優惠<br>• <strong>@ohlook_hk：</strong>聯班優惠高達減$1100<br>• <strong>@printyeala：</strong>全單85折，免費送一件畀班主任<br>• <strong>@ttfortee_hk：</strong>Tee類每班減$100，外套類每班減$200<br>• <strong>@class3hk / @marking_printing：</strong>85折優惠及免費設計圖">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
         </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Studies & Tutors" data-zh="學習與補習">Studies & Tutors</span>
+            <h3 class="offer-title i18n" data-en="Academic & Tutoring Offers" data-zh="補習與學習資源優惠">Academic & Tutoring Offers</h3>
+            <p class="offer-brief i18n" data-en="Discounts on study rooms, notesity, and tutoring platforms." data-zh="自修室、Notesity筆記及多家補習導師學費折扣。">Discounts on study rooms, notesity, and tutoring platforms.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="• <strong>deskonehk:</strong> 10% off for visits 3h or more.<br>• <strong>notesity.hk:</strong> 5% off site-wide code [NOTESITY2627].<br>• <strong>Tutor Circle:</strong> Special code [2526SU].<br>• <strong>tutor.buddy:</strong> 30% off 1st lesson (50% off for 2+ students).<br>• <strong>afterschool.dse:</strong> 7 subjects with 9 free DSE notes.<br>• <strong>hkdsechemistry / Mr Leung English:</strong> Direct tuition deductions."
+                data-zh="• <strong>deskonehk：</strong>到訪使用 3 小時或以上享 9 折<br>• <strong>notesity.hk：</strong>輸入【NOTESITY2627】享 95 折<br>• <strong>Tutor Circle 尋補：</strong>填寫【2526SU】優惠碼<br>• <strong>tutor.buddy：</strong>首堂 7 折（二人同行首堂半價）<br>• <strong>afterschool.dse：</strong>報讀送 9 份 DSE 精讀筆記">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Lifestyle & Entertainment" data-zh="休閒娛樂">Lifestyle & Entertainment</span>
+            <h3 class="offer-title i18n" data-en="Party Rooms, Cameras & Accessories" data-zh="Party Room、相機與生活良品">Party Rooms, Cameras & Accessories</h3>
+            <p class="offer-brief i18n" data-en="Discounts for FoxInABox, Snapio, HelloRide, camera stores." data-zh="密室逃脫、Snapio自拍亭、哈囉單車及菲林相機門市折扣。">Discounts for FoxInABox, Snapio, HelloRide, camera stores.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="• <strong>HelloRide:</strong> 12% off monthly/season pass.<br>• <strong>Snapio (T.O.P Mong Kok):</strong> 20% off spend over $100.<br>• <strong>FoxInABox Escape Room:</strong> 10% off with student ID.<br>• <strong>kobo_camera:</strong> $80 cash discount on film camera/lens.<br>• <strong>kk_camera:</strong> 5% off storewide.<br>• <strong>fungworkshop:</strong> 10% off pottery experience.<br>• <strong>untouchedunited:</strong> 20% off promo [GTEYC_AURORA2627]."
+                data-zh="• <strong>HelloRide 哈囉單車：</strong>專屬 88 折購卡優惠<br>• <strong>Snapio (旺角 T.O.P)：</strong>滿 $100 享 8 折<br>• <strong>FoxInABox 密室逃脫：</strong>出示學生證 9 折<br>• <strong>kobo_camera：</strong>相機/鏡頭現折 $80<br>• <strong>kk_camera：</strong>全單 95 折<br>• <strong>fungworkshop 陶瓷班：</strong>專屬 9 折優惠">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
       </div>
     </div>
   </main>
 
-  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
+  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora" data-zh="優才（楊殷有娣）書院  -  2026–27 1號候選內閣 Aurora">
+    G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora
+  </footer>
 
   <script>
-    // Retrieve saved language preference or default to 'en'
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
 
@@ -345,12 +536,9 @@
       });
 
       const langText = document.getElementById('lang-text');
-      if (langText) {
-        langText.textContent = lang === 'en' ? '繁體中文' : 'English';
-      }
+      if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
     }
 
-    // Apply language preference immediately as script runs
     setLanguage(currentLang);
 
     document.getElementById('lang-btn').addEventListener('click', () => {
@@ -361,7 +549,6 @@
 
       setTimeout(() => {
         setLanguage(currentLang === 'en' ? 'zh' : 'en');
-
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             document.body.classList.add('is-loaded');
@@ -371,15 +558,13 @@
       }, 350);
     });
 
+    function toggleCard(card) {
+      card.classList.toggle('expanded');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const video = document.getElementById('bg-video');
       let pageRevealed = false;
-
-      const observerOptions = {
-        root: null,
-        rootMargin: '0px 0px -40px 0px',
-        threshold: 0.1
-      };
 
       const fadeObserver = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
@@ -388,53 +573,26 @@
             obs.unobserve(entry.target);
           }
         });
-      }, observerOptions);
+      }, { threshold: 0.08 });
 
       function revealPage() {
         if (pageRevealed) return;
         pageRevealed = true;
-
-        if (video) {
-          video.play().catch(() => {});
-        }
-
+        if (video) video.play().catch(() => {});
         document.body.classList.add('is-loaded');
         document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
       }
 
-      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
+      const fallbackTimer = setTimeout(revealPage, 2500);
 
-      const logoImage = new Image();
-      logoImage.src = 'assets/aurora-logo.png';
-      const logoLoaded = new Promise((resolve) => {
-        if (logoImage.complete) resolve();
-        else {
-          logoImage.onload = resolve;
-          logoImage.onerror = resolve;
-        }
-      });
-
-      const videoLoaded = new Promise((resolve) => {
-        if (!video) return resolve();
-        if (video.readyState >= 3) {
-          resolve();
-        } else {
-          const onCanPlay = () => {
-            video.removeEventListener('canplaythrough', onCanPlay);
-            video.removeEventListener('loadeddata', onCanPlay);
-            resolve();
-          };
-          video.addEventListener('canplaythrough', onCanPlay);
-          video.addEventListener('loadeddata', onCanPlay);
-        }
-      });
-
-      const fallbackTimer = new Promise((resolve) => setTimeout(resolve, 3000));
-
-      Promise.race([
-        Promise.all([fontsLoaded, logoLoaded, videoLoaded]),
-        fallbackTimer
+      Promise.all([
+        document.fonts ? document.fonts.ready : Promise.resolve(),
+        new Promise(res => {
+          if (!video || video.readyState >= 3) res();
+          else { video.addEventListener('canplaythrough', res, {once:true}); }
+        })
       ]).then(() => {
+        clearTimeout(fallbackTimer);
         revealPage();
       });
     });

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora — Student Feedback</title>
+<link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
+
+<link rel="preload" href="assets/aurora-logo.png" as="image">
+<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --void: #050b12;
+    --deep: #0a1a20;
+    --ink: #dff6f2;
+    --aurora-teal: #2fe6b8;
+    --aurora-green: #6ee89a;
+    --aurora-cyan: #7fe9f0;
+    --aurora-violet: #8f8cf0;
+    --glass-bg: rgba(10, 26, 32, 0.65);
+    --glass-border: rgba(127, 233, 240, 0.22);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body {
+    min-height: 100%;
+    background: var(--void);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    overflow-x: hidden;
+  }
+
+  #preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #000000;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+
+  body.is-loaded #preloader {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .navbar, .page-container, footer, .lang-toggle {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.35s ease-in, transform 0.35s ease-in;
+    pointer-events: none;
+  }
+
+  body.is-loaded .navbar,
+  body.is-loaded .page-container,
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.is-loaded .navbar { transition-delay: 0.15s; }
+  body.is-loaded .page-container { transition-delay: 0.35s; }
+  body.is-loaded footer, body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+
+  .navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 4vw; background: rgba(6, 13, 22, 0.75);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(223, 246, 242, 0.12);
+  }
+
+  .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .nav-logo { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(127, 233, 240, 0.4); }
+  .nav-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 1.15rem; color: #eafffb; }
+  .nav-links { display: flex; align-items: center; gap: 1rem; }
+  .nav-btn {
+    color: rgba(223, 246, 242, 0.85); text-decoration: none; font-size: 0.9rem;
+    font-weight: 500; padding: 8px 16px; border-radius: 999px; border: 1px solid transparent; transition: all 0.3s ease;
+  }
+  .nav-btn:hover, .nav-btn.active {
+    color: #ffffff; border-color: rgba(127, 233, 240, 0.4); background: rgba(127, 233, 240, 0.1);
+  }
+
+  .lang-toggle {
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    display: flex; align-items: center; gap: 8px; padding: 10px 18px;
+    border-radius: 999px; border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    color: #eafffb; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); transition: all 0.35s ease;
+  }
+  .lang-toggle:hover {
+    border-color: rgba(127, 233, 240, 0.8); background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3); transform: translateY(-2px);
+  }
+  .lang-toggle svg { width: 16px; height: 16px; stroke: rgba(223, 246, 242, 0.85); }
+
+  .sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--void); }
+  .bg-video {
+    position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%;
+    transform: translate(-50%, -50%); object-fit: cover;
+  }
+  .sky-overlay {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.25) 0%, rgba(5, 11, 18, 0.75) 100%),
+                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.8) 100%);
+    pointer-events: none;
+  }
+
+  .page-container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 140px 5vw 80px; }
+  .header-section { text-align: center; margin-bottom: 40px; }
+  .page-subtitle { font-size: 0.85rem; letter-spacing: 0.2em; color: var(--aurora-cyan); text-transform: uppercase; margin-bottom: 12px; }
+  .page-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 5vw, 3.8rem); color: #ffffff; margin-bottom: 16px; }
+
+  .feedback-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .panel-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    color: var(--aurora-teal);
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(223, 246, 242, 0.15);
+    padding-bottom: 10px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .form-group label {
+    font-size: 0.88rem;
+    color: rgba(223, 246, 242, 0.85);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .word-counter { font-size: 0.78rem; color: rgba(223, 246, 242, 0.5); }
+  .word-counter.valid { color: var(--aurora-green); }
+
+  .form-input, .form-textarea {
+    width: 100%;
+    background: rgba(5, 11, 18, 0.7);
+    border: 1px solid rgba(127, 233, 240, 0.25);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: #ffffff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.92rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-input:focus, .form-textarea:focus {
+    border-color: var(--aurora-cyan);
+    box-shadow: 0 0 8px rgba(127, 233, 240, 0.2);
+  }
+
+  .form-textarea { min-height: 120px; resize: vertical; }
+
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(127, 233, 240, 0.5);
+    background: rgba(46, 230, 184, 0.15);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .submit-btn:hover:not(:disabled) {
+    background: rgba(46, 230, 184, 0.3);
+    border-color: var(--aurora-teal);
+    box-shadow: 0 0 12px rgba(46, 230, 184, 0.3);
+  }
+
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .feedback-list { display: flex; flex-direction: column; gap: 16px; margin-top: 10px; }
+  .feedback-item {
+    background: rgba(5, 11, 18, 0.6);
+    border: 1px solid rgba(223, 246, 242, 0.15);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .feedback-item-title { font-weight: 600; font-size: 1.05rem; color: var(--aurora-cyan); margin-bottom: 6px; }
+  .feedback-item-desc { font-size: 0.9rem; color: rgba(223, 246, 242, 0.85); line-height: 1.6; margin-bottom: 12px; }
+  .feedback-response {
+    background: rgba(46, 230, 184, 0.08);
+    border-left: 3px solid var(--aurora-teal);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    color: #eafffb;
+  }
+  .feedback-response-author { font-weight: 600; color: var(--aurora-teal); font-size: 0.8rem; margin-bottom: 4px; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(5, 11, 18, 0.85); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; visibility: hidden; transition: all 0.3s ease;
+  }
+  .modal-overlay.active { opacity: 1; visibility: visible; }
+  .modal-card {
+    background: rgba(10, 26, 32, 0.95);
+    border: 1px solid rgba(127, 233, 240, 0.35);
+    border-radius: 16px; width: 100%; max-width: 480px; padding: 28px; text-align: center;
+  }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid rgba(127, 233, 240, 0.2); border-top-color: var(--aurora-teal);
+    border-radius: 50%; animation: spin 1s linear infinite; margin: 16px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer { position: relative; z-index: 1; text-align: center; padding: 0 6vw 40px; font-size: 0.78rem; color: rgba(223, 246, 242, 0.4); }
+</style>
+</head>
+<body>
+
+  <div id="preloader"></div>
+
+  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+    </svg>
+    <span id="lang-text">繁體中文</span>
+  </button>
+
+  <!-- Panel Container -->
+  <div id="panel-container"></div>
+
+  <div class="sky">
+    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
+      <source src="assets/background.mp4" type="video/mp4">
+    </video>
+    <div class="sky-overlay"></div>
+  </div>
+
+  <main class="page-container">
+    <div class="header-section">
+      <p class="page-subtitle i18n" data-en="Student Voice" data-zh="學生聲音">Student Voice</p>
+      <h1 class="page-title i18n" data-en="Feedback & Responses" data-zh="意見反饋與回應">Feedback & Responses</h1>
+    </div>
+
+    <div class="feedback-grid">
+      <!-- Submit Feedback Form -->
+      <div class="glass-panel">
+        <h2 class="panel-title i18n" data-en="Submit Anonymous Feedback" data-zh="提交匿名意見">Submit Anonymous Feedback</h2>
+        <div class="form-group">
+          <label>
+            <span class="i18n" data-en="Title (at least 3 words)" data-zh="標題 (最少 3 個字詞)">Title (at least 3 words)</span>
+            <span id="title-counter" class="word-counter">0 / 3 words</span>
+          </label>
+          <input type="text" id="fb-title" class="form-input" placeholder="Enter feedback title...">
+        </div>
+        <div class="form-group">
+          <label>
+            <span class="i18n" data-en="Description (at least 20 words)" data-zh="詳細內容 (最少 20 個字詞)">Description (at least 20 words)</span>
+            <span id="desc-counter" class="word-counter">0 / 20 words</span>
+          </label>
+          <textarea id="fb-desc" class="form-textarea" placeholder="Provide detailed feedback..."></textarea>
+        </div>
+        <button id="fb-submit-btn" class="submit-btn i18n" data-en="Submit Feedback" data-zh="提交反饋" disabled>Submit Feedback</button>
+      </div>
+
+      <!-- Published Feedbacks -->
+      <div class="glass-panel">
+        <h2 class="panel-title i18n" data-en="Public Feedbacks & Student Union Responses" data-zh="公開意見及學生會回應">Public Feedbacks & Student Union Responses</h2>
+        <div id="feedbacks-container" class="feedback-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="modal-status" class="modal-overlay">
+    <div class="modal-card">
+      <h3 id="status-title" class="panel-title" style="border:none; text-align:center;">Checking Feedback</h3>
+      <div id="status-content" style="margin: 15px 0;">
+        <div class="spinner" id="status-spinner"></div>
+        <p id="status-msg" style="color: rgba(223, 246, 242, 0.9); font-size:0.9rem;"></p>
+      </div>
+      <button id="status-action-btn" class="submit-btn" style="display:none; width:auto; padding:8px 24px; margin:0 auto;">OK</button>
+    </div>
+  </div>
+
+  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
+
+  <script src="load-components.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      getDocs, 
+      query, 
+      where, 
+      orderBy, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
+      authDomain: "gtcsu-aurora.firebaseapp.com",
+      projectId: "gtcsu-aurora",
+      storageBucket: "gtcsu-aurora.firebasestorage.app",
+      messagingSenderId: "961705164297",
+      appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8",
+      measurementId: "G-ZWE0Z6VTZK"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let currentLang = localStorage.getItem('aurora_lang') || 'en';
+    let isSwitching = false;
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('aurora_lang', lang);
+      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+
+      document.querySelectorAll('.i18n').forEach(el => {
+        const text = el.getAttribute(`data-${lang}`);
+        if (text) el.innerHTML = text;
+      });
+
+      const langText = document.getElementById('lang-text');
+      if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
+    }
+
+    setLanguage(currentLang);
+
+    document.getElementById('lang-btn').addEventListener('click', () => {
+      if (isSwitching) return;
+      isSwitching = true;
+      document.body.classList.remove('is-loaded');
+      setTimeout(() => {
+        setLanguage(currentLang === 'en' ? 'zh' : 'en');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            document.body.classList.add('is-loaded');
+            setTimeout(() => { isSwitching = false; }, 1200);
+          });
+        });
+      }, 350);
+    });
+
+    function countWords(str) { return str.trim() ? str.trim().split(/\s+/).length : 0; }
+
+    const titleInput = document.getElementById('fb-title');
+    const descInput = document.getElementById('fb-desc');
+    const titleCounter = document.getElementById('title-counter');
+    const descCounter = document.getElementById('desc-counter');
+    const submitBtn = document.getElementById('fb-submit-btn');
+
+    function validateForm() {
+      const titleWords = countWords(titleInput.value);
+      const descWords = countWords(descInput.value);
+
+      titleCounter.textContent = `${titleWords} / 3 words`;
+      titleCounter.classList.toggle('valid', titleWords >= 3);
+
+      descCounter.textContent = `${descWords} / 20 words`;
+      descCounter.classList.toggle('valid', descWords >= 20);
+
+      submitBtn.disabled = !(titleWords >= 3 && descWords >= 20);
+    }
+
+    titleInput.addEventListener('input', validateForm);
+    descInput.addEventListener('input', validateForm);
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    document.getElementById('status-action-btn').addEventListener('click', () => closeModal('modal-status'));
+
+    const OPENROUTER_API_KEY = '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';
+    const MODEL = 'deepseek/deepseek-chat';
+    const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+    async function saveFeedback(title, description) {
+      try {
+        await addDoc(collection(db, "feedbacks"), {
+          title: title,
+          description: description,
+          response: '',
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+
+        document.getElementById('status-title').textContent = currentLang === 'zh' ? '提交成功' : 'Feedback Submitted';
+        document.getElementById('status-msg').textContent = currentLang === 'zh'
+          ? '感謝您的寶貴意見！我們會儘快為您處理並回應。'
+          : 'Thank you for your feedback! Our team will review and respond soon.';
+
+        titleInput.value = '';
+        descInput.value = '';
+        validateForm();
+        renderPublicFeedbacks();
+      } catch (err) {
+        console.error("Firestore Save Error:", err);
+        document.getElementById('status-title').textContent = currentLang === 'zh' ? '提交失敗' : 'Submission Error';
+        document.getElementById('status-msg').textContent = err.message;
+      }
+    }
+
+    submitBtn.addEventListener('click', async () => {
+      const title = titleInput.value.trim();
+      const description = descInput.value.trim();
+
+      document.getElementById('status-title').textContent = currentLang === 'zh' ? '正在審核反饋' : 'Checking Feedback';
+      document.getElementById('status-spinner').style.display = 'block';
+      document.getElementById('status-msg').textContent = currentLang === 'zh' ? '我們的模型正在檢查您的反饋...' : 'Our model is checking your feedback...';
+      document.getElementById('status-action-btn').style.display = 'none';
+      openModal('modal-status');
+
+      try {
+        const response = await fetch(OPENROUTER_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an automated content moderator. Determine if the given student feedback is spam. Return response strictly in JSON format as follows: {"isSpam": boolean, "reason": "string"}'
+              },
+              { role: 'user', content: `Title: ${title}\nDescription: ${description}` }
+            ]
+          })
+        });
+
+        let result = { isSpam: false };
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.choices && data.choices[0] && data.choices[0].message) {
+            try {
+              const raw = data.choices[0].message.content.replace(/```json|```/g, '').trim();
+              result = JSON.parse(raw);
+            } catch (e) { console.error("JSON parse error", e); }
+          }
+        }
+
+        document.getElementById('status-spinner').style.display = 'none';
+        document.getElementById('status-action-btn').style.display = 'inline-block';
+
+        if (result.isSpam) {
+          document.getElementById('status-title').textContent = currentLang === 'zh' ? '標記為垃圾訊息' : 'Marked as Spam';
+          document.getElementById('status-msg').innerHTML = currentLang === 'zh' 
+            ? '我們的模型已將您的反饋標記為垃圾訊息/無效內容。'
+            : 'Our model marked your submission as spam/irrelevant.';
+        } else {
+          await saveFeedback(title, description);
+        }
+      } catch (err) {
+        console.warn("Moderation API unavailable, saving feedback directly:", err);
+        document.getElementById('status-spinner').style.display = 'none';
+        document.getElementById('status-action-btn').style.display = 'inline-block';
+        await saveFeedback(title, description);
+      }
+    });
+
+    async function renderPublicFeedbacks() {
+      const container = document.getElementById('feedbacks-container');
+      try {
+        const q = query(
+          collection(db, "feedbacks"), 
+          where("status", "==", "approved"),
+          orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          container.innerHTML = `<p style="color: rgba(223,246,242,0.5); text-align:center; padding: 20px;">${currentLang === 'zh' ? '暫無公開反饋' : 'No published feedbacks yet.'}</p>`;
+          return;
+        }
+
+        let html = '';
+        querySnapshot.forEach((doc) => {
+          const f = doc.data();
+          html += `
+            <div class="feedback-item">
+              <div class="feedback-item-title">${escapeHtml(f.title)}</div>
+              <div class="feedback-item-desc">${escapeHtml(f.description)}</div>
+              ${f.response ? `
+                <div class="feedback-response">
+                  <div class="feedback-response-author">Aurora Student Union Response:</div>
+                  <div>${escapeHtml(f.response)}</div>
+                </div>
+              ` : '<div style="font-size:0.75rem; color:rgba(223,246,242,0.4); font-style:italic;">Awaiting SU response</div>'}
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        console.error("Error loading feedbacks:", err);
+        container.innerHTML = `<p style="color: rgba(255,107,107,0.7); text-align:center; padding: 20px;">Failed to load feedbacks.</p>`;
+      }
+    }
+
+    function escapeHtml(str) {
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderPublicFeedbacks();
+      setTimeout(() => { document.body.classList.add('is-loaded'); }, 300);
+    });
+  </script>
+</body>
+</html>

@@ -95,9 +95,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 4vw;
-    background: rgba(6, 13, 22, 0.45);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(6, 13, 22, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-bottom: 1px solid rgba(223, 246, 242, 0.12);
   }
 
@@ -128,7 +128,7 @@
   .nav-links {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.2rem;
   }
 
   .nav-btn {
@@ -141,14 +141,71 @@
     border-radius: 999px;
     border: 1px solid transparent;
     transition: all 0.3s ease;
+    cursor: pointer;
+    background: transparent;
   }
 
-  .nav-btn:hover {
+  .nav-btn:hover,
+  .nav-btn.active {
     color: #ffffff;
     border-color: rgba(127, 233, 240, 0.4);
     background: rgba(127, 233, 240, 0.1);
     box-shadow: 0 0 12px rgba(127, 233, 240, 0.2);
     transform: translateY(-1px);
+  }
+
+  /* ---------- Feedback Dropdown ---------- */
+  .feedback-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 180px;
+    background: rgba(10, 26, 32, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(127, 233, 240, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 101;
+  }
+
+  .feedback-dropdown-wrapper:hover .dropdown-menu,
+  .feedback-dropdown-wrapper:focus-within .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .dropdown-item {
+    padding: 10px 14px;
+    color: rgba(223, 246, 242, 0.85);
+    text-decoration: none;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+  }
+
+  .dropdown-item:hover {
+    background: rgba(127, 233, 240, 0.15);
+    color: #ffffff;
   }
 
   /* ---------- Floating Bottom-Right Language Button ---------- */
@@ -163,9 +220,9 @@
     padding: 10px 18px;
     border-radius: 999px;
     border: 1px solid rgba(127, 233, 240, 0.35);
-    background: rgba(10, 26, 32, 0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(10, 26, 32, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: #eafffb;
     font-family: 'Manrope', sans-serif;
     font-size: 0.85rem;
@@ -196,6 +253,7 @@
     z-index:0;
     overflow:hidden;
     background: var(--void);
+    transform: translateZ(0); /* Dedicated Compositing Layer */
   }
 
   .bg-video {
@@ -206,9 +264,11 @@
     min-height: 100%;
     width: auto;
     height: auto;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) translateZ(0); /* Hardware Accelerated */
+    will-change: transform;
     object-fit: cover;
     filter: brightness(1);
+    backface-visibility: hidden;
   }
 
   .sky-overlay {
@@ -300,8 +360,9 @@
     padding:14px 30px;
     border-radius:999px;
     border:1px solid rgba(223,246,242,0.35);
-    background:rgba(10,26,32,0.4);
+    background:rgba(10,26,32,0.5);
     backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
     color:#eafffb;
     text-decoration:none;
     font-size:0.98rem;
@@ -310,7 +371,7 @@
   }
   .cta:hover{
     border-color:rgba(127,233,240,0.75);
-    background:rgba(18,42,50,0.6);
+    background:rgba(18,42,50,0.7);
     transform:translateY(-2px);
   }
   .cta svg{ width:20px; height:20px; flex-shrink:0; }
@@ -324,6 +385,196 @@
     font-size:0.78rem;
     letter-spacing:0.06em;
     color:rgba(223,246,242,0.4);
+  }
+
+  /* ---------- Modals ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(5, 11, 18, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .modal-card {
+    background: rgba(10, 26, 32, 0.95);
+    border: 1px solid rgba(127, 233, 240, 0.35);
+    box-shadow: 0 0 32px rgba(46, 230, 184, 0.15);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 580px;
+    padding: 28px;
+    position: relative;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(223, 246, 242, 0.15);
+    padding-bottom: 12px;
+  }
+
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    color: #eafffb;
+  }
+
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: rgba(223, 246, 242, 0.6);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .modal-close:hover { color: #ffffff; }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+  }
+
+  .form-group label {
+    font-size: 0.85rem;
+    color: rgba(223, 246, 242, 0.8);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .word-counter {
+    font-size: 0.75rem;
+    color: rgba(223, 246, 242, 0.5);
+  }
+
+  .word-counter.valid { color: var(--aurora-green); }
+
+  .form-input, .form-textarea {
+    width: 100%;
+    background: rgba(5, 11, 18, 0.7);
+    border: 1px solid rgba(127, 233, 240, 0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #ffffff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-input:focus, .form-textarea:focus {
+    border-color: var(--aurora-cyan);
+    box-shadow: 0 0 8px rgba(127, 233, 240, 0.2);
+  }
+
+  .form-textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .modal-btn {
+    padding: 12px 24px;
+    border-radius: 999px;
+    border: 1px solid rgba(127, 233, 240, 0.5);
+    background: rgba(46, 230, 184, 0.15);
+    color: #ffffff;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .modal-btn:hover {
+    background: rgba(46, 230, 184, 0.3);
+    border-color: var(--aurora-teal);
+    box-shadow: 0 0 12px rgba(46, 230, 184, 0.3);
+  }
+
+  .modal-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .feedback-list {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-right: 6px;
+  }
+
+  .feedback-item {
+    background: rgba(5, 11, 18, 0.6);
+    border: 1px solid rgba(223, 246, 242, 0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-align: left;
+  }
+
+  .feedback-item-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--aurora-cyan);
+    margin-bottom: 6px;
+  }
+
+  .feedback-item-desc {
+    font-size: 0.88rem;
+    color: rgba(223, 246, 242, 0.85);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .feedback-response {
+    background: rgba(46, 230, 184, 0.08);
+    border-left: 3px solid var(--aurora-teal);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #eafffb;
+  }
+
+  .feedback-response-author {
+    font-weight: 600;
+    color: var(--aurora-teal);
+    font-size: 0.78rem;
+    margin-bottom: 4px;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(127, 233, 240, 0.2);
+    border-top-color: var(--aurora-teal);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 16px auto;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 
   @media (max-width:600px){
@@ -342,7 +593,7 @@
 </head>
 <body>
 
-  <!-- Black Preloader Overlay (No Spinner) -->
+  <!-- Black Preloader Overlay -->
   <div id="preloader"></div>
 
   <!-- Floating Bottom-Right Language Toggle Button -->
@@ -355,18 +606,8 @@
     <span id="lang-text">繁體中文</span>
   </button>
 
-  <!-- Top Navigation Header -->
-  <header class="navbar">
-    <a href="index.html" class="nav-brand">
-      <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo">
-      <span class="nav-title">Aurora</span>
-    </a>
-    <nav class="nav-links">
-      <a href="aboutus.html" class="nav-btn i18n" data-en="About Us" data-zh="關於我們">About Us</a>
-      <a href="offers.html" class="nav-btn i18n" data-en="What We Offer" data-zh="我們的政綱">What We Offer</a>
-      <a href="schedule.html" class="nav-btn i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
-    </nav>
-  </header>
+  <!-- Dynamic Navigation Panel Mount Point -->
+  <div id="panel-container"></div>
 
   <!-- Video Background -->
   <div class="sky">
@@ -400,8 +641,61 @@
 
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
 
+  <!-- Modal 1: Submit Feedback Form -->
+  <div id="modal-submit" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title i18n" data-en="Anonymous Feedback" data-zh="匿名意見反饋">Anonymous Feedback</h3>
+        <button class="modal-close" onclick="closeModal('modal-submit')">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>
+          <span class="i18n" data-en="Title (at least 3 words)" data-zh="標題 (最少 3 個字詞)">Title (at least 3 words)</span>
+          <span id="title-counter" class="word-counter">0 / 3 words</span>
+        </label>
+        <input type="text" id="fb-title" class="form-input" placeholder="Enter title...">
+      </div>
+      <div class="form-group">
+        <label>
+          <span class="i18n" data-en="Description (at least 20 words)" data-zh="詳細內容 (最少 20 個字詞)">Description (at least 20 words)</span>
+          <span id="desc-counter" class="word-counter">0 / 20 words</span>
+        </label>
+        <textarea id="fb-desc" class="form-textarea" placeholder="Detailed feedback..."></textarea>
+      </div>
+      <button id="fb-submit-btn" class="modal-btn i18n" data-en="Submit Feedback" data-zh="提交反饋" disabled>Submit Feedback</button>
+    </div>
+  </div>
+
+  <!-- Modal 2: Status / AI Moderation Modal -->
+  <div id="modal-status" class="modal-overlay">
+    <div class="modal-card" style="text-align: center;">
+      <div class="modal-header">
+        <h3 id="status-title" class="modal-title">Checking Feedback</h3>
+        <button class="modal-close" onclick="closeModal('modal-status')">&times;</button>
+      </div>
+      <div id="status-content" style="margin: 20px 0;">
+        <div class="spinner" id="status-spinner"></div>
+        <p id="status-msg" style="color: rgba(223, 246, 242, 0.9);">Our AI model is currently checking your feedback...</p>
+      </div>
+      <button id="status-action-btn" class="modal-btn" style="display: none;" onclick="closeModal('modal-status')">OK</button>
+    </div>
+  </div>
+
+  <!-- Modal 3: View Feedbacks -->
+  <div id="modal-view" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title i18n" data-en="Submitted Feedbacks & Answers" data-zh="已提交意見及回應">Submitted Feedbacks & Answers</h3>
+        <button class="modal-close" onclick="closeModal('modal-view')">&times;</button>
+      </div>
+      <div id="feedbacks-container" class="feedback-list">
+        <!-- Dynamically filled -->
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Retrieve saved language preference or default to 'en'
+    // Language Preference Setup
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
 
@@ -421,94 +715,260 @@
       }
     }
 
-    // Apply language preference immediately as script runs
     setLanguage(currentLang);
 
-    document.getElementById('lang-btn').addEventListener('click', () => {
-      if (isSwitching) return;
-      isSwitching = true;
+    const langBtn = document.getElementById('lang-btn');
+    if (langBtn) {
+      langBtn.addEventListener('click', () => {
+        if (isSwitching) return;
+        isSwitching = true;
 
-      document.body.classList.remove('is-loaded');
+        document.body.classList.remove('is-loaded');
 
-      setTimeout(() => {
-        setLanguage(currentLang === 'en' ? 'zh' : 'en');
+        setTimeout(() => {
+          setLanguage(currentLang === 'en' ? 'zh' : 'en');
 
-        requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            document.body.classList.add('is-loaded');
-            setTimeout(() => { isSwitching = false; }, 1200);
+            requestAnimationFrame(() => {
+              document.body.classList.add('is-loaded');
+              setTimeout(() => { isSwitching = false; }, 1200);
+            });
           });
-        });
-      }, 350);
-    });
+        }, 350);
+      });
+    }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const video = document.getElementById('bg-video');
-      let pageRevealed = false;
+    // Helper functions for word count
+    function countWords(str) {
+      return str.trim() ? str.trim().split(/\s+/).length : 0;
+    }
 
-      const observerOptions = {
-        root: null,
-        rootMargin: '0px 0px -40px 0px',
-        threshold: 0.1
-      };
+    const titleInput = document.getElementById('fb-title');
+    const descInput = document.getElementById('fb-desc');
+    const titleCounter = document.getElementById('title-counter');
+    const descCounter = document.getElementById('desc-counter');
+    const submitBtn = document.getElementById('fb-submit-btn');
 
-      const fadeObserver = new IntersectionObserver((entries, obs) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            obs.unobserve(entry.target);
-          }
-        });
-      }, observerOptions);
+    function validateForm() {
+      if (!titleInput || !descInput || !submitBtn) return;
+      const titleWords = countWords(titleInput.value);
+      const descWords = countWords(descInput.value);
 
-      function revealPage() {
-        if (pageRevealed) return;
-        pageRevealed = true;
-
-        if (video) {
-          video.play().catch(() => {});
-        }
-
-        document.body.classList.add('is-loaded');
-        document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+      if (titleCounter) {
+        titleCounter.textContent = `${titleWords} / 3 words`;
+        titleCounter.classList.toggle('valid', titleWords >= 3);
       }
 
-      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
+      if (descCounter) {
+        descCounter.textContent = `${descWords} / 20 words`;
+        descCounter.classList.toggle('valid', descWords >= 20);
+      }
 
-      const logoImage = new Image();
-      logoImage.src = 'assets/aurora-logo.png';
-      const logoLoaded = new Promise((resolve) => {
-        if (logoImage.complete) resolve();
-        else {
-          logoImage.onload = resolve;
-          logoImage.onerror = resolve;
+      submitBtn.disabled = !(titleWords >= 3 && descWords >= 20);
+    }
+
+    if (titleInput) titleInput.addEventListener('input', validateForm);
+    if (descInput) descInput.addEventListener('input', validateForm);
+
+    // Modal Control Functions
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.remove('active');
+    }
+
+    // Safe Event Listeners for optional open triggers
+    document.getElementById('btn-open-submit')?.addEventListener('click', () => {
+      openModal('modal-submit');
+    });
+
+    document.getElementById('btn-open-view')?.addEventListener('click', () => {
+      renderPublicFeedbacks();
+      openModal('modal-view');
+    });
+
+    // OpenRouter API Configuration
+    const OPENROUTER_API_KEY = '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';
+    const MODEL = 'deepseek/deepseek-v4-flash-vision-exp';
+    const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+    // Submit & AI Check logic
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async () => {
+        const title = titleInput ? titleInput.value.trim() : '';
+        const description = descInput ? descInput.value.trim() : '';
+
+        closeModal('modal-submit');
+        
+        // Reset Status Modal
+        const statusTitle = document.getElementById('status-title');
+        const statusSpinner = document.getElementById('status-spinner');
+        const statusMsg = document.getElementById('status-msg');
+        const statusActionBtn = document.getElementById('status-action-btn');
+
+        if (statusTitle) statusTitle.textContent = currentLang === 'zh' ? '正在審核反饋' : 'Checking Feedback';
+        if (statusSpinner) statusSpinner.style.display = 'block';
+        if (statusMsg) statusMsg.textContent = currentLang === 'zh' ? '我們的模型正在檢查您的反饋...' : 'Our model is checking your feedback...';
+        if (statusActionBtn) statusActionBtn.style.display = 'none';
+        
+        openModal('modal-status');
+
+        try {
+          const response = await fetch(OPENROUTER_URL, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: MODEL,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are an automated content moderator. Determine if the given student feedback is spam. Spam includes: gibberish, useless, irrelevant, abusive, or non-constructive test messages. Return response strictly in JSON format as follows: {"isSpam": boolean, "reason": "string"}'
+                },
+                {
+                  role: 'user',
+                  content: `Title: ${title}\nDescription: ${description}`
+                }
+              ],
+              response_format: { type: "json_object" }
+            })
+          });
+
+          const data = await response.json();
+          let result = { isSpam: false };
+
+          if (data.choices && data.choices[0] && data.choices[0].message) {
+            try {
+              const raw = data.choices[0].message.content.replace(/```json|```/g, '').trim();
+              result = JSON.parse(raw);
+            } catch (e) {
+              console.error("JSON parse error", e);
+            }
+          }
+
+          if (statusSpinner) statusSpinner.style.display = 'none';
+          if (statusActionBtn) statusActionBtn.style.display = 'inline-block';
+
+          if (result.isSpam) {
+            if (statusTitle) statusTitle.textContent = currentLang === 'zh' ? '標記為垃圾訊息' : 'Marked as Spam';
+            if (statusMsg) {
+              statusMsg.innerHTML = currentLang === 'zh' 
+                ? '我們的模型已將您的反饋標記為垃圾訊息/無效內容。<br><br>請重新填寫，或透過 Instagram (<a href="https://www.instagram.com/gteyc_aurora2627/" target="_blank" style="color:var(--aurora-cyan);">@gteyc_aurora2627</a>) 聯絡我們。'
+                : 'Our model marked your submission as spam/irrelevant.<br><br>Please try again or contact us directly via Instagram (<a href="https://www.instagram.com/gteyc_aurora2627/" target="_blank" style="color:var(--aurora-cyan);">@gteyc_aurora2627</a>).';
+            }
+          } else {
+            // Save valid feedback anonymously
+            const feedbacks = JSON.parse(localStorage.getItem('aurora_feedbacks') || '[]');
+            feedbacks.push({
+              id: Date.now(),
+              title: title,
+              description: description,
+              originalTitle: title,
+              originalDescription: description,
+              response: '',
+              status: 'pending',
+              createdAt: new Date().toLocaleDateString()
+            });
+            localStorage.setItem('aurora_feedbacks', JSON.stringify(feedbacks));
+
+            if (statusTitle) statusTitle.textContent = currentLang === 'zh' ? '提交成功' : 'Feedback Submitted';
+            if (statusMsg) {
+              statusMsg.textContent = currentLang === 'zh'
+                ? '感謝您的寶貴意見！我們會儘快為您處理並回應。'
+                : 'Thank you for your feedback! Our team will review and respond soon.';
+            }
+
+            // Reset Form
+            if (titleInput) titleInput.value = '';
+            if (descInput) descInput.value = '';
+            validateForm();
+          }
+        } catch (err) {
+          console.error(err);
+          if (statusSpinner) statusSpinner.style.display = 'none';
+          if (statusActionBtn) statusActionBtn.style.display = 'inline-block';
+          if (statusTitle) statusTitle.textContent = 'Error';
+          if (statusMsg) statusMsg.textContent = 'An error occurred while evaluating your feedback. Please try again.';
         }
       });
+    }
 
-      const videoLoaded = new Promise((resolve) => {
-        if (!video) return resolve();
-        if (video.readyState >= 3) {
-          resolve();
-        } else {
-          const onCanPlay = () => {
-            video.removeEventListener('canplaythrough', onCanPlay);
-            video.removeEventListener('loadeddata', onCanPlay);
-            resolve();
-          };
-          video.addEventListener('canplaythrough', onCanPlay);
-          video.addEventListener('loadeddata', onCanPlay);
-        }
-      });
+    // Render Public Feedbacks
+    function renderPublicFeedbacks() {
+      const container = document.getElementById('feedbacks-container');
+      if (!container) return;
 
-      const fallbackTimer = new Promise((resolve) => setTimeout(resolve, 3000));
+      const feedbacks = JSON.parse(localStorage.getItem('aurora_feedbacks') || '[]');
+      const published = feedbacks.filter(f => f.status === 'approved');
 
-      Promise.race([
-        Promise.all([fontsLoaded, logoLoaded, videoLoaded]),
-        fallbackTimer
-      ]).then(() => {
-        revealPage();
-      });
+      if (published.length === 0) {
+        container.innerHTML = `<p style="color: rgba(223,246,242,0.5); text-align:center; padding: 20px;">${currentLang === 'zh' ? '暫無公開反饋' : 'No published feedbacks yet.'}</p>`;
+        return;
+      }
+
+      container.innerHTML = published.map(f => `
+        <div class="feedback-item">
+          <div class="feedback-item-title">${escapeHtml(f.title)}</div>
+          <div class="feedback-item-desc">${escapeHtml(f.description)}</div>
+          ${f.response ? `
+            <div class="feedback-response">
+              <div class="feedback-response-author">Aurora Student Union Response:</div>
+              <div>${escapeHtml(f.response)}</div>
+            </div>
+          ` : '<div style="font-size:0.75rem; color:rgba(223,246,242,0.4); font-style:italic;">Awaiting SU response</div>'}
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Page Load & Video Auto-Recovery Setup
+    let pageRevealed = false;
+    function revealPage() {
+      if (pageRevealed) return;
+      pageRevealed = true;
+      const video = document.getElementById('bg-video');
+      if (video) video.play().catch(() => {});
+      document.body.classList.add('is-loaded');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(revealPage, 300);
+
+      const video = document.getElementById('bg-video');
+      if (video) {
+        // Automatically attempt video recovery if stalled, paused, or suspended by browser
+        ['stalled', 'suspend', 'pause', 'waiting'].forEach(evt => {
+          video.addEventListener(evt, () => {
+            if (video.paused) {
+              video.play().catch(() => {});
+            }
+          });
+        });
+
+        // Resume playback on active tab focus
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && video.paused) {
+            video.play().catch(() => {});
+          }
+        });
+      }
+    });
+
+    window.addEventListener('load', () => {
+      revealPage();
     });
   </script>
+
+  <!-- Load Navigation Panel Component -->
+  <script src="load-components.js"></script>
 </body>
 </html>

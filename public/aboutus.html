@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>About Us — Aurora Candidate Cabinet No. 1</title>
+<title>Aurora - About Us</title>
 <link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
 
 <!-- Asset Preloading -->
@@ -84,7 +84,7 @@
   .fade-in {
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     will-change: opacity, transform;
   }
 
@@ -94,12 +94,12 @@
     pointer-events: auto;
   }
 
+  /* Optimized Stagger Delays */
   .card-grid .glass-card:nth-child(1) { transition-delay: 0.05s; }
-  .card-grid .glass-card:nth-child(2) { transition-delay: 0.15s; }
-  .card-grid .glass-card:nth-child(3) { transition-delay: 0.25s; }
-  .card-grid .glass-card:nth-child(4) { transition-delay: 0.35s; }
-  .card-grid .glass-card:nth-child(5) { transition-delay: 0.45s; }
-  .card-grid .glass-card:nth-child(6) { transition-delay: 0.55s; }
+  .card-grid .glass-card:nth-child(2) { transition-delay: 0.10s; }
+  .card-grid .glass-card:nth-child(3) { transition-delay: 0.15s; }
+  .card-grid .glass-card:nth-child(4) { transition-delay: 0.20s; }
+  .card-grid .glass-card:nth-child(n+5) { transition-delay: 0.25s; }
 
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; }
@@ -301,9 +301,25 @@
     background: var(--line);
   }
 
+  /* ---------- SU Info Card Styling ---------- */
+  .su-info-card {
+    line-height: 1.95;
+    font-size: 1.05rem;
+    color: rgba(223, 246, 242, 0.9);
+  }
+
+  .su-paragraph {
+    margin-bottom: 1.25rem;
+    text-align: justify;
+  }
+
+  .su-paragraph:last-child {
+    margin-bottom: 0;
+  }
+
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 24px;
   }
 
@@ -314,7 +330,7 @@
     -webkit-backdrop-filter: blur(10px);
     border-radius: 16px;
     padding: 28px;
-    transition: transform 0.3s ease, border-color 0.3s ease, opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
   }
 
   .glass-card:hover {
@@ -324,42 +340,72 @@
 
   .team-card {
     text-align: center;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    cursor: pointer;
   }
 
-  .avatar-placeholder {
-    width: 84px;
-    height: 84px;
-    border-radius: 50%;
+  .team-card:hover {
+    box-shadow: 0 0 20px rgba(46, 230, 184, 0.2);
+  }
+
+  /* Member Avatar Styling */
+  .avatar-wrapper {
+    width: 88px;
+    height: 88px;
     margin: 0 auto 16px;
-    background: linear-gradient(135deg, rgba(46, 230, 184, 0.3), rgba(143, 140, 240, 0.3));
-    border: 2px solid var(--aurora-cyan);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Cinzel', serif;
-    font-size: 1.5rem;
-    color: #ffffff;
+    position: relative;
   }
 
+  .member-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--aurora-cyan);
+    box-shadow: 0 0 12px rgba(127, 233, 240, 0.25);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .team-card:hover .member-avatar {
+    transform: scale(1.05);
+    border-color: var(--aurora-teal);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.4);
+  }
+
+  /* Member Information Styling */
   .member-role {
-    font-size: 0.8rem;
-    letter-spacing: 0.1em;
+    font-size: 1.35rem;
+    font-weight: 700;
     color: var(--aurora-teal);
-    text-transform: uppercase;
     margin-bottom: 6px;
+    letter-spacing: 0.02em;
   }
 
   .member-name {
-    font-size: 1.25rem;
+    font-size: 1.05rem;
     font-weight: 600;
     color: #ffffff;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 
-  .member-desc {
-    font-size: 0.9rem;
-    line-height: 1.6;
-    color: rgba(223, 246, 242, 0.7);
+  .member-class {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(223, 246, 242, 0.65);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .member-handle {
+    font-size: 0.85rem;
+    color: var(--aurora-cyan);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
   }
 
   footer {
@@ -394,17 +440,8 @@
     <span id="lang-text">繁體中文</span>
   </button>
 
-  <header class="navbar">
-    <a href="index.html" class="nav-brand">
-      <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo" onerror="this.style.display='none'">
-      <span class="nav-title">Aurora</span>
-    </a>
-    <nav class="nav-links">
-      <a href="aboutus.html" class="nav-btn active i18n" data-en="About Us" data-zh="關於我們">About Us</a>
-      <a href="offers.html" class="nav-btn i18n" data-en="What We Offer" data-zh="我們的政綱">What We Offer</a>
-      <a href="schedule.html" class="nav-btn i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
-    </nav>
-  </header>
+  <!-- Panel Container -->
+  <div id="panel-container"></div>
 
   <!-- Video Background -->
   <div class="sky">
@@ -416,92 +453,174 @@
 
   <main class="page-container">
     <div class="header-section">
-      <p class="page-subtitle i18n" data-en="Cabinet Introduction" data-zh="內閣簡介">Cabinet Introduction</p>
       <h1 class="page-title i18n" data-en="About Aurora" data-zh="關於 Aurora">About Aurora</h1>
-      <p class="page-description i18n" data-en="&ldquo;Sparked by Aurora, united with Harmonia&rdquo;<br>As Candidate Cabinet No. 1 for G.T. (Ellen Yeung) College 2026–27, we are dedicated to bringing a vibrant and warm campus experience to all students." data-zh="「Sparked by Aurora, united with Harmonia」<br>作為 2026–27 年度優才（楊殷有娣）書院 1 號候選內閣，我們致力為全體同學帶來充滿活力與溫度的校園體驗。">
+      <p class="page-description i18n" data-en="&ldquo;Sparked by Aurora, united with Harmonia&rdquo;<br>As Candidate Cabinet No. 1 for G.T. (Ellen Yeung) College 2026–27, we are dedicated to bringing a vibrant and warm campus experience to all students." data-zh="「Sparked by Aurora, united with Harmonia」<br>作為 2026–27 年度優才（楊殷有娣）書院 1 號候選內閣，我們致力為師生營造愉快充實的校園生活。">
         "Sparked by Aurora, united with Harmonia"<br>
         As Candidate Cabinet No. 1 for G.T. (Ellen Yeung) College 2026–27, we are dedicated to bringing a vibrant and warm campus experience to all students.
       </p>
     </div>
 
-    <!-- Cabinet Vision -->
+    <!-- PART 1: About the Student Union -->
     <div class="section-block fade-in">
-      <h2 class="section-heading i18n" data-en="Cabinet Vision & Core Pillars" data-zh="內閣願景與核心理念">Cabinet Vision & Core Pillars</h2>
-      <div class="card-grid">
-        <div class="glass-card fade-in">
-          <h3 class="i18n" data-en="✦ Listen & Connect" data-zh="✦ 傾聽與連結" style="color:#ffffff; margin-bottom:12px;">✦ Listen & Connect</h3>
-          <p class="i18n" data-en="Building multi-channel feedback platforms to ensure every student's voice receives meaningful responses and actions." data-zh="構建多渠道意見反饋平台，確保每一位學生的聲音都能獲得實質回應與變革。" style="font-size:0.95rem; line-height:1.7; color:rgba(223,246,242,0.75);">
-            Building multi-channel feedback platforms to ensure every student's voice receives meaningful responses and actions.
-          </p>
-        </div>
-        <div class="glass-card fade-in">
-          <h3 class="i18n" data-en="✦ Welfare & Innovation" data-zh="✦ 福利與創新" style="color:#ffffff; margin-bottom:12px;">✦ Welfare & Innovation</h3>
-          <p class="i18n" data-en="Expanding merchant discounts and optimizing item rental services to create a practical, valuable welfare system." data-zh="拓展校外商戶優惠陣容，優化校內借用物品服務，打造實用有感的福利體系。" style="font-size:0.95rem; line-height:1.7; color:rgba(223,246,242,0.75);">
-            Expanding merchant discounts and optimizing item rental services to create a practical, valuable welfare system.
-          </p>
-        </div>
-        <div class="glass-card fade-in">
-          <h3 class="i18n" data-en="✦ Unity & Vitality" data-zh="✦ 凝聚與精彩" style="color:#ffffff; margin-bottom:12px;">✦ Unity & Vitality</h3>
-          <p class="i18n" data-en="Hosting diverse themed events and competitions to enrich campus life and foster a true sense of belonging." data-zh="舉辦多樣化主題活動與社群比賽，豐富校園生活，建立專屬於優才人的歸屬感。" style="font-size:0.95rem; line-height:1.7; color:rgba(223,246,242,0.75);">
-            Hosting diverse themed events and competitions to enrich campus life and foster a true sense of belonging.
-          </p>
-        </div>
+      <h2 class="section-heading i18n" data-en="Our Vision" data-zh="Aurora 的理念">Our Vision</h2>
+      <div class="glass-card su-info-card">
+        <p class="su-paragraph i18n" 
+           data-en="Aurora represents the &ldquo;Aurora Borealis&rdquo;, a natural wonder formed by the interplay of vibrant colors in the dark night sky. We chose the name Aurora because we firmly believe that every student possesses unique strengths. Just as an aurora encompasses a spectrum of diverse colors, every student on campus shines with their own distinct radiance. We hope the Student Union will serve as a bridge of communication between students and the school, working together to foster a positive campus atmosphere." 
+           data-zh="Aurora 代表著「極光」，是黑夜中不同顏色交織而成的自然奇蹟。取名為Aurora，是因為我們深信每一位同學都有獨一無二的長處。正如極光包含著種種不同色彩，校園內的每一位學生亦都擁有著屬於自己獨特的光芒。我們希望學生會能夠成為學生與學校溝通的橋樑，合作建立良好的校園氛圍。">
+          Aurora represents the "Aurora Borealis", a natural wonder formed by the interplay of vibrant colors in the dark night sky. We chose the name Aurora because we firmly believe that every student possesses unique strengths. Just as an aurora encompasses a spectrum of diverse colors, every student on campus shines with their own distinct radiance. We hope the Student Union will serve as a bridge of communication between students and the school, working together to foster a positive campus atmosphere.
+        </p>
+        <p class="su-paragraph i18n" 
+           data-en="Furthermore, Aurora symbolizes &ldquo;Hope and Dawn&rdquo;. This reflects our cabinet's sincere determination to inspire students to actively and optimistically enjoy their campus life. We will earnestly listen to students' opinions and dedicate ourselves wholeheartedly to the school, teachers, and students—striving to create a joyful, fulfilling campus experience and leaving behind unforgettable memories of youth." 
+           data-zh="此外，極光亦象徵著「希望與破曉」。這代表著我們內閣真摯的決心，希望同學能夠積極，樂觀地享受校園生活。我們將認真聆聽同學們的意見，全心全力為學校和師生付出，致力為同學營造愉快充實的校園生活，留下一段難忘的青春回憶。">
+          Furthermore, Aurora symbolizes "Hope and Dawn". This reflects our cabinet's sincere determination to inspire students to actively and optimistically enjoy their campus life. We will earnestly listen to students' opinions and dedicate ourselves wholeheartedly to the school, teachers, and students—striving to create a joyful, fulfilling campus experience and leaving behind unforgettable memories of youth.
+        </p>
       </div>
     </div>
 
-    <!-- Cabinet Executive Team -->
+    <!-- PART 2: Cabinet Members -->
     <div class="section-block fade-in">
-      <h2 class="section-heading i18n" data-en="Executive Cabinet" data-zh="常務內閣">Executive Cabinet</h2>
+      <h2 class="section-heading i18n" data-en="Cabinet Members" data-zh="成員介紹">Cabinet Members</h2>
       <div class="card-grid">
-        <div class="glass-card team-card fade-in">
-          <div class="avatar-placeholder">P</div>
-          <div class="member-role i18n" data-en="President" data-zh="主席">President</div>
-          <div class="member-name i18n" data-en="President" data-zh="主席">President</div>
-          <p class="member-desc i18n" data-en="Leads overall cabinet affairs and represents the student body in liaising with the school for rights and welfare." data-zh="統領內閣整體事務，代表學生會與校方溝通爭取權益。">Leads overall cabinet affairs and represents the student body in liaising with the school for rights and welfare.</p>
-        </div>
 
-        <div class="glass-card team-card fade-in">
-          <div class="avatar-placeholder">VP</div>
-          <div class="member-role i18n" data-en="Vice President" data-zh="副主席">Vice President</div>
-          <div class="member-name i18n" data-en="Vice President" data-zh="副主席">Vice President</div>
-          <p class="member-desc i18n" data-en="Coordinates department operations, internal management, and execution of major projects." data-zh="協調各部門運作，主理內部管理與大型項目執行。">Coordinates department operations, internal management, and execution of major projects.</p>
-        </div>
+        <!-- 1. President -->
+        <a href="https://instagram.com/samuel_w._so/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/samuel_w._so.jpg" alt="Samuel So" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Samuel+So';">
+          </div>
+          <div class="member-role i18n" data-en="President" data-zh="候選主席">President</div>
+          <div class="member-name i18n" data-en="Samuel So" data-zh="蘇南榮">Samuel So</div>
+          <div class="member-class">11A (20)</div>
+          <div class="member-handle">@samuel_w._so</div>
+        </a>
 
-        <div class="glass-card team-card fade-in">
-          <div class="avatar-placeholder">W</div>
-          <div class="member-role i18n" data-en="Welfare Officer" data-zh="福利幹事">Welfare Officer</div>
-          <div class="member-name i18n" data-en="Welfare Officer" data-zh="福利幹事">Welfare Officer</div>
-          <p class="member-desc i18n" data-en="Negotiates external merchant discounts and maintains campus welfare facilities." data-zh="對外洽談商家折扣，對內維護及更新學生福利設施。">Negotiates external merchant discounts and maintains campus welfare facilities.</p>
-        </div>
+        <!-- 2. Internal Vice President -->
+        <a href="https://instagram.com/xtshh_00/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/xtshh_00.jpg" alt="Jerry Xu" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Jerry+Xu';">
+          </div>
+          <div class="member-role i18n" data-en="Internal Vice President" data-zh="候選內務副主席">Internal Vice President</div>
+          <div class="member-name i18n" data-en="Jerry Xu" data-zh="徐兆睿">Jerry Xu</div>
+          <div class="member-class">11A (25)</div>
+          <div class="member-handle">@xtshh_00</div>
+        </a>
 
-        <div class="glass-card team-card fade-in">
-          <div class="avatar-placeholder">E</div>
-          <div class="member-role i18n" data-en="Event Coordinator" data-zh="活動幹事">Event Coordinator</div>
-          <div class="member-name i18n" data-en="Event Coordinator" data-zh="活動幹事">Event Coordinator</div>
-          <p class="member-desc i18n" data-en="Plans diverse campus activities to create engaging recreational experiences." data-zh="策劃多樣化校園活動，打造極致文娛體驗。">Plans diverse campus activities to create engaging recreational experiences.</p>
-        </div>
+        <!-- 3. External Vice President -->
+        <a href="https://instagram.com/gian_pang/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/gian_pang.jpg" alt="Gian Pang" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Gian+Pang';">
+          </div>
+          <div class="member-role i18n" data-en="External Vice President" data-zh="候選外務副主席">External Vice President</div>
+          <div class="member-name i18n" data-en="Gian Pang" data-zh="彭衍晴">Gian Pang</div>
+          <div class="member-class">11A (17)</div>
+          <div class="member-handle">@gian_pang</div>
+        </a>
 
-        <div class="glass-card team-card fade-in">
-          <div class="avatar-placeholder">PR</div>
-          <div class="member-role i18n" data-en="Public Relations" data-zh="公關幹事">Public Relations</div>
-          <div class="member-name i18n" data-en="PR Officer" data-zh="公關幹事">PR Officer</div>
-          <p class="member-desc i18n" data-en="Manages social media platforms to ensure transparent and prompt communication." data-zh="營運社群平台，確保內閣資訊透明且快速送達。">Manages social media platforms to ensure transparent and prompt communication.</p>
-        </div>
+        <!-- 4. Secretary General -->
+        <a href="https://instagram.com/the_smiley_katie/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/the_smiley_katie.jpg" alt="Katie Ngai" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Katie+Ngai';">
+          </div>
+          <div class="member-role i18n" data-en="Secretary General" data-zh="候選秘書長">Secretary General</div>
+          <div class="member-name i18n" data-en="Katie Ngai" data-zh="倪子淇">Katie Ngai</div>
+          <div class="member-class">11A (16)</div>
+          <div class="member-handle">@the_smiley_katie</div>
+        </a>
 
-        <div class="glass-card team-card fade-in">
-          <div class="avatar-placeholder">IT</div>
-          <div class="member-role i18n" data-en="IT & Design" data-zh="資訊及設計幹事">IT & Design</div>
-          <div class="member-name i18n" data-en="IT & Design Officer" data-zh="資訊及設計幹事">IT & Design Officer</div>
-          <p class="member-desc i18n" data-en="Develops the cabinet website and maintains digital service platforms and visual designs." data-zh="開發內閣網站，維護數位服務平台與視覺設計。">Develops the cabinet website and maintains digital service platforms and visual designs.</p>
-        </div>
+        <!-- 5. Financial Officer -->
+        <a href="https://instagram.com/marcuspoon1218/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/marcuspoon1218.jpg" alt="Marcus Poon" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Marcus+Poon';">
+          </div>
+          <div class="member-role i18n" data-en="Financial Officer" data-zh="候選財政">Financial Officer</div>
+          <div class="member-name i18n" data-en="Marcus Poon" data-zh="潘溢熙">Marcus Poon</div>
+          <div class="member-class">11A (19)</div>
+          <div class="member-handle">@marcuspoon1218</div>
+        </a>
+
+        <!-- 6. General Affairs Officer -->
+        <a href="https://instagram.com/allysonhny/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/allysonhny.jpg" alt="Allyson Hui" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Allyson+Hui';">
+          </div>
+          <div class="member-role i18n" data-en="General Affairs Officer" data-zh="候選總務幹事">General Affairs Officer</div>
+          <div class="member-name i18n" data-en="Allyson Hui" data-zh="許諾怡">Allyson Hui</div>
+          <div class="member-class">10C (12)</div>
+          <div class="member-handle">@allysonhny</div>
+        </a>
+
+        <!-- 7. Event Officer -->
+        <a href="https://instagram.com/kage_no._.akuma/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/kage_no._.akuma.jpg" alt="Thomas Wong" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Thomas+Wong';">
+          </div>
+          <div class="member-role i18n" data-en="Event Officer" data-zh="候選活動幹事">Event Officer</div>
+          <div class="member-name i18n" data-en="Thomas Wong" data-zh="黃仲勤">Thomas Wong</div>
+          <div class="member-class">10E (14)</div>
+          <div class="member-handle">@kage_no._.akuma</div>
+        </a>
+
+        <!-- 8. Promotion Officer -->
+        <a href="https://instagram.com/a.c.y.t_/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/a.c.y.t_.jpg" alt="Agnes Chow" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Agnes+Chow';">
+          </div>
+          <div class="member-role i18n" data-en="Promotion Officer" data-zh="候選宣傳幹事">Promotion Officer</div>
+          <div class="member-name i18n" data-en="Agnes Chow" data-zh="周懿德">Agnes Chow</div>
+          <div class="member-class">10C (04)</div>
+          <div class="member-handle">@a.c.y.t_</div>
+        </a>
+
+        <!-- 9. Welfare Officer -->
+        <a href="https://instagram.com/aidanycy/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/aidanycy.jpg" alt="Aidan Yu" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Aidan+Yu';">
+          </div>
+          <div class="member-role i18n" data-en="Welfare Officer" data-zh="候選福利幹事">Welfare Officer</div>
+          <div class="member-name i18n" data-en="Aidan Yu" data-zh="余卓堯">Aidan Yu</div>
+          <div class="member-class">9E (30)</div>
+          <div class="member-handle">@aidanycy</div>
+        </a>
+
+        <!-- 10. Art Officer -->
+        <a href="https://instagram.com/b3lla._26/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/b3lla._26.jpg" alt="Bella Koo" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Bella+Koo';">
+          </div>
+          <div class="member-role i18n" data-en="Art Officer" data-zh="候選美術幹事">Art Officer</div>
+          <div class="member-name i18n" data-en="Bella Koo" data-zh="古雁心">Bella Koo</div>
+          <div class="member-class">9B (09)</div>
+          <div class="member-handle">@b3lla._26</div>
+        </a>
+
+        <!-- 11. Photography Officer -->
+        <a href="https://instagram.com/hpkkk_baka/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/hpkkk_baka.jpg" alt="QQ Ho" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=QQ+Ho';">
+          </div>
+          <div class="member-role i18n" data-en="Photography Officer" data-zh="候選攝影幹事">Photography Officer</div>
+          <div class="member-name i18n" data-en="QQ Ho" data-zh="侯柏喬">QQ Ho</div>
+          <div class="member-class">10C (09)</div>
+          <div class="member-handle">@hpkkk_baka</div>
+        </a>
+
       </div>
     </div>
   </main>
 
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
 
+  <script src="load-components.js"></script>
   <script>
-    // Retrieve saved language preference or default to 'en'
+    (function preloadAvatars() {
+      const avatarImgs = document.querySelectorAll('.member-avatar');
+      avatarImgs.forEach(img => {
+        if (img.src) {
+          const p = new Image();
+          p.src = img.src;
+        }
+      });
+    })();
+
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
 
@@ -521,7 +640,6 @@
       }
     }
 
-    // Apply language preference immediately as script runs
     setLanguage(currentLang);
 
     document.getElementById('lang-btn').addEventListener('click', () => {
@@ -548,8 +666,8 @@
 
       const observerOptions = {
         root: null,
-        rootMargin: '0px 0px -40px 0px',
-        threshold: 0.1
+        rootMargin: '400px 0px 400px 0px',
+        threshold: 0.01
       };
 
       const fadeObserver = new IntersectionObserver((entries, obs) => {

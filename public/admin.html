@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora - Admin Moderation</title>
+<link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #050b12;
+    --deep: #0a1a20;
+    --ink: #dff6f2;
+    --aurora-teal: #2fe6b8;
+    --aurora-cyan: #7fe9f0;
+    --aurora-red: #ff6b6b;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    padding: 30px 5vw;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(127, 233, 240, 0.2);
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    color: #eafffb;
+    font-size: 1.8rem;
+  }
+
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--aurora-cyan);
+  }
+
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8rem;
+  }
+
+  .user-name { font-weight: 600; color: #ffffff; }
+  .user-email { color: rgba(223, 246, 242, 0.6); }
+
+  .nav-btn {
+    color: var(--aurora-cyan);
+    text-decoration: none;
+    font-size: 0.85rem;
+    border: 1px solid rgba(127, 233, 240, 0.3);
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .nav-btn:hover {
+    background: rgba(127, 233, 240, 0.1);
+  }
+
+  /* Auth Section */
+  .auth-card {
+    max-width: 420px;
+    margin: 80px auto;
+    background: rgba(10, 26, 32, 0.85);
+    border: 1px solid rgba(127, 233, 240, 0.3);
+    border-radius: 16px;
+    padding: 36px;
+    text-align: center;
+  }
+
+  .google-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background: #ffffff;
+    color: #000000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .google-btn:hover { background: #f1f1f1; }
+
+  .admin-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .card {
+    background: rgba(10, 26, 32, 0.85);
+    border: 1px solid rgba(127, 233, 240, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: rgba(223, 246, 242, 0.6);
+  }
+
+  .badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge.pending { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+  .badge.approved { background: rgba(46, 230, 184, 0.2); color: var(--aurora-teal); }
+  .badge.spam { background: rgba(255, 107, 107, 0.2); color: var(--aurora-red); }
+
+  .log-banner {
+    background: rgba(46, 230, 184, 0.08);
+    border-left: 3px solid var(--aurora-teal);
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    color: var(--aurora-teal);
+    border-radius: 4px;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field-label {
+    font-size: 0.8rem;
+    color: var(--aurora-cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .input-text, .input-textarea {
+    width: 100%;
+    background: rgba(5, 11, 18, 0.7);
+    border: 1px solid rgba(127, 233, 240, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+
+  .input-textarea { min-height: 80px; resize: vertical; }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-publish { background: var(--aurora-teal); color: #050b12; }
+  .btn-publish:hover { opacity: 0.9; box-shadow: 0 0 10px rgba(46, 230, 184, 0.4); }
+
+  .btn-spam { background: rgba(255, 107, 107, 0.2); color: var(--aurora-red); border: 1px solid var(--aurora-red); }
+  .btn-spam:hover { background: rgba(255, 107, 107, 0.4); }
+
+  .btn-delete { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+  <!-- Login Section -->
+  <div id="login-view" class="auth-card">
+    <h1 style="font-size: 1.5rem; margin-bottom: 12px;">Admin Portal</h1>
+    <p style="font-size: 0.85rem; color: rgba(223, 246, 242, 0.7);">Please sign in with your Google Account to access feedback moderation.</p>
+    <button id="google-login-btn" class="google-btn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.41-1.57-5.13-3.72L.97 13.04C2.45 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.87 10.8c-.18-.53-.28-1.1-.28-1.8s.1-1.27.28-1.8L.97 4.96C.35 6.18 0 7.55 0 9s.35 2.82.97 4.04l2.9-2.24z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.45 2.02.97 4.96l2.9 2.24C4.59 5.05 6.62 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+  </div>
+
+  <!-- Main Dashboard View -->
+  <div id="admin-view" class="hidden">
+    <header>
+      <h1>Feedback Moderation Admin</h1>
+      <div class="user-profile">
+        <img id="user-avatar" class="user-avatar" src="" alt="Avatar">
+        <div class="user-info">
+          <span id="user-name" class="user-name"></span>
+          <span id="user-email" class="user-email"></span>
+        </div>
+        <button id="signout-btn" class="nav-btn">Sign Out</button>
+        <a href="feedbacks.html" class="nav-btn">← View Site</a>
+      </div>
+    </header>
+
+    <main id="admin-container" class="admin-grid"></main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      getDocs, 
+      updateDoc, 
+      deleteDoc, 
+      doc, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { 
+      getAuth, 
+      signInWithPopup, 
+      GoogleAuthProvider, 
+      signOut, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
+      authDomain: "gtcsu-aurora.firebaseapp.com",
+      projectId: "gtcsu-aurora",
+      storageBucket: "gtcsu-aurora.firebasestorage.app",
+      messagingSenderId: "961705164297",
+      appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8",
+      measurementId: "G-ZWE0Z6VTZK"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    let currentUser = null;
+
+    // Helper for Hong Kong Time
+    function getHKTTimeString() {
+      return new Date().toLocaleString("en-GB", {
+        timeZone: "Asia/Hong_Kong",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      }) + " (HKT)";
+    }
+
+    // Auth Listeners
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        document.getElementById('login-view').classList.add('hidden');
+        document.getElementById('admin-view').classList.remove('hidden');
+        
+        document.getElementById('user-name').textContent = user.displayName || 'Admin User';
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-avatar').src = user.photoURL || 'assets/aurora-logo.png';
+        
+        loadAdminFeedbacks();
+      } else {
+        currentUser = null;
+        document.getElementById('login-view').classList.remove('hidden');
+        document.getElementById('admin-view').classList.add('hidden');
+      }
+    });
+
+    document.getElementById('google-login-btn').addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (err) {
+        alert("Google Sign-In failed: " + err.message);
+      }
+    });
+
+    document.getElementById('signout-btn').addEventListener('click', () => signOut(auth));
+
+    async function loadAdminFeedbacks() {
+      const container = document.getElementById('admin-container');
+      container.innerHTML = `<p style="text-align:center; color:rgba(223,246,242,0.5); padding: 40px;">Loading feedbacks...</p>`;
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "feedbacks"));
+        
+        if (querySnapshot.empty) {
+          container.innerHTML = `<p style="text-align:center; color:rgba(223,246,242,0.5); padding: 40px;">No incoming feedbacks found.</p>`;
+          return;
+        }
+
+        let html = '';
+        querySnapshot.forEach((docSnap) => {
+          const item = docSnap.data();
+          const id = docSnap.id;
+          
+          html += `
+            <div class="card">
+              <div class="card-header">
+                <span>Doc ID: ${id}</span>
+                <span class="badge ${item.status}">${item.status.toUpperCase()}</span>
+              </div>
+
+              ${item.approvedBy ? `
+                <div class="log-banner">
+                  ✓ Approved by <strong>${escapeHtml(item.approvedBy)}</strong> on ${item.approvedAtHKT || 'N/A'}
+                </div>
+              ` : ''}
+
+              <div class="field-group">
+                <span class="field-label">Edit User Title</span>
+                <input type="text" class="input-text" id="title-${id}" value="${escapeHtml(item.title)}">
+              </div>
+
+              <div class="field-group">
+                <span class="field-label">Edit User Description</span>
+                <textarea class="input-textarea" id="desc-${id}">${escapeHtml(item.description)}</textarea>
+              </div>
+
+              <div class="field-group">
+                <span class="field-label">Student Union Response</span>
+                <textarea class="input-textarea" id="resp-${id}" placeholder="Write response from SU...">${escapeHtml(item.response || '')}</textarea>
+              </div>
+
+              <div class="actions">
+                <button class="btn btn-spam" data-action="spam" data-id="${id}">Mark Spam</button>
+                <button class="btn btn-delete" data-action="delete" data-id="${id}">Delete</button>
+                <button class="btn btn-publish" data-action="publish" data-id="${id}">Save & Publish</button>
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+
+        // Attach event delegation for action buttons
+        container.querySelectorAll('button[data-action]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const action = e.target.getAttribute('data-action');
+            const id = e.target.getAttribute('data-id');
+            if (action === 'publish') publishItem(id);
+            if (action === 'spam') markSpam(id);
+            if (action === 'delete') deleteItem(id);
+          });
+        });
+
+      } catch (err) {
+        console.error("Error loading feedbacks:", err);
+        container.innerHTML = `<p style="text-align:center; color:var(--aurora-red); padding: 40px;">Failed to load feedbacks: ${err.message}</p>`;
+      }
+    }
+
+    async function publishItem(id) {
+      if (!currentUser) return;
+      const title = document.getElementById(`title-${id}`).value;
+      const description = document.getElementById(`desc-${id}`).value;
+      const response = document.getElementById(`resp-${id}`).value;
+      
+      const moderatorName = currentUser.displayName || currentUser.email;
+      const hktTime = getHKTTimeString();
+
+      try {
+        await updateDoc(doc(db, "feedbacks", id), {
+          title: title,
+          description: description,
+          response: response,
+          status: 'approved',
+          approvedBy: moderatorName,
+          approvedAtHKT: hktTime,
+          moderatedAt: serverTimestamp()
+        });
+        loadAdminFeedbacks();
+      } catch (err) {
+        alert("Failed to publish feedback: " + err.message);
+      }
+    }
+
+    async function markSpam(id) {
+      try {
+        await updateDoc(doc(db, "feedbacks", id), {
+          status: 'spam',
+          moderatedAt: serverTimestamp()
+        });
+        loadAdminFeedbacks();
+      } catch (err) {
+        alert("Failed to mark spam: " + err.message);
+      }
+    }
+
+    async function deleteItem(id) {
+      if (!confirm("Are you sure you want to delete this feedback document?")) return;
+      try {
+        await deleteDoc(doc(db, "feedbacks", id));
+        loadAdminFeedbacks();
+      } catch (err) {
+        alert("Failed to delete feedback: " + err.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
+    }
+  </script>
+</body>
+</html>
