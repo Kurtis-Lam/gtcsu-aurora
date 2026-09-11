@@ -148,7 +148,7 @@
   }
   .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 
-  .offers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .offers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; align-items: start; }
 
   .offer-card {
     background: var(--glass-bg); border: 1px solid var(--glass-border);
@@ -241,7 +241,55 @@
       </p>
     </div>
 
-    <!-- Section 1: Campus Welfare -->
+    <!-- Section 1: Special Merchant Discounts -->
+    <div class="section-block">
+      <h2 class="section-heading i18n" data-en="Special Merchant Discounts" data-zh="特約商戶優惠">Special Merchant Discounts</h2>
+      <div class="offers-grid">
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Theme Parks" data-zh="主題樂園">Theme Parks</span>
+            <h3 class="offer-title i18n" data-en="Theme Parks Exclusive Discount" data-zh="KKday 景點門票優惠">Theme Parks Exclusive Discount</h3>
+            <p class="offer-brief i18n" data-en="Extra 5% off tickets for HK Disneyland, Ocean Park, Ngong Ping 360." data-zh="經 KKday 購買迪士尼、海洋公園及昂坪360門票享額外95折。">Extra 5% off tickets for HK Disneyland, Ocean Park, Ngong Ping 360.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Partners:</strong> KKDay <br><strong>Offer:</strong> Extra 5% off via KKday platform using exclusive promo code (released after election)."
+                data-zh="<strong>商戶：</strong>香港迪士尼樂園、香港海洋公園、昂坪360纜車<br><strong>福利：</strong>通過 KKday 平台購票輸入專屬優惠碼可額外享 95 折優惠（優惠碼將於當選後發放）。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Transport" data-zh="交通出行">Transport</span>
+            <h3 class="offer-title i18n" data-en="HelloRide Exclusive Discount" data-zh="HelloRide 哈囉單車優惠">HelloRide Exclusive Discount</h3>
+            <p class="offer-brief i18n" data-en="Exclusive 12% off monthly and season passes." data-zh="享專屬 88 折單車月卡與季卡優惠。">Exclusive 12% off monthly and season passes.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>Partner:</strong> HelloRide<br><strong>Offer:</strong> Exclusive 12% off discount on monthly and season passes for GT students."
+                data-zh="<strong>商戶：</strong>HelloRide 哈囉單車<br><strong>福利：</strong>優才學生專屬 88 折購卡（月卡/季卡）優惠。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section 2: Campus Welfare -->
     <div class="section-block">
       <h2 class="section-heading i18n" data-en="Campus Welfare" data-zh="校內福利">Campus Welfare</h2>
       <div class="offers-grid">
@@ -249,7 +297,7 @@
         <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
             <span class="badge i18n" data-en="Winter Welfare" data-zh="冬季福利">Winter Welfare</span>
-            <h3 class="offer-title i18n" data-en="Heat Pack Distribution" data-zh="贈送暖包">Heat Pack Distribution</h3>
+            <h3 class="offer-title i18n" data-en="Warm Pack Distribution" data-zh="贈送暖包">Heat Pack Distribution</h3>
             <p class="offer-brief i18n" data-en="Free heat packs handed out on cold winter mornings." data-zh="於冬季一天早上，向同學免費贈送暖包。">Free heat packs handed out on cold winter mornings.</p>
           </div>
           <div class="details-wrapper">
@@ -269,13 +317,13 @@
         <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
             <span class="badge i18n" data-en="Summer Welfare" data-zh="夏季福利">Summer Welfare</span>
-            <h3 class="offer-title i18n" data-en="Ice Cream Treat" data-zh="雪糕派發">Ice Cream Treat</h3>
+            <h3 class="offer-title i18n" data-en="Free Ice Cream" data-zh="雪糕派發">Free Ice Cream </h3>
             <p class="offer-brief i18n" data-en="Free ice cream distributed on a hot summer day." data-zh="夏季時於一天免費贈送雪糕給同學解署。">Free ice cream distributed on a hot summer day.</p>
           </div>
           <div class="details-wrapper">
             <div class="details-inner">
               <div class="details-content i18n"
-                data-en="<strong>Brief:</strong> Free ice cream given out during summer to cool off students (limited quantity).<br><strong>Purpose:</strong> Bring cool treats in hot summer and add joy to campus life."
+                data-en="<strong>Brief:</strong> Free ice cream given out during summer to cool off students.<br><strong>Purpose:</strong> Bring cool treats in hot summer and add joy to campus life."
                 data-zh="<strong>簡介：</strong>夏季時於一天免費贈送雪糕給同學，為學生解暑（數量有限）。<br><strong>目的：</strong>在炎夏帶來涼快的甜品，增添校園生活的歡樂氣氛。">
               </div>
             </div>
@@ -289,14 +337,14 @@
         <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
             <span class="badge i18n" data-en="Summer Welfare" data-zh="夏季福利">Summer Welfare</span>
-            <h3 class="offer-title i18n" data-en="Watermelon Treat" data-zh="西瓜派發">Watermelon Treat</h3>
+            <h3 class="offer-title i18n" data-en="Free Watermelon" data-zh="西瓜派發">Free Watermelon</h3>
             <p class="offer-brief i18n" data-en="Fresh watermelon slices distributed during summer." data-zh="夏季免費派發切塊西瓜，沁涼消暑。">Fresh watermelon slices distributed during summer.</p>
           </div>
           <div class="details-wrapper">
             <div class="details-inner">
               <div class="details-content i18n"
-                data-en="<strong>Brief:</strong> Free watermelon distribution on a summer day (limited quantity).<br><strong>Purpose:</strong> Provide diversified summer treats for students to enjoy refreshing fruits."
-                data-zh="<strong>簡介：</strong>夏季時於一天免費派發西瓜給同學，為學生解暑（數量有限）。<br><strong>目的：</strong>提供多元化的夏日解暑福利，讓同學享受消暑食品。">
+                data-en="<strong>Brief:</strong> Free watermelon distribution on a summer day (limited quantity, first come first served).<br><strong>Purpose:</strong> Provide diversified summer treats for students to enjoy refreshing fruits."
+                data-zh="<strong>簡介：</strong>夏季時於一天免費派發西瓜給同學，為學生解暑（數量有限，送完即止）。<br><strong>目的：</strong>提供多元化的夏日解暑福利，讓同學享受消暑食品。">
               </div>
             </div>
           </div>
@@ -329,13 +377,13 @@
         <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
             <span class="badge i18n" data-en="Daily Care" data-zh="日常關懷">Daily Care</span>
-            <h3 class="offer-title i18n" data-en="Umbrella Loan Service" data-zh="借傘服務">Umbrella Loan Service</h3>
-            <p class="offer-brief i18n" data-en="Free umbrella rental for rainy days." data-zh="雨天提供雨傘借用服務，方便同學放學。">Free umbrella rental for rainy days.</p>
+            <h3 class="offer-title i18n" data-en="Umbrella Borrowing Service" data-zh="借傘服務">Umbrella Borrowing Service</h3>
+            <p class="offer-brief i18n" data-en="Providing umbrellas on rainy days." data-zh="雨天提供雨傘借用服務，方便同學放學。">Free umbrella rental for rainy days.</p>
           </div>
           <div class="details-wrapper">
             <div class="details-inner">
               <div class="details-content i18n"
-                data-en="<strong>Brief:</strong> Rain umbrellas available for students in need (limited quantity).<br><strong>Purpose:</strong> Convenience for students who forgot to bring umbrellas on rainy days."
+                data-en="<strong>Brief:</strong> Umbrellas available for students in need (limited quantity).<br><strong>Purpose:</strong> Convenience for students who forgot to bring umbrellas on rainy days."
                 data-zh="<strong>簡介：</strong>在雨天時提供雨傘予有需要的同學（數量有限）。<br><strong>目的：</strong>方便無帶雨傘的同學放學時使用。">
               </div>
             </div>
@@ -349,13 +397,13 @@
         <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
             <span class="badge i18n" data-en="Sports Day" data-zh="陸運會福利">Sports Day</span>
-            <h3 class="offer-title i18n" data-en="Sports Day Drink Welfare" data-zh="陸運會冷飲福利">Sports Day Drink Welfare</h3>
+            <h3 class="offer-title i18n" data-en="Cold Drinks Welfare" data-zh="陸運會冷飲福利">Cold Drinks Welfare</h3>
             <p class="offer-brief i18n" data-en="Sports drinks provided for cover design competition winners." data-zh="為陸運會封面設計得獎班別提供冷飲。">Sports drinks provided for cover design competition winners.</p>
           </div>
           <div class="details-wrapper">
             <div class="details-inner">
               <div class="details-content i18n"
-                data-en="<strong>Brief:</strong> Sports drinks provided for winning classes on Sports Day.<br><strong>Purpose:</strong> Encourage class creativity and hydrate athletes and cheering squads."
+                data-en="<strong>Brief:</strong> Sports drinks provided to winning classes of the Sports Day Booklet Cover Design Competition.<br><strong>Purpose:</strong> Encourage class creativity and hydrate athletes and cheering squads."
                 data-zh="<strong>簡介：</strong>為陸運會小冊子封面設計比賽得獎班別提供運動飲料。<br><strong>目的：</strong>鼓勵班級發揮創意並投入陸運會，同時為健兒與打氣團隊補充水分。">
               </div>
             </div>
@@ -369,7 +417,7 @@
         <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
             <span class="badge i18n" data-en="Sports Day" data-zh="陸運會福利">Sports Day</span>
-            <h3 class="offer-title i18n" data-en="Water Transfer Tattoos" data-zh="陸運會水印貼紙">Water Transfer Tattoos</h3>
+            <h3 class="offer-title i18n" data-en="Washable Tattoos" data-zh="陸運會水印貼紙">Washable Tattoos</h3>
             <p class="offer-brief i18n" data-en="Fun 1-day washable tattoos provided during Sports Day." data-zh="提供一日即可洗淨的水印貼紙，升溫陸運會氣氛。">Fun 1-day washable tattoos provided during Sports Day.</p>
           </div>
           <div class="details-wrapper">
@@ -409,42 +457,22 @@
       </div>
     </div>
 
-    <!-- Section 2: External Merchant Discounts -->
+    <!-- Section 3: External Welfares -->
     <div class="section-block">
-      <h2 class="section-heading i18n" data-en="Merchant Discounts & External Welfare" data-zh="校外福利與特約商戶">Merchant Discounts & External Welfare</h2>
+      <h2 class="section-heading i18n" data-en="External Welfares" data-zh="校外福利">External Welfares</h2>
       <div class="offers-grid">
-
-        <div class="offer-card fade-in" onclick="toggleCard(this)">
-          <div>
-            <span class="badge i18n" data-en="Theme Parks" data-zh="主題樂園">Theme Parks</span>
-            <h3 class="offer-title i18n" data-en="KKday Theme Parks Discount" data-zh="Theme Park 平台優惠">KKday Theme Parks Discount</h3>
-            <p class="offer-brief i18n" data-en="Extra 5% off tickets for HK Disneyland, Ocean Park, Ngong Ping 360." data-zh="經 KKday 購買迪士尼、海洋公園及昂坪360門票享額外95折。">Extra 5% off tickets for HK Disneyland, Ocean Park, Ngong Ping 360.</p>
-          </div>
-          <div class="details-wrapper">
-            <div class="details-inner">
-              <div class="details-content i18n"
-                data-en="<strong>Partners:</strong> HK Disneyland, Ocean Park, Ngong Ping 360<br><strong>Offer:</strong> Extra 5% off via KKday platform using exclusive promo code (released after election)."
-                data-zh="<strong>商戶：</strong>香港迪士尼樂園、香港海洋公園、昂坪360纜車<br><strong>福利：</strong>通過 KKday 平台購票輸入專屬優惠碼可額外享 95 折優惠（優惠碼將於當選後發放）。">
-              </div>
-            </div>
-          </div>
-          <div class="expand-indicator">
-            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </div>
-        </div>
 
         <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
             <span class="badge i18n" data-en="Food & Drinks" data-zh="餐飲美食">Food & Drinks</span>
             <h3 class="offer-title i18n" data-en="Dining & Drink Special Offers" data-zh="周邊美食與茶飲優惠">Dining & Drink Special Offers</h3>
-            <p class="offer-brief i18n" data-en="Exclusive student discounts across 15+ popular food & beverage shops." data-zh="超過15間特色餐廳及手搖飲品專享學生折扣。">Exclusive student discounts across 15+ popular food & beverage shops.</p>
+            <p class="offer-brief i18n" data-en="Exclusive student discounts across 18+ popular food & beverage shops." data-zh="超過18間特色餐廳及手搖飲品專享學生折扣。">Exclusive student discounts across 18+ popular food & beverage shops.</p>
           </div>
           <div class="details-wrapper">
             <div class="details-inner">
               <div class="details-content i18n"
-                data-en="• <strong>宏富雲南米線:</strong> Free cold/hot drink with regular noodle dish.<br>• <strong>厚興瑜記手撕雞:</strong> Free extra noodles/rice.<br>• <strong>豪大大雞排:</strong> Free boxed drink on orders over $50.<br>• <strong>茶魚飯后:</strong> Student meals / weekday student discounts.<br>• <strong>腸粉王:</strong> $2 off over $35.<br>• <strong>三寳車仔麵:</strong> $5 off over $60.<br>• <strong>桂花小幸 / milkshahk / @kr_cafe_hk:</strong> $5 off.<br>• <strong>秋田冰室 / More yogurt / 佐賀燒肉谷:</strong> 10% OFF.<br>• <strong>茶大椰:</strong> 15% OFF.<br>• <strong>萬波:</strong> $3 off."
-                data-zh="• <strong>宏富雲南米線：</strong>凡正價購買麵食送冷/熱飲一杯<br>• <strong>厚興瑜記手撕雞專門店：</strong>飯麵免費加底<br>• <strong>豪大大雞排：</strong>消費滿$50送紙包飲品一包<br>• <strong>茶魚飯后：</strong>平日學生優惠及優才專屬學生餐<br>• <strong>腸粉王：</strong>消費滿$35減$2<br>• <strong>三寳車仔麵：</strong>消費滿$60減$5<br>• <strong>桂花小幸 / milkshahk / @kr_cafe_hk：</strong>立減$5<br>• <strong>秋田冰室 / More yogurt / 佐賀燒肉谷：</strong>全單9折<br>• <strong>茶大椰：</strong>學生 85 折<br>• <strong>萬波：</strong>學生減$3">
+                data-en=" <strong>宏富雲南米線:</strong> Free cold/hot drink with regular-priced noodle dish.<br> <strong>厚興瑜記手撕雞專門店:</strong> Free extra noodles/rice.<br> <strong>豪大大雞排:</strong> Free boxed drink on orders over $50.<br> <strong>茶魚飯后:</strong> Mon–Fri student discount with student ID; GT student meal offer on Sat.<br> <strong>腸粉王:</strong> $2 off over $35.<br> <strong>三寳車仔麵:</strong> $5 off over $60.<br> <strong>桂花小幸:</strong> $5 off for students.<br> <strong>@kr_cafe_hk:</strong> $5 off single items.<br> <strong>@tnmshophk:</strong> Free upgrade + $5 discount coupon.<br> <strong>milkshahk:</strong> $5 off for students.<br> <strong>秋田冰室:</strong> 10% off for students.<br> <strong>@catstearoom:</strong> $12 off weekday entry fee.<br> <strong>萬波:</strong> $3 off for students.<br> <strong>茶大椰:</strong> 15% off for students.<br> <strong>More yogurt:</strong> 10% off for students.<br> <strong>山見:</strong> Free 30-min extension on main menu (>20 people).<br> <strong>百樂門:</strong> Discount rate negotiated based on current menu.<br> <strong>佐賀燒肉谷:</strong> 10% off total bill for students (electronic payment)."
+                data-zh=" <strong>宏富雲南米線：</strong>凡正價購買麵食送冷/熱飲一杯<br> <strong>厚興瑜記手撕雞專門店：</strong>飯麵免費加底<br> <strong>豪大大雞排：</strong>消費滿$50送紙包飲品一包<br> <strong>茶魚飯后：</strong>星期一至五出示學生證即有學生優惠，星期六優才學生可享學生餐優惠<br> <strong>腸粉王：</strong>消費滿$35減$2<br> <strong>三寳車仔麵：</strong>消費滿$60減$5<br> <strong>桂花小幸：</strong>學生減$5<br> <strong>@kr_cafe_hk：</strong>單點減$5<br> <strong>@tnmshophk：</strong>免費升級+$5優惠券<br> <strong>milkshahk：</strong>學生減$5<br> <strong>秋田冰室：</strong>學生9折<br> <strong>@catstearoom：</strong>閒日入場費減$12<br> <strong>萬波：</strong>學生減$3<br> <strong>茶大椰：</strong>學生85折<br> <strong>More yogurt：</strong>學生9折<br> <strong>山見：</strong>主餐牌免費加時30min（>20人）<br> <strong>百樂門：</strong>會根據當時菜單內容商議雙方可接受的優惠折扣<br> <strong>佐賀燒肉谷：</strong>學生全單9折（電子支付）">
               </div>
             </div>
           </div>
@@ -458,13 +486,13 @@
           <div>
             <span class="badge i18n" data-en="Class Apparel" data-zh="班衫班T">Class Apparel</span>
             <h3 class="offer-title i18n" data-en="Class T-Shirt Printing Discounts" data-zh="班T團購專屬優惠">Class T-Shirt Printing Discounts</h3>
-            <p class="offer-brief i18n" data-en="Up to 25% off class tees from 10+ printing partners." data-zh="超過10間知名班T印製公司提供低至75折與跨班滿減。">Up to 25% off class tees from 10+ printing partners.</p>
+            <p class="offer-brief i18n" data-en="Up to 25% off class tees and exclusive perks from 12 printing partners." data-zh="超過12間知名班T印製公司提供低至75折、跨班滿減與免費禮遇。">Up to 25% off class tees and exclusive perks from 12 printing partners.</p>
           </div>
           <div class="details-wrapper">
             <div class="details-inner">
               <div class="details-content i18n"
-                data-en="• <strong>@inbudget_printing:</strong> $100 off per class, $200 off for 2 classes, $360 off for 3.<br>• <strong>@once_clothing__:</strong> 20% OFF.<br>• <strong>@ohlook_hk:</strong> Combined classes up to $1100 off.<br>• <strong>@printyeala:</strong> 15% off + free tee for class teacher.<br>• <strong>@ttfortee_hk:</strong> $100 off T-shirts / $200 off Hoodies per class.<br>• <strong>@class3hk / @marking_printing:</strong> 15% OFF."
-                data-zh="• <strong>@inbudget_printing：</strong>一班減$100，兩班減$200，三班減$360<br>• <strong>@once_clothing__：</strong>8折優惠<br>• <strong>@ohlook_hk：</strong>聯班優惠高達減$1100<br>• <strong>@printyeala：</strong>全單85折，免費送一件畀班主任<br>• <strong>@ttfortee_hk：</strong>Tee類每班減$100，外套類每班減$200<br>• <strong>@class3hk / @marking_printing：</strong>85折優惠及免費設計圖">
+                data-en="<strong>@inbudget_printing:</strong> $100 off 1 class, $200 off 2, $360 off 3; free SF Express for joint classes, free mockups & draft conversion.<br><strong>@once_clothing__:</strong> 20% OFF total bill.<br><strong>@tp3.hk:</strong> 10% off for 15+ pcs, 15% off for 30+ pcs.<br><strong>@ohlook_hk:</strong> $120 off T-shirts / $200 off Hoodies per class; joint classes up to $1100 off.<br><strong>@ohtee_hk:</strong> Free delivery for 20+ pcs; $100 off per class for joint orders.<br><strong>@teetimeprinting:</strong> Buy 30+ get 1 free; 15% off for 2 classes, 20% off for 3, up to 25% off for 4.<br><strong>@class3hk:</strong> 15% off class tees, free digital mockups and free delivery.<br><strong>@marking_printing:</strong> Up to 15% off year-round; joint class/house offers up to $8500 discount.<br><strong>@ttfortee_hk:</strong> $100 off T-shirts/Polos, $200 off Hoodies/Outerwear per class.<br><strong>@printyeala:</strong> 15% off total order, 1 free tee for class teacher, extra joint class discounts, free mockup & delivery.<br><strong>@freepointcw:</strong> 10% to 30% off regular price based on printing specs.<br><strong>@a1_print:</strong> 10% off joint orders, free tee for class teacher, free mockup & SF Express delivery, re-order price protection."
+                data-zh="<strong>@inbudget_printing：</strong>一班減$100，兩班減$200，三班減$360；聯班免費寄順豐，免費電腦圖及手稿轉換咨詢。<br><strong>@once_clothing__：</strong>全單 8 折優惠。<br><strong>@tp3.hk：</strong>買滿 15 件 9 折，30 件 85 折。<br><strong>@ohlook_hk：</strong>每班 TEE 款減$120 / 外套衛衣款減$200；聯班最高減$1100。<br><strong>@ohtee_hk：</strong>班衫 (20件以上) 免費送貨；聯班訂購每班減$100。<br><strong>@teetimeprinting：</strong>一班滿 30 件送 1 件，2 班 85 折，3 班 8 折，4 班低至 75 折。<br><strong>@class3hk：</strong>訂購班衫 85 折，提供免費電腦繪圖及免費送貨。<br><strong>@marking_printing：</strong>全年低至 85 折；聯班/聯社優惠高達$8500，全校禮品訂製低至 85 折。<br><strong>@ttfortee_hk：</strong>T-shirt/Polo 類每班減$100，外套類每班減$200。<br><strong>@printyeala：</strong>全單 85 折，送班主任 Tee，聯班折上折，免費整電腦圖及送貨。<br><strong>@freepointcw：</strong>正價 7 至 9 折優惠（視乎印刷工藝）。<br><strong>@a1_print：</strong>聯班 9 折，送班主任 Tee，免費電腦圖及順豐送貨，遺失補單重製享原價保障。">
               </div>
             </div>
           </div>
@@ -478,13 +506,13 @@
           <div>
             <span class="badge i18n" data-en="Studies & Tutors" data-zh="學習與補習">Studies & Tutors</span>
             <h3 class="offer-title i18n" data-en="Academic & Tutoring Offers" data-zh="補習與學習資源優惠">Academic & Tutoring Offers</h3>
-            <p class="offer-brief i18n" data-en="Discounts on study rooms, notesity, and tutoring platforms." data-zh="自修室、Notesity筆記及多家補習導師學費折扣。">Discounts on study rooms, notesity, and tutoring platforms.</p>
+            <p class="offer-brief i18n" data-en="Discounts across 11+ tutoring platforms, revision notes, and study spaces." data-zh="超過11間補習平台、DSE精讀筆記及自修室專享折扣。">Discounts across 11+ tutoring platforms, revision notes, and study spaces.</p>
           </div>
           <div class="details-wrapper">
             <div class="details-inner">
               <div class="details-content i18n"
-                data-en="• <strong>deskonehk:</strong> 10% off for visits 3h or more.<br>• <strong>notesity.hk:</strong> 5% off site-wide code [NOTESITY2627].<br>• <strong>Tutor Circle:</strong> Special code [2526SU].<br>• <strong>tutor.buddy:</strong> 30% off 1st lesson (50% off for 2+ students).<br>• <strong>afterschool.dse:</strong> 7 subjects with 9 free DSE notes.<br>• <strong>hkdsechemistry / Mr Leung English:</strong> Direct tuition deductions."
-                data-zh="• <strong>deskonehk：</strong>到訪使用 3 小時或以上享 9 折<br>• <strong>notesity.hk：</strong>輸入【NOTESITY2627】享 95 折<br>• <strong>Tutor Circle 尋補：</strong>填寫【2526SU】優惠碼<br>• <strong>tutor.buddy：</strong>首堂 7 折（二人同行首堂半價）<br>• <strong>afterschool.dse：</strong>報讀送 9 份 DSE 精讀筆記">
+                data-en="<strong>@definingeducationhk:</strong> Group enrollment discounts.<br><strong>@tutorcircle:</strong> Enter promo code [2526SU] when applying.<br><strong>@deskonehk:</strong> 10% off for visits of 3 hours or more.<br><strong>@notesity.hk:</strong> 5% off sitewide with promo code [NOTESITY2627].<br><strong>@tutor.buddy:</strong> 30% off 1st lesson for 1 student; 50% off 1st lesson for 2+ students.<br><strong>@mrleung_english:</strong> 20% off 1st lesson.<br><strong>@pastpaper_perfect:</strong> 5% off storewide.<br><strong>@pastpaper_king:</strong> 5% off with redemption code.<br><strong>@upskyler.tutor:</strong> $50 tuition deduction when spending $720+ on first 2 lessons.<br><strong>@hkdsechemistry:</strong> $50 off per course.<br><strong>@afterschool.dse:</strong> 7 subjects with 9 free DSE revision notes."
+                data-zh="<strong>@definingeducationhk：</strong>團體報讀優惠。<br><strong>@tutorcircle：</strong>申請補習時填寫【2526SU】優惠碼。<br><strong>@deskonehk：</strong>到訪使用 3 小時或以上享 9 折優惠。<br><strong>@notesity.hk：</strong>結帳前輸入【NOTESITY2627】享全單 95 折。<br><strong>@tutor.buddy：</strong>一位學生補習第一堂 7 折；兩位或以上學生一同補習第一堂半價。<br><strong>@mrleung_english：</strong>首堂 8 折優惠。<br><strong>@pastpaper_perfect：</strong>全線商品 95 折。<br><strong>@pastpaper_king：</strong>以兌換碼領取 95 折。<br><strong>@upskyler.tutor：</strong>首兩堂滿 $720 獲 $50 學費扣減。<br><strong>@hkdsechemistry：</strong>每個 course 減 $50。<br><strong>@afterschool.dse：</strong>報讀 7 科共送 9 份 DSE 精讀筆記。">
               </div>
             </div>
           </div>
@@ -497,14 +525,94 @@
         <div class="offer-card fade-in" onclick="toggleCard(this)">
           <div>
             <span class="badge i18n" data-en="Lifestyle & Entertainment" data-zh="休閒娛樂">Lifestyle & Entertainment</span>
-            <h3 class="offer-title i18n" data-en="Party Rooms, Cameras & Accessories" data-zh="Party Room、相機與生活良品">Party Rooms, Cameras & Accessories</h3>
-            <p class="offer-brief i18n" data-en="Discounts for FoxInABox, Snapio, HelloRide, camera stores." data-zh="密室逃脫、Snapio自拍亭、哈囉單車及菲林相機門市折扣。">Discounts for FoxInABox, Snapio, HelloRide, camera stores.</p>
+            <h3 class="offer-title i18n" data-en="Party Rooms & Escape Rooms" data-zh="派對房間與密室逃脫">Party Rooms & Escape Rooms</h3>
+            <p class="offer-brief i18n" data-en="Exclusive discounts for Soul Seoul Room, The Between Us Studio, and FoxInABox." data-zh="專享 Soul Seoul Room、The Between Us Studio 及 FoxInABox 優惠。">Exclusive discounts for Soul Seoul Room, The Between Us Studio, and FoxInABox.</p>
           </div>
           <div class="details-wrapper">
             <div class="details-inner">
               <div class="details-content i18n"
-                data-en="• <strong>HelloRide:</strong> 12% off monthly/season pass.<br>• <strong>Snapio (T.O.P Mong Kok):</strong> 20% off spend over $100.<br>• <strong>FoxInABox Escape Room:</strong> 10% off with student ID.<br>• <strong>kobo_camera:</strong> $80 cash discount on film camera/lens.<br>• <strong>kk_camera:</strong> 5% off storewide.<br>• <strong>fungworkshop:</strong> 10% off pottery experience.<br>• <strong>untouchedunited:</strong> 20% off promo [GTEYC_AURORA2627]."
-                data-zh="• <strong>HelloRide 哈囉單車：</strong>專屬 88 折購卡優惠<br>• <strong>Snapio (旺角 T.O.P)：</strong>滿 $100 享 8 折<br>• <strong>FoxInABox 密室逃脫：</strong>出示學生證 9 折<br>• <strong>kobo_camera：</strong>相機/鏡頭現折 $80<br>• <strong>kk_camera：</strong>全單 95 折<br>• <strong>fungworkshop 陶瓷班：</strong>專屬 9 折優惠">
+                data-en="<strong>【Party Rooms】</strong><br><strong>@soulseoulroom:</strong> Wear school uniform or present student ID: spend HKD $100+ in-store and follow official IG to get 5% off total bill; get 1 free greeting card when ordering bouquets in-store.<br><strong>@thebetweenus.studio:</strong> Present student ID for 12% off year-round, 20% off for 15+ people, plus 1 person free if over 20 people. Birthday star of the month gets 1 free personal photo session (1 scene or Korean style photography; prior notification & HKID required).<br><br><strong>【Escape Room / LARP】</strong><br><strong>@foxinaboxhongkong:</strong> Present student ID for 10% off regular price."
+                data-zh="<strong>【Party rooms】</strong><br><strong>@soulseoulroom：</strong>穿著校服或出示學生證：於門市購物滿 HKD $100 或以上並 Follow IG 官方帳號可獲全單 95 折優惠，到門市訂購花束時，可享額外免費贈送心意卡一張。<br><strong>@thebetweenus.studio：</strong>出示學生證可獲得：全年可享 88 折優惠，15 人或以上 8 折，如果多於 20 人可再 free 一個人。該月份壽星可獲得個人攝影服務一次（可選擇一個場景或韓式攝影，需預先通知及出示身份證）。<br><br><strong>【Escape room / LARP】</strong><br><strong>@foxinaboxhongkong：</strong>出示學生證可獲得原價 9 折優惠。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Clothing &amp; Accessories" data-zh="服飾與飾物">Clothing &amp; Accessories</span>
+            <h3 class="offer-title i18n" data-en="Clothing &amp; Accessories Offers" data-zh="服飾與飾物優惠">Clothing &amp; Accessories Offers</h3>
+            <p class="offer-brief i18n" data-en="Exclusive discounts on apparel, sportswear, eyewear, contact lenses, and accessories." data-zh="精選潮流服飾、運動裝備、眼鏡及飾物專享折扣優惠。">Exclusive discounts on apparel, sportswear, eyewear, contact lenses, and accessories.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>【Clothing】</strong><br><strong>@novelty_sportswear:</strong> 10% off upon presenting student ID.<br><strong>@whoops.hk:</strong> 10% off + free shipping on orders over $100 with student ID.<br><strong>@untouchedunited:</strong> 20% off selected house brand collections (Promo code: GTEYC_AURORA2627, <a href='https://untouchedunited.com/GTEYC_AURORA2627' target='_blank' style='color: var(--aurora-cyan);'>Offer Link</a>).<br><br><strong>【Accessories】</strong><br><strong>@ho.mor.ear:</strong> Buy 3 get 1 free on all items by following shop IG.<br><strong>@pepperoptical:</strong> 30% off lenses upon presenting student ID.<br><strong>@lovelenshk:</strong> Buy 2 get 1 free on regular-priced monthly and yearly contact lenses.<br><strong>@topick.store.hk:</strong> $50 off on online orders over $500 with promo code Aurora50."
+                data-zh="<strong>【Clothing 服飾】</strong><br><strong>@novelty_sportswear：</strong>出示學生證提供九折優惠<br><strong>@whoops.hk：</strong>超過$100：出示學生證全單9折+免運費<br><strong>@untouchedunited：</strong>20% off selected collections 自家品牌 (優惠碼：GTEYC_AURORA2627，<a href='https://untouchedunited.com/GTEYC_AURORA2627' target='_blank' style='color: var(--aurora-cyan);'>優惠連結</a>)<br><br><strong>【Accessories 飾物與配件】</strong><br><strong>@ho.mor.ear：</strong>Follow 本小店 IG 就所有產品買三送一優惠<br><strong>@pepperoptical：</strong>凡出示學生證即可獲得鏡片7折<br><strong>@lovelenshk：</strong>正價月拋、年拋買二送一<br><strong>@topick.store.hk：</strong>網店買滿$500減$50，出示優惠碼 Aurora50">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Workshops" data-zh="體驗工作坊">Workshops</span>
+            <h3 class="offer-title i18n" data-en="Pottery & Craft Workshops" data-zh="手作與陶瓷工作坊優惠">Pottery & Craft Workshops</h3>
+            <p class="offer-brief i18n" data-en="Exclusive discounts on pottery trial courses and group workshops." data-zh="陶瓷體驗班及團隊課程專享學生優惠。">Exclusive discounts on pottery trial courses and group workshops.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>@fungworkshop:</strong> Exclusive promo code with valid student ID: [0726_SCDIS]<br>* 10% off designated pottery trial courses.<br>* Team discount available for group courses of 4 or more people (cannot be combined with other concurrent offers)."
+                data-zh="<strong>@fungworkshop：</strong>持有效學生證享專屬優惠碼【0726_SCDIS】<br>* 參加陶瓷體驗班指定課程，可獲 9 折優惠<br>* 4 人或以上團隊課程提供團隊優惠（此優惠不能與同期優惠一併使用）">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Stationery" data-zh="文具精品">Stationery</span>
+            <h3 class="offer-title i18n" data-en="Stationery & Models Discounts" data-zh="文具、玩具及模型專享優惠">Stationery & Models Discounts</h3>
+            <p class="offer-brief i18n" data-en="10% off storewide at selected local stationery and gift shops upon minimum spend." data-zh="指定文具模型行及禮品店消費滿額享 9 折優惠。">10% off storewide at selected local stationery and gift shops upon minimum spend.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>中記文具玩具模型行:</strong> 10% off on purchases of $50 or more.<br><strong>敏達文具禮品:</strong> 10% off on purchases of $100 or more."
+                data-zh="<strong>中記文具玩具模型行：</strong>買滿 $50 享 9 折優惠。<br><strong>敏達文具禮品：</strong>買滿 $100 享 9 折優惠。">
+              </div>
+            </div>
+          </div>
+          <div class="expand-indicator">
+            <span class="i18n" data-en="Click for Details" data-zh="點擊查看詳情">Click for Details</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="offer-card fade-in" onclick="toggleCard(this)">
+          <div>
+            <span class="badge i18n" data-en="Lifestyle & Photography" data-zh="生活與攝影">Lifestyle & Photography</span>
+            <h3 class="offer-title i18n" data-en="Photography, Florist & Travel Offers" data-zh="攝影、花藝與生活綜合優惠">Photography, Florist & Travel Offers</h3>
+            <p class="offer-brief i18n" data-en="Discounts across photo booths, film cameras, florists, rental studios, and travel." data-zh="自拍館、菲林相機、花店、影樓及旅遊專享學生折扣。">Discounts across photo booths, film cameras, florists, rental studios, and travel.</p>
+          </div>
+          <div class="details-wrapper">
+            <div class="details-inner">
+              <div class="details-content i18n"
+                data-en="<strong>@snapio.io:</strong> Enjoy 20% off on spending HK$100+ at Snapio Mong Kok T.O.P store (*Applicable to photo taking experience only, not applicable to merchandise purchase or photo reprint service).<br><strong>@kiitosflorist:</strong> Follow IG & state school name to enjoy 10% off all products.<br><strong>@kobo_camera:</strong> Follow IG (kobo_camera), purchase any film camera or lens in-store (*excl. film/other items/on-sale items), show student ID at checkout to receive $80 cash discount.<br><strong>@kk_camera:</strong> Present student ID & mention student union discount for 5% off total bill.<br><strong>@s_studio.hk:</strong> 5% off total bill (applicable to Sat/Sun any time & all branches, must present student ID via IG DM/Wts). Promotional perks: 1) Student discount -$5/hr; 2) Extra -$15 discount for 3+ consecutive hours; 3) Tag studio for KT dance video to get a 1-hour free voucher for next visit.<br><strong>@tecnix.travel:</strong> Up to 30% off."
+                data-zh="<strong>@snapio.io：</strong>凡到 Snapio 旺角 T.O.P 門市影相，消費滿 HK$100 即可享受 8 折優惠（*優惠只適用於拍照體驗，不適用於商品購買或照片重印服務）。<br><strong>@kiitosflorist：</strong>Follow IG 及講學校名即享有全部貨品 9 折優惠。<br><strong>@kobo_camera：</strong>Follow 本店 IG (kobo_camera)，於門市選購「任何款式菲林相機或鏡頭」（*菲林/其他貨品/特價貨品除外），結賬時出示學生證即獲 $80 現金折扣優惠。<br><strong>@kk_camera：</strong>出示學生證及表明要使用學生會優惠，可以全單 95 折。<br><strong>@s_studio.hk：</strong>全單 95 折（適用於星期六日任何時段及全線分店，需透過 IG DM/Wts 出示學生證）。宣傳期間原優惠：1) 學生優惠每小時減 $5；2) 連續預訂滿 3 小時額外再減 $15；3) KT 跳舞 tag studio，下次有一小時免費優惠券。<br><strong>@tecnix.travel：</strong>低至 7 折優惠。">
               </div>
             </div>
           </div>
