@@ -3,3 +3,6 @@
 firebase.json
 keys.txt
 .DS_Store
+
+public/assets/profiles
+public/assets/aurora-legacy-logo.png
