@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora - About Us</title>
+<link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
+
+<!-- Asset Preloading -->
+<link rel="preload" href="assets/aurora-logo.png" as="image">
+<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,500&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void: #050b12;
+    --deep: #0a1a20;
+    --ink: #dff6f2;
+    --aurora-teal: #2fe6b8;
+    --aurora-green: #6ee89a;
+    --aurora-cyan: #7fe9f0;
+    --aurora-violet: #8f8cf0;
+    --star: #ffffff;
+    --line: rgba(223, 246, 242, 0.18);
+    --glass-bg: rgba(10, 26, 32, 0.55);
+    --glass-border: rgba(127, 233, 240, 0.2);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html,body{
+    min-height:100%;
+    background:var(--void);
+    color:var(--ink);
+    font-family:'Manrope', sans-serif;
+    overflow-x:hidden;
+  }
+
+  /* ---------- Solid Black Preloader Overlay ---------- */
+  #preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #000000;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+
+  body.is-loaded #preloader {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  /* ---------- Initial Hidden UI States ---------- */
+  .navbar, 
+  .header-section,
+  .section-block,
+  footer,
+  .lang-toggle {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.35s ease-in, transform 0.35s ease-in;
+    pointer-events: none;
+  }
+
+  /* Reveal sequence after preloader fades */
+  body.is-loaded .navbar,
+  body.is-loaded .header-section,
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.is-loaded .navbar { transition-delay: 0.15s; }
+  body.is-loaded .header-section { transition-delay: 0.35s; }
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+
+  /* ---------- Fade-in Scroll Reveal Effect ---------- */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  .fade-in.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Optimized Stagger Delays */
+  .card-grid .glass-card:nth-child(1) { transition-delay: 0.05s; }
+  .card-grid .glass-card:nth-child(2) { transition-delay: 0.10s; }
+  .card-grid .glass-card:nth-child(3) { transition-delay: 0.15s; }
+  .card-grid .glass-card:nth-child(4) { transition-delay: 0.20s; }
+  .card-grid .glass-card:nth-child(n+5) { transition-delay: 0.25s; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; }
+    .navbar, .header-section, .section-block, .fade-in, footer, .lang-toggle { 
+      transition: none !important; 
+      opacity: 1 !important; 
+      transform: none !important; 
+    }
+  }
+
+  /* ---------- Top Navigation Panel ---------- */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 4vw;
+    background: rgba(6, 13, 22, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(223, 246, 242, 0.12);
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+
+  .nav-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(127, 233, 240, 0.4);
+    box-shadow: 0 0 12px rgba(46, 230, 184, 0.25);
+  }
+
+  .nav-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 1.15rem;
+    color: #eafffb;
+    letter-spacing: 0.05em;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .nav-btn {
+    color: rgba(223, 246, 242, 0.85);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+  }
+
+  .nav-btn:hover, .nav-btn.active {
+    color: #ffffff;
+    border-color: rgba(127, 233, 240, 0.4);
+    background: rgba(127, 233, 240, 0.1);
+    box-shadow: 0 0 12px rgba(127, 233, 240, 0.2);
+  }
+
+  /* ---------- Hamburger Button ---------- */
+  .hamburger-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    padding: 0;
+    z-index: 102;
+  }
+
+  .hamburger-btn span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--ink);
+    border-radius: 2px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  }
+
+  .hamburger-btn.open span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .hamburger-btn.open span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger-btn.open span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* ---------- Mobile Navigation Overlay ---------- */
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 11, 18, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 98;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+  }
+
+  .nav-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* ---------- Floating Bottom-Right Language Button ---------- */
+  .lang-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #eafffb;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+  }
+
+  .lang-toggle:hover {
+    border-color: rgba(127, 233, 240, 0.8);
+    background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .lang-toggle svg {
+    width: 16px;
+    height: 16px;
+    stroke: rgba(223, 246, 242, 0.85);
+  }
+
+  /* ---------- Video Background ---------- */
+  .sky{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    overflow:hidden;
+    background: var(--void);
+  }
+
+  .bg-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+    filter: brightness(1);
+  }
+
+  .sky-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.2) 0%, rgba(5, 11, 18, 0.6) 100%),
+                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.7) 100%);
+    pointer-events: none;
+  }
+
+  /* ---------- Layout & Content ---------- */
+  .page-container {
+    position: relative;
+    z-index: 1;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 140px 6vw 80px;
+  }
+
+  .header-section {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  .page-subtitle {
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    color: var(--aurora-cyan);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    color: #ffffff;
+    margin-bottom: 16px;
+    text-shadow: 0 0 20px rgba(127, 233, 240, 0.3);
+  }
+
+  .page-description {
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: rgba(223, 246, 242, 0.8);
+  }
+
+  .section-block {
+    margin-bottom: 70px;
+  }
+
+  .section-heading {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem;
+    color: var(--aurora-teal);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* ---------- SU Info Card Styling ---------- */
+  .su-info-card {
+    line-height: 1.95;
+    font-size: 1.05rem;
+    color: rgba(223, 246, 242, 0.9);
+  }
+
+  .su-paragraph {
+    margin-bottom: 1.25rem;
+    text-align: justify;
+  }
+
+  .su-paragraph:last-child {
+    margin-bottom: 0;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+
+  .glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 28px;
+    transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+
+  .glass-card:hover {
+    transform: translateY(-4px) !important;
+    border-color: rgba(127, 233, 240, 0.5);
+  }
+
+  .team-card {
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    cursor: pointer;
+  }
+
+  .team-card:hover {
+    box-shadow: 0 0 20px rgba(46, 230, 184, 0.2);
+  }
+
+  /* Member Avatar Styling */
+  .avatar-wrapper {
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 16px;
+    position: relative;
+  }
+
+  .member-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--aurora-cyan);
+    box-shadow: 0 0 12px rgba(127, 233, 240, 0.25);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .team-card:hover .member-avatar {
+    transform: scale(1.05);
+    border-color: var(--aurora-teal);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.4);
+  }
+
+  /* Member Information Styling */
+  .member-role {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--aurora-teal);
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+  }
+
+  .member-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 4px;
+  }
+
+  .member-class {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(223, 246, 242, 0.65);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .member-handle {
+    font-size: 0.85rem;
+    color: var(--aurora-cyan);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 0 6vw 40px;
+    font-size: 0.78rem;
+    color: rgba(223, 246, 242, 0.4);
+  }
+
+  /* ---------- Mobile Drawer Media Query ---------- */
+  @media (max-width: 768px) {
+    .hamburger-btn {
+      display: flex;
+    }
+
+    .navbar {
+      justify-content: flex-start;
+      gap: 16px;
+      padding: 0.8rem 1rem;
+    }
+
+    .nav-title {
+      display: inline-block;
+    }
+
+    .nav-links {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      height: 100dvh;
+      background: rgba(10, 26, 32, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(127, 233, 240, 0.25);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 80px 20px 24px;
+      gap: 0.8rem;
+      transform: translateX(-100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 99;
+    }
+
+    .nav-links.active {
+      transform: translateX(0);
+    }
+
+    .nav-btn {
+      width: 100%;
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+    }
+
+    .lang-toggle {
+      bottom: 16px;
+      right: 16px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Black Preloader Overlay -->
+  <div id="preloader"></div>
+
+  <!-- Floating Bottom-Right Language Toggle Button -->
+  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="2" y1="12" x2="22" y2="12"></line>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1 4-10z"></path>
+    </svg>
+    <span id="lang-text">繁體中文</span>
+  </button>
+
+  <!-- Mobile Navigation Overlay -->
+  <div class="nav-overlay" id="nav-overlay"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Navigation">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <a href="index.html" class="nav-brand">
+      <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo" onerror="this.style.display='none'">
+      <span class="nav-title">Aurora</span>
+    </a>
+    <nav class="nav-links" id="nav-links">
+      <a href="aboutus.html" class="nav-btn active i18n" data-en="About Us" data-zh="關於我們">About Us</a>
+      <a href="activities.html" class="nav-btn i18n" data-en="Activities" data-zh="活動">Activities</a>
+      <a href="welfare.html" class="nav-btn i18n" data-en="Welfare" data-zh="福利">Welfare</a>
+      <a href="schedule.html" class="nav-btn i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
+      <a href="feedbacks.html" class="nav-btn i18n" data-en="Feedback" data-zh="意見反饋">Feedback</a>
+    </nav>
+  </header>
+
+  <!-- Video Background -->
+  <div class="sky">
+    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
+      <source src="assets/background.mp4" type="video/mp4">
+    </video>
+    <div class="sky-overlay"></div>
+  </div>
+
+  <main class="page-container">
+    <div class="header-section">
+      <h1 class="page-title i18n" data-en="About Aurora" data-zh="關於 Aurora">About Aurora</h1>
+      <p class="page-description i18n" data-en="&ldquo;𝑺𝒑𝒂𝒓𝒌𝒆𝒅 𝒃𝒚 𝑨𝒖𝒓𝒐𝒓𝒂, 𝒖𝒏𝒊𝒕𝒆𝒅 𝒘𝒊𝒕𝒉 𝑯𝒂𝒓𝒎𝒐𝒏𝒊𝒂&rdquo;<br>As Student Union Cabinet No. 1 for G.T. (Ellen Yeung) College 2026–27, we are dedicated to bringing a vibrant and warm campus experience to all students." data-zh="「𝑺𝒑𝒂𝒓𝒌𝒆𝒅 𝒃𝒚 𝑨𝒖𝒓𝒐𝒓𝒂, 𝒖𝒏𝒊𝒕𝒆𝒅 𝒘𝒊𝒕𝒉 𝑯𝒂𝒓𝒎𝒐𝒏𝒊𝒂」<br>作為 2026–27 年度優才（楊殷有娣）書院 1 號候選內閣，我們致力為師生營造愉快充實的校園生活。">
+        "𝑺𝒑𝒂𝒓𝒌𝒆𝒅 𝒃𝒚 𝑨𝒖𝒓𝒐𝒓𝒂, 𝒖𝒏𝒊𝒕𝒆𝒅 𝒘𝒊𝒕𝒉 𝑯𝒂𝒓𝒎𝒐𝒏𝒊𝒂"<br>
+        As Student Union Cabinet No. 1 for G.T. (Ellen Yeung) College 2026–27, we are dedicated to bringing a vibrant and warm campus experience to all students.
+      </p>
+    </div>
+
+    <!-- PART 1: About the Student Union -->
+    <div class="section-block fade-in">
+      <h2 class="section-heading i18n" data-en="Our Vision" data-zh="Aurora 的理念">Our Vision</h2>
+      <div class="glass-card su-info-card">
+        <p class="su-paragraph i18n" 
+           data-en="Aurora represents the &ldquo;Aurora Borealis&rdquo;, a natural wonder formed by the interplay of vibrant colors in the dark night sky. We chose the name Aurora because we firmly believe that every student possesses unique strengths. Just as an aurora encompasses a spectrum of diverse colors, every student on campus shines with their own distinct radiance. We hope the Student Union will serve as a bridge of communication between students and the school, working together to foster a positive campus atmosphere." 
+           data-zh="Aurora 代表著「極光」，是黑夜中不同顏色交織而成的自然奇蹟。取名為Aurora，是因為我們深信每一位同學都有獨一無二的長處。正如極光包含著種種不同色彩，校園內的每一位學生亦都擁有著屬於自己獨特的光芒。我們希望學生會能夠成為學生與學校溝通的橋樑，合作建立良好的校園氛圍。">
+          Aurora represents the "Aurora Borealis", a natural wonder formed by the interplay of vibrant colors in the dark night sky. We chose the name Aurora because we firmly believe that every student possesses unique strengths. Just as an aurora encompasses a spectrum of diverse colors, every student on campus shines with their own distinct radiance. We hope the Student Union will serve as a bridge of communication between students and the school, working together to foster a positive campus atmosphere.
+        </p>
+        <p class="su-paragraph i18n" 
+           data-en="Furthermore, Aurora symbolizes &ldquo;Hope and Dawn&rdquo;. This reflects our cabinet's sincere determination to inspire students to actively and optimistically enjoy their campus life. We will earnestly listen to students' opinions and dedicate ourselves wholeheartedly to the school, teachers, and students—striving to create a joyful, fulfilling campus experience and leaving behind unforgettable memories of youth." 
+           data-zh="此外，極光亦象徵著「希望與破曉」。這代表著我們內閣真摯的決心，希望同學能夠積極，樂觀地享受校園生活。我們將認真聆聽同學們的意見，全心全力為學校和師生付出，致力為同學營造愉快充實的校園生活，留下一段難忘的青春回憶。">
+          Furthermore, Aurora symbolizes "Hope and Dawn". This reflects our cabinet's sincere determination to inspire students to actively and optimistically enjoy their campus life. We will earnestly listen to students' opinions and dedicate ourselves wholeheartedly to the school, teachers, and students—striving to create a joyful, fulfilling campus experience and leaving behind unforgettable memories of youth.
+        </p>
+      </div>
+    </div>
+
+    <!-- PART 2: Cabinet Members -->
+    <div class="section-block fade-in">
+      <h2 class="section-heading i18n" data-en="Cabinet Members" data-zh="成員">Cabinet Members</h2>
+      <div class="card-grid">
+
+        <!-- 1. President -->
+        <a href="https://instagram.com/samuel_w._so/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/samuel_w._so.jpg" alt="Samuel So" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Samuel+So';">
+          </div>
+          <div class="member-role i18n" data-en="President" data-zh="候選主席">President</div>
+          <div class="member-name i18n" data-en="Samuel So" data-zh="蘇南榮">Samuel So</div>
+          <div class="member-class">11A (20)</div>
+          <div class="member-handle">@samuel_w._so</div>
+        </a>
+
+        <!-- 2. Internal Vice President -->
+        <a href="https://instagram.com/xtshh_00/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/xtshh_00.jpg" alt="Jerry Xu" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Jerry+Xu';">
+          </div>
+          <div class="member-role i18n" data-en="Internal Vice President" data-zh="候選內務副主席">Internal Vice President</div>
+          <div class="member-name i18n" data-en="Jerry Xu" data-zh="徐兆睿">Jerry Xu</div>
+          <div class="member-class">11A (25)</div>
+          <div class="member-handle">@xtshh_00</div>
+        </a>
+
+        <!-- 3. External Vice President -->
+        <a href="https://instagram.com/gian_pang/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/gian_pang.jpg" alt="Gian Pang" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Gian+Pang';">
+          </div>
+          <div class="member-role i18n" data-en="External Vice President" data-zh="候選外務副主席">External Vice President</div>
+          <div class="member-name i18n" data-en="Gian Pang" data-zh="彭衍晴">Gian Pang</div>
+          <div class="member-class">11A (17)</div>
+          <div class="member-handle">@gian_pang</div>
+        </a>
+
+        <!-- 4. Secretary -->
+        <a href="https://instagram.com/the_smiley_katie/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/the_smiley_katie.jpg" alt="Katie Ngai" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Katie+Ngai';">
+          </div>
+          <div class="member-role i18n" data-en="Secretary" data-zh="候選秘書長">Secretary</div>
+          <div class="member-name i18n" data-en="Katie Ngai" data-zh="倪子淇">Katie Ngai</div>
+          <div class="member-class">11A (16)</div>
+          <div class="member-handle">@the_smiley_katie</div>
+        </a>
+
+        <!-- 5. Treasurer -->
+        <a href="https://instagram.com/marcuspoon1218/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/marcuspoon1218.jpg" alt="Marcus Poon" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Marcus+Poon';">
+          </div>
+          <div class="member-role i18n" data-en="Treasurer" data-zh="候選財政">Treasurer</div>
+          <div class="member-name i18n" data-en="Marcus Poon" data-zh="潘溢熙">Marcus Poon</div>
+          <div class="member-class">11A (19)</div>
+          <div class="member-handle">@marcuspoon1218</div>
+        </a>
+
+        <!-- 6. General Director -->
+        <a href="https://instagram.com/allysonhny/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/allysonhny.jpg" alt="Allyson Hui" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Allyson+Hui';">
+          </div>
+          <div class="member-role i18n" data-en="General Director" data-zh="候選總務幹事">General Director</div>
+          <div class="member-name i18n" data-en="Allyson Hui" data-zh="許諾怡">Allyson Hui</div>
+          <div class="member-class">10C (12)</div>
+          <div class="member-handle">@allysonhny</div>
+        </a>
+
+        <!-- 7. Activity Director -->
+        <a href="https://instagram.com/kage_no._.akuma/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/kage_no._.akuma.jpg" alt="Thomas Wong" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Thomas+Wong';">
+          </div>
+          <div class="member-role i18n" data-en="Activity Director" data-zh="候選活動幹事">Activity Director</div>
+          <div class="member-name i18n" data-en="Thomas Wong" data-zh="黃仲勤">Thomas Wong</div>
+          <div class="member-class">10E (14)</div>
+          <div class="member-handle">@kage_no._.akuma</div>
+        </a>
+
+        <!-- 8. Promotion Officer -->
+        <a href="https://instagram.com/a.c.y.t_/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/a.c.y.t_.jpg" alt="Agnes Chow" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Agnes+Chow';">
+          </div>
+          <div class="member-role i18n" data-en="Promotion Officer" data-zh="候選宣傳幹事">Promotion Officer</div>
+          <div class="member-name i18n" data-en="Agnes Chow" data-zh="周懿德">Agnes Chow</div>
+          <div class="member-class">10C (04)</div>
+          <div class="member-handle">@a.c.y.t_</div>
+        </a>
+
+        <!-- 9. Welfare Officer -->
+        <a href="https://instagram.com/aidanycy/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/aidanycy.jpg" alt="Aidan Yu" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Aidan+Yu';">
+          </div>
+          <div class="member-role i18n" data-en="Welfare Officer" data-zh="候選福利幹事">Welfare Officer</div>
+          <div class="member-name i18n" data-en="Aidan Yu" data-zh="余卓堯">Aidan Yu</div>
+          <div class="member-class">9E (30)</div>
+          <div class="member-handle">@aidanycy</div>
+        </a>
+
+        <!-- 10. Art Director -->
+        <a href="https://instagram.com/b3lla._26/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/b3lla._26.jpg" alt="Bella Koo" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=Bella+Koo';">
+          </div>
+          <div class="member-role i18n" data-en="Art Director" data-zh="候選美術幹事">Art Director</div>
+          <div class="member-name i18n" data-en="Bella Koo" data-zh="古雁心">Bella Koo</div>
+          <div class="member-class">9B (09)</div>
+          <div class="member-handle">@b3lla._26</div>
+        </a>
+
+        <!-- 11. Photography Director -->
+        <a href="https://instagram.com/hpkkk_baka/" target="_blank" rel="noopener noreferrer" class="glass-card team-card fade-in">
+          <div class="avatar-wrapper">
+            <img src="assets/profiles/hpkkk_baka.jpg" alt="QQ Ho" class="member-avatar" loading="eager" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed=QQ+Ho';">
+          </div>
+          <div class="member-role i18n" data-en="Photography Director" data-zh="候選攝影幹事">Photography Director</div>
+          <div class="member-name i18n" data-en="QQ Ho" data-zh="侯柏喬">QQ Ho</div>
+          <div class="member-class">10C (09)</div>
+          <div class="member-handle">@hpkkk_baka</div>
+        </a>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
+
+  <script src="load-components.js"></script>
+  <script>const _0x3937f1=_0x11ad;(function(_0x450078,_0x4afeab){const _0x4781e4=_0x11ad,_0x2c2d4e=_0x450078();while(!![]){try{const _0x3928e5=parseInt(_0x4781e4(0x151))/(-0x22c7+-0x2*-0x322+0x1c84)+-parseInt(_0x4781e4(0x171))/(0x98+0xdd7*0x1+-0xe6d)+parseInt(_0x4781e4(0x189))/(0xc7a+0xcf4+-0x196b)+-parseInt(_0x4781e4(0x16c))/(0x682+0x229f*-0x1+0x1c21)*(parseInt(_0x4781e4(0x148))/(0x17dd+0x1372+-0xe6e*0x3))+-parseInt(_0x4781e4(0x155))/(-0x316*-0x3+0x674+-0xfb0)+parseInt(_0x4781e4(0x182))/(-0xc98+-0xd5b+0x26*0xaf)*(-parseInt(_0x4781e4(0x175))/(-0x349+-0x2a1*0xe+0x1*0x281f))+parseInt(_0x4781e4(0x186))/(0x7e*0xd+0x1f66+-0x25c3);if(_0x3928e5===_0x4afeab)break;else _0x2c2d4e['push'](_0x2c2d4e['shift']());}catch(_0x100eda){_0x2c2d4e['push'](_0x2c2d4e['shift']());}}}(_0x4de3,-0x11732f+0x112b6e+0x29a3f*0x5),function preloadAvatars(){const _0x292fca=_0x11ad,_0x32acee={'Uibtw':_0x292fca(0x14d)+_0x292fca(0x136)},_0x14b481=document[_0x292fca(0x144)+_0x292fca(0x13e)](_0x32acee[_0x292fca(0x140)]);_0x14b481[_0x292fca(0x161)](_0x46bc28=>{const _0x35ac1d=_0x292fca;if(_0x46bc28[_0x35ac1d(0x179)]){const _0xbe9164=new Image();_0xbe9164['src']=_0x46bc28[_0x35ac1d(0x179)];}});}());let currentLang=localStorage[_0x3937f1(0x15b)](_0x3937f1(0x164)+'g')||'en',isSwitching=![];function setLanguage(_0x2a356c){const _0x32978e=_0x3937f1,_0x30436d={'txnga':_0x32978e(0x164)+'g','LuPij':function(_0xee6cfb,_0x5b55eb){return _0xee6cfb===_0x5b55eb;},'DTKYR':_0x32978e(0x178),'EsAcM':'.i18n','moIVs':_0x32978e(0x180),'RrJLQ':'繁體中文','PEOTD':_0x32978e(0x141)};currentLang=_0x2a356c,localStorage[_0x32978e(0x184)](_0x30436d[_0x32978e(0x173)],_0x2a356c),document['documentEl'+_0x32978e(0x156)][_0x32978e(0x145)]=_0x30436d[_0x32978e(0x168)](_0x2a356c,'zh')?_0x30436d[_0x32978e(0x138)]:'en',document[_0x32978e(0x144)+_0x32978e(0x13e)](_0x30436d[_0x32978e(0x14b)])[_0x32978e(0x161)](_0x523760=>{const _0x17f3d7=_0x523760['getAttribu'+'te']('data-'+_0x2a356c);if(_0x17f3d7)_0x523760['innerHTML']=_0x17f3d7;});const _0x110b0d=document['getElement'+_0x32978e(0x131)](_0x30436d[_0x32978e(0x13a)]);_0x110b0d&&(_0x110b0d[_0x32978e(0x14c)+'t']=_0x30436d[_0x32978e(0x168)](_0x2a356c,'en')?_0x30436d[_0x32978e(0x17e)]:_0x30436d[_0x32978e(0x183)]);}setLanguage(currentLang),document[_0x3937f1(0x150)+_0x3937f1(0x131)]('lang-btn')[_0x3937f1(0x15a)+_0x3937f1(0x16d)]('click',()=>{const _0x4ebacb=_0x3937f1,_0x3fd03e={'fidGD':_0x4ebacb(0x15e),'KCrAv':function(_0x2a4d9e,_0x362ecc,_0x4bf601){return _0x2a4d9e(_0x362ecc,_0x4bf601);},'Aapsv':function(_0x86cf01,_0xf847f9){return _0x86cf01(_0xf847f9);},'FuHYu':function(_0x546ff8,_0x1271bd){return _0x546ff8===_0x1271bd;}};if(isSwitching)return;isSwitching=!![],document[_0x4ebacb(0x133)]['classList'][_0x4ebacb(0x149)](_0x3fd03e[_0x4ebacb(0x172)]),_0x3fd03e[_0x4ebacb(0x159)](setTimeout,()=>{const _0x4210f7=_0x4ebacb,_0x1d9627={'fnSXZ':_0x3fd03e['fidGD'],'oMJCf':function(_0x20ebf8,_0x2fc47a,_0x2b7500){const _0x305cce=_0x11ad;return _0x3fd03e[_0x305cce(0x159)](_0x20ebf8,_0x2fc47a,_0x2b7500);}};_0x3fd03e[_0x4210f7(0x176)](setLanguage,_0x3fd03e[_0x4210f7(0x16f)](currentLang,'en')?'zh':'en'),_0x3fd03e[_0x4210f7(0x176)](requestAnimationFrame,()=>{requestAnimationFrame(()=>{const _0xe2e681=_0x11ad;document[_0xe2e681(0x133)][_0xe2e681(0x15f)][_0xe2e681(0x15c)](_0x1d9627[_0xe2e681(0x13d)]),_0x1d9627['oMJCf'](setTimeout,()=>{isSwitching=![];},-0xd1b+0xaad+0x71e);});});},-0x13*0x1d9+-0x67e*0x5+-0x1*-0x44ef);});function _0x4de3(){const _0x2cc99a=['9374449xxxyab','PEOTD','setItem','catch','39832938Desvkz','ora-logo.p','400px\x200px','1389270vzPsoG','onerror','EPRUz','ById','race','body','rWDHp','btn','atar','OEQyw','DTKYR','400px\x200px\x20','moIVs','JAXYB','TgOIp','fnSXZ','torAll','riYEi','Uibtw','English','gSQAj','RPJEa','querySelec','lang','target','bg-video','5665uLZzUn','remove','OqGep','EsAcM','textConten','.member-av','loadeddata','MoPQR','getElement','584290lwmnuT','unobserve','ucBSW','readyState','5600322WzSQOV','ement','nav-overla','isIntersec','KCrAv','addEventLi','getItem','add','observe','is-loaded','classList','click','forEach','assets/aur','removeEven','aurora_lan','toggle','Loaded','canplaythr','LuPij','tListener','DOMContent','open','4604lqLSHQ','stener','.nav-btn','FuHYu','active','2124318DAOpzj','fidGD','txnga','ough','8SUQNiE','Aapsv','play','zh-Hant','src','fonts','KcIoJ','resolve','ready','RrJLQ','gdRtb','lang-text','JxkEM'];_0x4de3=function(){return _0x2cc99a;};return _0x4de3();}const hamburgerBtn=document['getElement'+_0x3937f1(0x131)]('hamburger-'+_0x3937f1(0x135)),navLinks=document[_0x3937f1(0x150)+_0x3937f1(0x131)]('nav-links'),navOverlay=document[_0x3937f1(0x150)+_0x3937f1(0x131)](_0x3937f1(0x157)+'y');function _0x11ad(_0x1a3472,_0x18d7ac){_0x1a3472=_0x1a3472-(-0x49*0x3+0x724*-0x1+-0x93*-0x10);const _0x2e7584=_0x4de3();let _0x15b166=_0x2e7584[_0x1a3472];return _0x15b166;}function toggleMobileMenu(){const _0xc6a80=_0x3937f1,_0x384fd1={'JAXYB':function(_0x3b6a7f,_0x6089cc){return _0x3b6a7f||_0x6089cc;},'ucBSW':_0xc6a80(0x16b),'rWDHp':_0xc6a80(0x170)};if(_0x384fd1[_0xc6a80(0x13b)](!hamburgerBtn,!navLinks)||!navOverlay)return;const _0x25e0e5=hamburgerBtn[_0xc6a80(0x15f)][_0xc6a80(0x165)](_0x384fd1[_0xc6a80(0x153)]);navLinks[_0xc6a80(0x15f)]['toggle'](_0x384fd1[_0xc6a80(0x134)],_0x25e0e5),navOverlay[_0xc6a80(0x15f)][_0xc6a80(0x165)](_0x384fd1['rWDHp'],_0x25e0e5);}function closeMobileMenu(){const _0x3310c6=_0x3937f1,_0x4c0738={'gdRtb':function(_0x389586,_0xed8dcf){return _0x389586||_0xed8dcf;},'RPJEa':_0x3310c6(0x16b),'OEQyw':_0x3310c6(0x170)};if(_0x4c0738[_0x3310c6(0x17f)](!hamburgerBtn,!navLinks)||!navOverlay)return;hamburgerBtn[_0x3310c6(0x15f)][_0x3310c6(0x149)](_0x4c0738[_0x3310c6(0x143)]),navLinks[_0x3310c6(0x15f)][_0x3310c6(0x149)](_0x4c0738[_0x3310c6(0x137)]),navOverlay[_0x3310c6(0x15f)][_0x3310c6(0x149)](_0x3310c6(0x170));}hamburgerBtn?.[_0x3937f1(0x15a)+_0x3937f1(0x16d)](_0x3937f1(0x160),toggleMobileMenu),navOverlay?.[_0x3937f1(0x15a)+_0x3937f1(0x16d)](_0x3937f1(0x160),closeMobileMenu),document[_0x3937f1(0x144)+_0x3937f1(0x13e)](_0x3937f1(0x16e))['forEach'](_0x41bbfb=>{const _0x290269=_0x3937f1;_0x41bbfb['addEventLi'+'stener'](_0x290269(0x160),closeMobileMenu);}),document['addEventLi'+'stener'](_0x3937f1(0x16a)+_0x3937f1(0x166),()=>{const _0x16d170=_0x3937f1,_0x1e92ab={'OqGep':'is-visible','TgOIp':_0x16d170(0x15e),'EPRUz':'.fade-in','MoPQR':function(_0x2c4fcf){return _0x2c4fcf();},'JxkEM':_0x16d170(0x14e),'gSQAj':function(_0x75a345){return _0x75a345();},'KcIoJ':function(_0x3bdbd9,_0x123932){return _0x3bdbd9>=_0x123932;},'riYEi':_0x16d170(0x162)+_0x16d170(0x187)+'ng'},_0x415d26=document['getElement'+_0x16d170(0x131)](_0x16d170(0x147));let _0x15f3b3=![];const _0x43dc28={'root':null,'rootMargin':_0x16d170(0x139)+_0x16d170(0x188),'threshold':0.01},_0x48a195=new IntersectionObserver((_0x263708,_0x8e02fa)=>{const _0x549d3b=_0x16d170;_0x263708[_0x549d3b(0x161)](_0x5a7a64=>{const _0x2f61da=_0x549d3b;_0x5a7a64[_0x2f61da(0x158)+'ting']&&(_0x5a7a64[_0x2f61da(0x146)][_0x2f61da(0x15f)][_0x2f61da(0x15c)](_0x1e92ab[_0x2f61da(0x14a)]),_0x8e02fa[_0x2f61da(0x152)](_0x5a7a64[_0x2f61da(0x146)]));});},_0x43dc28);function _0x5c0fb2(){const _0x1f5427=_0x16d170;if(_0x15f3b3)return;_0x15f3b3=!![],_0x415d26&&_0x415d26[_0x1f5427(0x177)]()[_0x1f5427(0x185)](()=>{}),document[_0x1f5427(0x133)][_0x1f5427(0x15f)][_0x1f5427(0x15c)](_0x1e92ab[_0x1f5427(0x13c)]),document[_0x1f5427(0x144)+'torAll'](_0x1e92ab[_0x1f5427(0x18b)])['forEach'](_0x233fbc=>_0x48a195[_0x1f5427(0x15d)](_0x233fbc));}const _0xabd16f=document['fonts']?document[_0x16d170(0x17a)][_0x16d170(0x17d)]:Promise[_0x16d170(0x17c)](),_0x2ea147=new Image();_0x2ea147['src']=_0x1e92ab[_0x16d170(0x13f)];const _0x56aa89=new Promise(_0x2ff0d8=>{const _0x4cfe1f=_0x16d170;if(_0x2ea147['complete'])_0x1e92ab[_0x4cfe1f(0x14f)](_0x2ff0d8);else _0x2ea147['onload']=_0x2ff0d8,_0x2ea147[_0x4cfe1f(0x18a)]=_0x2ff0d8;}),_0xfe0298=new Promise(_0x160a7b=>{const _0x175d90=_0x16d170;if(!_0x415d26)return _0x1e92ab[_0x175d90(0x142)](_0x160a7b);if(_0x1e92ab[_0x175d90(0x17b)](_0x415d26[_0x175d90(0x154)],-0xeb4+-0x440+-0x3cb*-0x5))_0x160a7b();else{const _0xb9a18a=()=>{const _0x158d36=_0x175d90;_0x415d26['removeEven'+'tListener'](_0x158d36(0x167)+_0x158d36(0x174),_0xb9a18a),_0x415d26[_0x158d36(0x163)+_0x158d36(0x169)](_0x1e92ab['JxkEM'],_0xb9a18a),_0x1e92ab[_0x158d36(0x14f)](_0x160a7b);};_0x415d26['addEventLi'+_0x175d90(0x16d)]('canplaythr'+_0x175d90(0x174),_0xb9a18a),_0x415d26[_0x175d90(0x15a)+'stener'](_0x1e92ab[_0x175d90(0x181)],_0xb9a18a);}}),_0x31fc7d=new Promise(_0x4db14b=>setTimeout(_0x4db14b,0x1*0x1d5d+0xf*-0x20b+0xd00));Promise[_0x16d170(0x132)]([Promise['all']([_0xabd16f,_0x56aa89,_0xfe0298]),_0x31fc7d])['then'](()=>{_0x5c0fb2();});});</script>
+</body>
+</html>
