@@ -473,6 +473,20 @@
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
 
+    // Helper for Hong Kong Time
+    function getHKTTimeString() {
+      return new Date().toLocaleString("en-GB", {
+        timeZone: "Asia/Hong_Kong",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      }) + " (HKT)";
+    }
+
     function setLanguage(lang) {
       currentLang = lang;
       localStorage.setItem('aurora_lang', lang);
@@ -565,6 +579,7 @@
           description: description,
           response: '',
           status: 'pending',
+          submittedAtHKT: getHKTTimeString(),
           createdAt: serverTimestamp()
         });
 
@@ -590,7 +605,7 @@
 
       document.getElementById('status-title').textContent = currentLang === 'zh' ? '正在審核反饋' : 'Checking Feedback';
       document.getElementById('status-spinner').style.display = 'block';
-      document.getElementById('status-msg').textContent = currentLang === 'zh' ? '我們的模型正在檢查您的反饋...' : 'Our model is checking your feedback...';
+      document.getElementById('status-msg').textContent = currentLang === 'zh' ? '我們正在檢查您的反饋...' : 'we are currently checking your feedback';
       document.getElementById('status-action-btn').style.display = 'none';
       openModal('modal-status');
 
@@ -609,8 +624,8 @@
         if (result.isSpam) {
           document.getElementById('status-title').textContent = currentLang === 'zh' ? '標記為垃圾訊息' : 'Marked as Spam';
           document.getElementById('status-msg').textContent = currentLang === 'zh' 
-            ? `我們的模型已將您的反饋標記為垃圾訊息/無效內容。原因: ${result.reason || ''}`
-            : `Our model marked your submission as spam/irrelevant. Reason: ${result.reason || ''}`;
+            ? `我們的系統已將您的反饋標記為垃圾訊息/無效內容。原因: ${result.reason || ''}`
+            : `Our system marked your submission as spam/irrelevant. Reason: ${result.reason || ''}`;
         } else {
           await saveFeedback(title, description);
         }
