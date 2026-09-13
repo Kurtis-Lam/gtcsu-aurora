@@ -144,6 +144,12 @@
   .badge.approved { background: rgba(46, 230, 184, 0.2); color: var(--aurora-teal); }
   .badge.spam { background: rgba(255, 107, 107, 0.2); color: var(--aurora-red); }
 
+  .logs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
   .log-banner {
     background: rgba(46, 230, 184, 0.08);
     border-left: 3px solid var(--aurora-teal);
@@ -196,7 +202,13 @@
   }
 
   .btn-publish { background: var(--aurora-teal); color: #050b12; }
-  .btn-publish:hover { opacity: 0.9; box-shadow: 0 0 10px rgba(46, 230, 184, 0.4); }
+  .btn-publish:hover:not(:disabled) { opacity: 0.9; box-shadow: 0 0 10px rgba(46, 230, 184, 0.4); }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none !important;
+  }
 
   .btn-spam { background: rgba(255, 107, 107, 0.2); color: var(--aurora-red); border: 1px solid var(--aurora-red); }
   .btn-spam:hover { background: rgba(255, 107, 107, 0.4); }
@@ -245,6 +257,8 @@
       updateDoc, 
       deleteDoc, 
       doc, 
+      getDoc,
+      arrayUnion,
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { 
@@ -344,6 +358,40 @@
           const id = item.id;
           const submittedTime = item.submittedAtHKT || (item.createdAt?.toDate ? item.createdAt.toDate().toLocaleString("en-GB", { timeZone: "Asia/Hong_Kong" }) + " (HKT)" : "N/A");
 
+          // Build approval list (includes legacy fallback)
+          let approvalsList = Array.isArray(item.approvals) ? [...item.approvals] : [];
+          if (approvalsList.length === 0 && item.approvedBy) {
+            approvalsList.push({
+              name: item.approvedBy,
+              email: '',
+              timeHKT: item.approvedAtHKT || 'N/A',
+              timestamp: 0
+            });
+          }
+
+          // Sort so that newer (later) approvals appear at the top
+          approvalsList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+          // Check if current logged-in admin has already approved
+          const hasUserApproved = currentUser && approvalsList.some(app => 
+            (app.email && app.email === currentUser.email) ||
+            (app.name && app.name === (currentUser.displayName || currentUser.email))
+          );
+
+          // Render approval logs (later on top)
+          let logsHtml = '';
+          if (approvalsList.length > 0) {
+            logsHtml = `
+              <div class="logs-container">
+                ${approvalsList.map(app => `
+                  <div class="log-banner">
+                    ✓ Approved by <strong>${escapeHtml(app.name)}</strong> on ${escapeHtml(app.timeHKT)}
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
+
           html += `
             <div class="card">
               <div class="card-header">
@@ -351,11 +399,7 @@
                 <span class="badge ${item.status}">${item.status.toUpperCase()}</span>
               </div>
 
-              ${item.approvedBy ? `
-                <div class="log-banner">
-                  ✓ Approved by <strong>${escapeHtml(item.approvedBy)}</strong> on ${item.approvedAtHKT || 'N/A'}
-                </div>
-              ` : ''}
+              ${logsHtml}
 
               <div class="field-group">
                 <span class="field-label">Edit User Title</span>
@@ -370,7 +414,9 @@
               <div class="actions">
                 <button class="btn btn-spam" data-action="spam" data-id="${id}">Mark Spam</button>
                 <button class="btn btn-delete" data-action="delete" data-id="${id}">Delete</button>
-                <button class="btn btn-publish" data-action="publish" data-id="${id}">Approve</button>
+                <button class="btn btn-publish" data-action="publish" data-id="${id}" ${hasUserApproved ? 'disabled title="You have already approved this item"' : ''}>
+                  ${hasUserApproved ? 'Approved' : 'Approve'}
+                </button>
               </div>
             </div>
           `;
@@ -397,6 +443,8 @@
 
     async function publishItem(id) {
       if (!currentUser) return;
+
+      const docRef = doc(db, "feedbacks", id);
       const title = document.getElementById(`title-${id}`).value;
       const description = document.getElementById(`desc-${id}`).value;
       
@@ -404,14 +452,39 @@
       const hktTime = getHKTTimeString();
 
       try {
-        await updateDoc(doc(db, "feedbacks", id), {
+        // Prevent duplicate approvals by checking doc status
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const approvals = data.approvals || [];
+          const alreadyApproved = approvals.some(app => 
+            (app.email && app.email === currentUser.email) ||
+            (app.name && app.name === moderatorName)
+          ) || (data.approvedBy === moderatorName);
+
+          if (alreadyApproved) {
+            alert("You have already approved this feedback.");
+            return;
+          }
+        }
+
+        const newApprovalRecord = {
+          name: moderatorName,
+          email: currentUser.email,
+          timeHKT: hktTime,
+          timestamp: Date.now()
+        };
+
+        await updateDoc(docRef, {
           title: title,
           description: description,
           status: 'approved',
+          approvals: arrayUnion(newApprovalRecord),
           approvedBy: moderatorName,
           approvedAtHKT: hktTime,
           moderatedAt: serverTimestamp()
         });
+
         loadAdminFeedbacks();
       } catch (err) {
         alert("Failed to approve feedback: " + err.message);

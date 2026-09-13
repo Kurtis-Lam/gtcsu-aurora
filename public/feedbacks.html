@@ -280,12 +280,33 @@
     border-radius: 16px; width: 100%; max-width: 480px; padding: 28px; text-align: center;
   }
 
-  .spinner {
-    width: 36px; height: 36px;
-    border: 3px solid rgba(127, 233, 240, 0.2); border-top-color: var(--aurora-teal);
-    border-radius: 50%; animation: spin 1s linear infinite; margin: 16px auto;
+  /* Progress Bar Styles */
+  .progress-container {
+    width: 100%;
+    height: 10px;
+    background: rgba(5, 11, 18, 0.8);
+    border-radius: 999px;
+    border: 1px solid rgba(127, 233, 240, 0.2);
+    overflow: hidden;
+    margin: 18px 0 10px;
+    display: none;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--aurora-teal), var(--aurora-cyan));
+    box-shadow: 0 0 10px rgba(46, 230, 184, 0.5);
+    border-radius: 999px;
+    transition: width 0.15s ease-out;
+  }
+
+  .time-remaining {
+    font-size: 0.82rem;
+    color: var(--aurora-cyan);
+    margin-top: 6px;
+    display: none;
+  }
 
   footer { position: relative; z-index: 1; text-align: center; padding: 0 6vw 40px; font-size: 0.78rem; color: rgba(223, 246, 242, 0.4); }
 
@@ -350,11 +371,9 @@
 
   <div id="preloader"></div>
 
+  <!-- Floating Bottom-Right Language Toggle Button -->
   <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1 4-10z"></path>
-    </svg>
+    <span class="lang-icon">🌐</span>
     <span id="lang-text">繁體中文</span>
   </button>
 
@@ -446,8 +465,11 @@
     <div class="modal-card">
       <h3 id="status-title" class="panel-title" style="border:none; text-align:center;">Checking Feedback</h3>
       <div id="status-content" style="margin: 15px 0;">
-        <div class="spinner" id="status-spinner"></div>
-        <p id="status-msg" style="color: rgba(223, 246, 242, 0.9); font-size:0.9rem;"></p>
+        <div class="progress-container" id="status-progress-container">
+          <div class="progress-bar-fill" id="status-progress-bar"></div>
+        </div>
+        <div class="time-remaining" id="status-time-remaining">Estimated time left: 4s</div>
+        <p id="status-msg" style="color: rgba(223, 246, 242, 0.9); font-size:0.9rem; margin-top: 10px;"></p>
       </div>
       <button id="status-action-btn" class="submit-btn" style="display:none; width:auto; padding:8px 24px; margin:0 auto;">OK</button>
     </div>
@@ -480,6 +502,7 @@
 
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
+    let progressTimer = null;
 
     // Helper for Hong Kong Time
     function getHKTTimeString() {
@@ -580,6 +603,50 @@
 
     document.getElementById('status-action-btn').addEventListener('click', () => closeModal('modal-status'));
 
+    // Progress Bar Handler
+    function startProgressBar(estimatedSeconds = 4) {
+      const progressContainer = document.getElementById('status-progress-container');
+      const progressBar = document.getElementById('status-progress-bar');
+      const timeRemaining = document.getElementById('status-time-remaining');
+
+      progressContainer.style.display = 'block';
+      timeRemaining.style.display = 'block';
+      progressBar.style.width = '0%';
+
+      let elapsedMs = 0;
+      const totalMs = estimatedSeconds * 1000;
+      const intervalMs = 100;
+
+      if (progressTimer) clearInterval(progressTimer);
+
+      progressTimer = setInterval(() => {
+        elapsedMs += intervalMs;
+        // Cap progress visual at 92% until request completes
+        let percent = Math.min(92, Math.floor((elapsedMs / totalMs) * 100));
+        let secondsLeft = Math.max(1, Math.ceil((totalMs - elapsedMs) / 1000));
+
+        progressBar.style.width = `${percent}%`;
+        timeRemaining.textContent = currentLang === 'zh' 
+          ? `預計剩餘時間：約 ${secondsLeft} 秒` 
+          : `Estimated time left: ~${secondsLeft}s`;
+      }, intervalMs);
+    }
+
+    function completeProgressBar() {
+      if (progressTimer) clearInterval(progressTimer);
+      const progressContainer = document.getElementById('status-progress-container');
+      const progressBar = document.getElementById('status-progress-bar');
+      const timeRemaining = document.getElementById('status-time-remaining');
+
+      progressBar.style.width = '100%';
+      timeRemaining.textContent = currentLang === 'zh' ? '完成！' : 'Completed!';
+
+      setTimeout(() => {
+        progressContainer.style.display = 'none';
+        timeRemaining.style.display = 'none';
+      }, 500);
+    }
+
     async function saveFeedback(title, description) {
       try {
         await addDoc(collection(db, "feedbacks"), {
@@ -610,9 +677,10 @@
       const description = descInput.value.trim();
 
       document.getElementById('status-title').textContent = currentLang === 'zh' ? '正在審核反饋' : 'Checking Feedback';
-      document.getElementById('status-spinner').style.display = 'block';
-      document.getElementById('status-msg').textContent = currentLang === 'zh' ? '我們正在檢查您的反饋...' : 'we are currently checking your feedback';
+      document.getElementById('status-msg').textContent = currentLang === 'zh' ? '我們正在檢查您的反饋...' : 'We are currently checking your feedback...';
       document.getElementById('status-action-btn').style.display = 'none';
+      
+      startProgressBar(4); // Trigger 4-second estimated loading bar
       openModal('modal-status');
 
       try {
@@ -624,7 +692,7 @@
 
         const result = await response.json();
 
-        document.getElementById('status-spinner').style.display = 'none';
+        completeProgressBar();
         document.getElementById('status-action-btn').style.display = 'inline-block';
 
         if (result.isSpam) {
@@ -637,7 +705,7 @@
         }
       } catch (err) {
         console.warn("Moderation fallback:", err);
-        document.getElementById('status-spinner').style.display = 'none';
+        completeProgressBar();
         document.getElementById('status-action-btn').style.display = 'inline-block';
         await saveFeedback(title, description);
       }
