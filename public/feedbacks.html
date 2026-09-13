@@ -595,40 +595,27 @@
       openModal('modal-status');
 
       try {
-        // Secure call via Vercel Serverless Proxy
         const response = await fetch('/api/moderate', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, description })
         });
 
-        let result = { isSpam: false };
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.choices && data.choices[0] && data.choices[0].message) {
-            try {
-              const raw = data.choices[0].message.content.replace(/```json|```/g, '').trim();
-              result = JSON.parse(raw);
-            } catch (e) { console.error("JSON parse error", e); }
-          }
-        }
+        const result = await response.json();
 
         document.getElementById('status-spinner').style.display = 'none';
         document.getElementById('status-action-btn').style.display = 'inline-block';
 
         if (result.isSpam) {
           document.getElementById('status-title').textContent = currentLang === 'zh' ? '標記為垃圾訊息' : 'Marked as Spam';
-          document.getElementById('status-msg').innerHTML = currentLang === 'zh' 
-            ? '我們的模型已將您的反饋標記為垃圾訊息/無效內容。'
-            : 'Our model marked your submission as spam/irrelevant.';
+          document.getElementById('status-msg').textContent = currentLang === 'zh' 
+            ? `我們的模型已將您的反饋標記為垃圾訊息/無效內容。原因: ${result.reason || ''}`
+            : `Our model marked your submission as spam/irrelevant. Reason: ${result.reason || ''}`;
         } else {
           await saveFeedback(title, description);
         }
       } catch (err) {
-        console.warn("Moderation API unavailable, saving feedback directly:", err);
+        console.warn("Moderation fallback:", err);
         document.getElementById('status-spinner').style.display = 'none';
         document.getElementById('status-action-btn').style.display = 'inline-block';
         await saveFeedback(title, description);
