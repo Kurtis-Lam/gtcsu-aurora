@@ -256,6 +256,50 @@
 
   .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  .feedback-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 10px;
+  }
+
+  .feedback-item {
+    background: rgba(5, 11, 18, 0.6);
+    border: 1px solid rgba(223, 246, 242, 0.15);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .feedback-item-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--aurora-cyan);
+    margin-bottom: 6px;
+  }
+
+  .feedback-item-desc {
+    font-size: 0.88rem;
+    color: rgba(223, 246, 242, 0.85);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .feedback-response {
+    background: rgba(46, 230, 184, 0.08);
+    border-left: 3px solid var(--aurora-teal);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #eafffb;
+  }
+
+  .feedback-response-author {
+    font-weight: 600;
+    color: var(--aurora-teal);
+    font-size: 0.78rem;
+    margin-bottom: 4px;
+  }
+
   .faq-list { display: flex; flex-direction: column; gap: 16px; margin-top: 10px; }
   .faq-item {
     background: rgba(5, 11, 18, 0.6);
@@ -432,6 +476,14 @@
         <button id="fb-submit-btn" class="submit-btn i18n" data-en="Submit Feedback" data-zh="提交反饋" disabled>Submit Feedback</button>
       </div>
 
+      <!-- Published Responses Section -->
+      <div class="glass-panel">
+        <h2 class="panel-title i18n" data-en="Submitted Feedbacks & Answers" data-zh="已提交意見及回應">Submitted Feedbacks & Answers</h2>
+        <div id="feedbacks-container" class="feedback-list">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
       <!-- FAQ Section -->
       <div class="glass-panel">
         <h2 class="panel-title i18n" data-en="Frequently Asked Questions (FAQ)" data-zh="常見問題 (FAQ)">Frequently Asked Questions (FAQ)</h2>
@@ -504,7 +556,6 @@
     let isSwitching = false;
     let progressTimer = null;
 
-    // Helper for Hong Kong Time
     function getHKTTimeString() {
       return new Date().toLocaleString("en-GB", {
         timeZone: "Asia/Hong_Kong",
@@ -530,6 +581,8 @@
 
       const langText = document.getElementById('lang-text');
       if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
+      
+      renderPublicFeedbacks();
     }
 
     setLanguage(currentLang);
@@ -549,7 +602,6 @@
       }, 350);
     });
 
-    // Mobile Navigation Drawer Controls
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const navLinks = document.getElementById('nav-links');
     const navOverlay = document.getElementById('nav-overlay');
@@ -603,7 +655,6 @@
 
     document.getElementById('status-action-btn').addEventListener('click', () => closeModal('modal-status'));
 
-    // Progress Bar Handler
     function startProgressBar(estimatedSeconds = 4) {
       const progressContainer = document.getElementById('status-progress-container');
       const progressBar = document.getElementById('status-progress-bar');
@@ -621,7 +672,6 @@
 
       progressTimer = setInterval(() => {
         elapsedMs += intervalMs;
-        // Cap progress visual at 92% until request completes
         let percent = Math.min(92, Math.floor((elapsedMs / totalMs) * 100));
         let secondsLeft = Math.max(1, Math.ceil((totalMs - elapsedMs) / 1000));
 
@@ -680,7 +730,7 @@
       document.getElementById('status-msg').textContent = currentLang === 'zh' ? '我們正在檢查您的反饋...' : 'We are currently checking your feedback...';
       document.getElementById('status-action-btn').style.display = 'none';
       
-      startProgressBar(4); // Trigger 4-second estimated loading bar
+      startProgressBar(4);
       openModal('modal-status');
 
       try {
@@ -711,7 +761,38 @@
       }
     });
 
+    function renderPublicFeedbacks() {
+      const container = document.getElementById('feedbacks-container');
+      if (!container) return;
+
+      const feedbacks = JSON.parse(localStorage.getItem('aurora_feedbacks') || '[]');
+      const published = feedbacks.filter(f => f.status === 'approved');
+
+      if (published.length === 0) {
+        container.innerHTML = `<p style="color: rgba(223,246,242,0.5); text-align:center; padding: 20px;">${currentLang === 'zh' ? '暫無公開反饋' : 'No published feedbacks yet.'}</p>`;
+        return;
+      }
+
+      container.innerHTML = published.map(f => `
+        <div class="feedback-item">
+          <div class="feedback-item-title">${escapeHtml(f.title)}</div>
+          <div class="feedback-item-desc">${escapeHtml(f.description)}</div>
+          ${f.response ? `
+            <div class="feedback-response">
+              <div class="feedback-response-author">Aurora Student Union Response:</div>
+              <div>${escapeHtml(f.response)}</div>
+            </div>
+          ` : '<div style="font-size:0.75rem; color:rgba(223,246,242,0.4); font-style:italic;">Awaiting SU response</div>'}
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      renderPublicFeedbacks();
       setTimeout(() => { document.body.classList.add('is-loaded'); }, 300);
     });
   </script>
