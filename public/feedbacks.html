@@ -256,24 +256,15 @@
 
   .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .feedback-list { display: flex; flex-direction: column; gap: 16px; margin-top: 10px; }
-  .feedback-item {
+  .faq-list { display: flex; flex-direction: column; gap: 16px; margin-top: 10px; }
+  .faq-item {
     background: rgba(5, 11, 18, 0.6);
     border: 1px solid rgba(223, 246, 242, 0.15);
     border-radius: 10px;
-    padding: 16px;
+    padding: 18px;
   }
-  .feedback-item-title { font-weight: 600; font-size: 1.05rem; color: var(--aurora-cyan); margin-bottom: 6px; }
-  .feedback-item-desc { font-size: 0.9rem; color: rgba(223, 246, 242, 0.85); line-height: 1.6; margin-bottom: 12px; }
-  .feedback-response {
-    background: rgba(46, 230, 184, 0.08);
-    border-left: 3px solid var(--aurora-teal);
-    padding: 10px 12px;
-    border-radius: 4px;
-    font-size: 0.88rem;
-    color: #eafffb;
-  }
-  .feedback-response-author { font-weight: 600; color: var(--aurora-teal); font-size: 0.8rem; margin-bottom: 4px; }
+  .faq-item-title { font-weight: 600; font-size: 1.05rem; color: var(--aurora-cyan); margin-bottom: 8px; }
+  .faq-item-desc { font-size: 0.9rem; color: rgba(223, 246, 242, 0.85); line-height: 1.6; }
 
   /* Modal */
   .modal-overlay {
@@ -398,7 +389,7 @@
   <main class="page-container">
     <div class="header-section">
       <p class="page-subtitle i18n" data-en="Student Voice" data-zh="學生聲音">Student Voice</p>
-      <h1 class="page-title i18n" data-en="Feedback & Responses" data-zh="意見反饋與回應">Feedback & Responses</h1>
+      <h1 class="page-title i18n" data-en="Feedback & FAQ" data-zh="意見反饋與常見問題">Feedback & FAQ</h1>
     </div>
 
     <div class="feedback-grid">
@@ -422,10 +413,27 @@
         <button id="fb-submit-btn" class="submit-btn i18n" data-en="Submit Feedback" data-zh="提交反饋" disabled>Submit Feedback</button>
       </div>
 
-      <!-- Published Feedbacks -->
+      <!-- FAQ Section -->
       <div class="glass-panel">
-        <h2 class="panel-title i18n" data-en="Public Feedbacks & Student Union Responses" data-zh="公開意見及學生會回應">Public Feedbacks & Student Union Responses</h2>
-        <div id="feedbacks-container" class="feedback-list"></div>
+        <h2 class="panel-title i18n" data-en="Frequently Asked Questions (FAQ)" data-zh="常見問題 (FAQ)">Frequently Asked Questions (FAQ)</h2>
+        <div class="faq-list">
+          <div class="faq-item">
+            <div class="faq-item-title i18n" data-en="Q: How can I submit anonymous feedback?" data-zh="問：如何提交匿名意見？">Q: How can I submit anonymous feedback?</div>
+            <div class="faq-item-desc i18n" data-en="Fill in the title (at least 3 words) and description (at least 20 words) in the form above and click Submit Feedback." data-zh="只需在上方的表單中填寫標題（最少 3 個字詞）和詳細內容（最少 20 個字詞），然後點擊提交反饋即可。">Fill in the title (at least 3 words) and description (at least 20 words) in the form above and click Submit Feedback.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-item-title i18n" data-en="Q: Is my submission completely anonymous?" data-zh="問：我的提交是完全匿名的嗎？">Q: Is my submission completely anonymous?</div>
+            <div class="faq-item-desc i18n" data-en="Yes, all submissions are processed anonymously without recording any personal identification or account details." data-zh="是的，所有提交均為匿名處理，系統不會記錄任何個人身份或帳戶資訊。">Yes, all submissions are processed anonymously without recording any personal identification or account details.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-item-title i18n" data-en="Q: How will the Student Union handle my feedback?" data-zh="問：學生會將如何處理我的意見？">Q: How will the Student Union handle my feedback?</div>
+            <div class="faq-item-desc i18n" data-en="Our executive team reviews submitted suggestions regularly to improve student welfare, campus events, and cabinet planning." data-zh="我們的執行團隊會定期審閱所有意見，用以改善學生福利、校園活動及內閣規劃。">Our executive team reviews submitted suggestions regularly to improve student welfare, campus events, and cabinet planning.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-item-title i18n" data-en="Q: What should I do if my submission is flagged as spam?" data-zh="問：如果我的反饋被標記為垃圾訊息該怎麼辦？">Q: What should I do if my submission is flagged as spam?</div>
+            <div class="faq-item-desc i18n" data-en="Ensure your submission contains constructive language, follows school regulations, and meets the required minimum word count." data-zh="請確保您的提交內容具建設性、符合學校規條，並達到所需的最低字數要求。">Ensure your submission contains constructive language, follows school regulations, and meets the required minimum word count.</div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -450,10 +458,6 @@
       getFirestore, 
       collection, 
       addDoc, 
-      getDocs, 
-      query, 
-      where, 
-      orderBy, 
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -577,7 +581,6 @@
         await addDoc(collection(db, "feedbacks"), {
           title: title,
           description: description,
-          response: '',
           status: 'pending',
           submittedAtHKT: getHKTTimeString(),
           createdAt: serverTimestamp()
@@ -585,13 +588,12 @@
 
         document.getElementById('status-title').textContent = currentLang === 'zh' ? '提交成功' : 'Feedback Submitted';
         document.getElementById('status-msg').textContent = currentLang === 'zh'
-          ? '感謝您的寶貴意見！我們會儘快為您處理並回應。'
-          : 'Thank you for your feedback! Our team will review and respond soon.';
+          ? '感謝您的寶貴意見！我們會儘快為您處理。'
+          : 'Thank you for your feedback! Our team will review it soon.';
 
         titleInput.value = '';
         descInput.value = '';
         validateForm();
-        renderPublicFeedbacks();
       } catch (err) {
         console.error("Firestore Save Error:", err);
         document.getElementById('status-title').textContent = currentLang === 'zh' ? '提交失敗' : 'Submission Error';
@@ -637,50 +639,7 @@
       }
     });
 
-    async function renderPublicFeedbacks() {
-      const container = document.getElementById('feedbacks-container');
-      try {
-        const q = query(
-          collection(db, "feedbacks"), 
-          where("status", "==", "approved"),
-          orderBy("createdAt", "desc")
-        );
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          container.innerHTML = `<p style="color: rgba(223,246,242,0.5); text-align:center; padding: 20px;">${currentLang === 'zh' ? '暫無公開反饋' : 'No published feedbacks yet.'}</p>`;
-          return;
-        }
-
-        let html = '';
-        querySnapshot.forEach((doc) => {
-          const f = doc.data();
-          html += `
-            <div class="feedback-item">
-              <div class="feedback-item-title">${escapeHtml(f.title)}</div>
-              <div class="feedback-item-desc">${escapeHtml(f.description)}</div>
-              ${f.response ? `
-                <div class="feedback-response">
-                  <div class="feedback-response-author">Aurora Student Union Response:</div>
-                  <div>${escapeHtml(f.response)}</div>
-                </div>
-              ` : '<div style="font-size:0.75rem; color:rgba(223,246,242,0.4); font-style:italic;">Awaiting SU response</div>'}
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-      } catch (err) {
-        console.error("Error loading feedbacks:", err);
-        container.innerHTML = `<p style="color: rgba(255,107,107,0.7); text-align:center; padding: 20px;">Failed to load feedbacks.</p>`;
-      }
-    }
-
-    function escapeHtml(str) {
-      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
-      renderPublicFeedbacks();
       setTimeout(() => { document.body.classList.add('is-loaded'); }, 300);
     });
   </script>

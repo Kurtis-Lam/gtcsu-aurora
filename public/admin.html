@@ -367,15 +367,10 @@
                 <textarea class="input-textarea" id="desc-${id}">${escapeHtml(item.description)}</textarea>
               </div>
 
-              <div class="field-group">
-                <span class="field-label">Student Union Response</span>
-                <textarea class="input-textarea" id="resp-${id}" placeholder="Write response from SU...">${escapeHtml(item.response || '')}</textarea>
-              </div>
-
               <div class="actions">
                 <button class="btn btn-spam" data-action="spam" data-id="${id}">Mark Spam</button>
                 <button class="btn btn-delete" data-action="delete" data-id="${id}">Delete</button>
-                <button class="btn btn-publish" data-action="publish" data-id="${id}">Save & Publish</button>
+                <button class="btn btn-publish" data-action="publish" data-id="${id}">Approve</button>
               </div>
             </div>
           `;
@@ -404,7 +399,6 @@
       if (!currentUser) return;
       const title = document.getElementById(`title-${id}`).value;
       const description = document.getElementById(`desc-${id}`).value;
-      const response = document.getElementById(`resp-${id}`).value;
       
       const moderatorName = currentUser.displayName || currentUser.email;
       const hktTime = getHKTTimeString();
@@ -413,7 +407,6 @@
         await updateDoc(doc(db, "feedbacks", id), {
           title: title,
           description: description,
-          response: response,
           status: 'approved',
           approvedBy: moderatorName,
           approvedAtHKT: hktTime,
@@ -421,7 +414,7 @@
         });
         loadAdminFeedbacks();
       } catch (err) {
-        alert("Failed to publish feedback: " + err.message);
+        alert("Failed to approve feedback: " + err.message);
       }
     }
 
