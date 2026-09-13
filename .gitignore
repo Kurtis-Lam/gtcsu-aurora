@@ -1,8 +1,11 @@
 .firebase/
 .firebaserc
+node_modules/
+
 keys.txt
 .DS_Store
 
 public/assets/profiles
 public/assets/aurora-legacy-logo.png
-public/kahoot.html
+
+public/ob.js
