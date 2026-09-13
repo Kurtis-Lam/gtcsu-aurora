@@ -558,10 +558,6 @@
 
     document.getElementById('status-action-btn').addEventListener('click', () => closeModal('modal-status'));
 
-    const OPENROUTER_API_KEY = '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';
-    const MODEL = 'deepseek/deepseek-chat';
-    const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-
     async function saveFeedback(title, description) {
       try {
         await addDoc(collection(db, "feedbacks"), {
@@ -599,22 +595,13 @@
       openModal('modal-status');
 
       try {
-        const response = await fetch(OPENROUTER_URL, {
+        // Secure call via Vercel Serverless Proxy
+        const response = await fetch('/api/moderate', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            model: MODEL,
-            messages: [
-              {
-                role: 'system',
-                content: 'You are an automated content moderator. Determine if the given student feedback is spam. Return response strictly in JSON format as follows: {"isSpam": boolean, "reason": "string"}'
-              },
-              { role: 'user', content: `Title: ${title}\nDescription: ${description}` }
-            ]
-          })
+          body: JSON.stringify({ title, description })
         });
 
         let result = { isSpam: false };
