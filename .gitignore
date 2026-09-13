@@ -9,3 +9,5 @@ public/assets/profiles
 public/assets/aurora-legacy-logo.png
 
 public/ob.js
+.vercel
+.env*
