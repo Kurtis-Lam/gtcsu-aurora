@@ -1,9 +1,14 @@
 <header class="navbar">
+  <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle navigation menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
   <a href="index.html" class="nav-brand">
     <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo" onerror="this.style.display='none'">
     <span class="nav-title">Aurora</span>
   </a>
-  <nav class="nav-links">
+  <nav class="nav-links" id="nav-links">
     <a href="aboutus.html" class="nav-btn i18n" data-page="aboutus.html" data-en="About Us" data-zh="關於我們">About Us</a>
     <a href="activities.html" class="nav-btn i18n" data-page="activities.html" data-en="Activities" data-zh="活動">Activities</a>
     <a href="welfare.html" class="nav-btn i18n" data-page="welfare.html" data-en="Welfare" data-zh="福利">Welfare</a>
@@ -11,3 +16,4 @@
     <a href="feedbacks.html" class="nav-btn i18n" data-page="feedbacks.html" data-en="Feedback" data-zh="意見反饋">Feedback</a>
   </nav>
 </header>
+<div class="nav-overlay" id="nav-overlay"></div>

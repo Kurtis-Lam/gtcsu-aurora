@@ -175,6 +175,59 @@
     box-shadow: 0 0 12px rgba(127, 233, 240, 0.2);
   }
 
+  /* ---------- Hamburger Button ---------- */
+  .hamburger-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    padding: 0;
+    z-index: 102;
+  }
+
+  .hamburger-btn span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--ink);
+    border-radius: 2px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  }
+
+  .hamburger-btn.open span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .hamburger-btn.open span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger-btn.open span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* ---------- Mobile Navigation Overlay ---------- */
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 11, 18, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 98;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+  }
+
+  .nav-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
   /* ---------- Floating Bottom-Right Language Button ---------- */
   .lang-toggle {
     position: fixed;
@@ -417,11 +470,60 @@
     color: rgba(223, 246, 242, 0.4);
   }
 
-  @media (max-width: 600px) {
-    .nav-title { display: none; }
-    .nav-links { gap: 0.3rem; }
-    .nav-btn { font-size: 0.8rem; padding: 6px 10px; }
-    .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
+  /* ---------- Mobile Drawer Media Query ---------- */
+  @media (max-width: 768px) {
+    .hamburger-btn {
+      display: flex;
+    }
+
+    .navbar {
+      justify-content: flex-start;
+      gap: 16px;
+      padding: 0.8rem 1rem;
+    }
+
+    .nav-title {
+      display: inline-block;
+    }
+
+    .nav-links {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      height: 100dvh;
+      background: rgba(10, 26, 32, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(127, 233, 240, 0.25);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 80px 20px 24px;
+      gap: 0.8rem;
+      transform: translateX(-100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 99;
+    }
+
+    .nav-links.active {
+      transform: translateX(0);
+    }
+
+    .nav-btn {
+      width: 100%;
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+    }
+
+    .lang-toggle {
+      bottom: 16px;
+      right: 16px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+    }
   }
 </style>
 </head>
@@ -435,13 +537,33 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="2" y1="12" x2="22" y2="12"></line>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1 4-10z"></path>
     </svg>
     <span id="lang-text">繁體中文</span>
   </button>
 
-  <!-- Panel Container -->
-  <div id="panel-container"></div>
+  <!-- Mobile Navigation Overlay -->
+  <div class="nav-overlay" id="nav-overlay"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Navigation">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <a href="index.html" class="nav-brand">
+      <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo" onerror="this.style.display='none'">
+      <span class="nav-title">Aurora</span>
+    </a>
+    <nav class="nav-links" id="nav-links">
+      <a href="aboutus.html" class="nav-btn active i18n" data-en="About Us" data-zh="關於我們">About Us</a>
+      <a href="activities.html" class="nav-btn i18n" data-en="Activities" data-zh="活動">Activities</a>
+      <a href="welfare.html" class="nav-btn i18n" data-en="Welfare" data-zh="福利">Welfare</a>
+      <a href="schedule.html" class="nav-btn i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
+      <a href="feedbacks.html" class="nav-btn i18n" data-en="Feedback" data-zh="意見反饋">Feedback</a>
+    </nav>
+  </header>
 
   <!-- Video Background -->
   <div class="sky">
@@ -658,6 +780,31 @@
           });
         });
       }, 350);
+    });
+
+    // Mobile Navigation Drawer Controls
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const navLinks = document.getElementById('nav-links');
+    const navOverlay = document.getElementById('nav-overlay');
+
+    function toggleMobileMenu() {
+      if (!hamburgerBtn || !navLinks || !navOverlay) return;
+      const isOpen = hamburgerBtn.classList.toggle('open');
+      navLinks.classList.toggle('active', isOpen);
+      navOverlay.classList.toggle('active', isOpen);
+    }
+
+    function closeMobileMenu() {
+      if (!hamburgerBtn || !navLinks || !navOverlay) return;
+      hamburgerBtn.classList.remove('open');
+      navLinks.classList.remove('active');
+      navOverlay.classList.remove('active');
+    }
+
+    hamburgerBtn?.addEventListener('click', toggleMobileMenu);
+    navOverlay?.addEventListener('click', closeMobileMenu);
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', closeMobileMenu);
     });
 
     document.addEventListener('DOMContentLoaded', () => {
