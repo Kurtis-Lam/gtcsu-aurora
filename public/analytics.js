@@ -1,10 +1,13 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"; 
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"; 
 import { 
   getFirestore, 
   collection, 
   doc, 
+  getDoc,
   setDoc, 
   updateDoc, 
+  onSnapshot,
+  runTransaction,
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"; 
 
@@ -17,7 +20,7 @@ const firebaseConfig = {
   appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8"
 }; 
 
-const app = initializeApp(firebaseConfig); 
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig); 
 const db = getFirestore(app); 
 
 function getHKTDateString(date = new Date()) {
@@ -28,23 +31,6 @@ const startTime = Date.now();
 const path = window.location.pathname || '/'; 
 
 const pageviewRef = doc(collection(db, "pageviews")); 
-
-// ---------------------------------------------------------------------------
-// Reliable "exit" writes via navigator.sendBeacon
-//
-// The Firestore SDK's updateDoc() is NOT sent with `keepalive`, so when a tab
-// is actually closed (as opposed to just backgrounded) the browser can tear
-// down the page's network stack before the write reaches the server. This is
-// most visible on pages people look at briefly and close fast (e.g. an admin
-// panel or a feedback form) - there just isn't enough time for the async SDK
-// call to complete before the tab disappears, so "closedAt" silently never
-// gets written.
-//
-// navigator.sendBeacon() is the browser-guaranteed way to fire a request that
-// survives page unload, but it only supports simple POST requests with no
-// custom headers, so it can't go through the Firestore SDK. Instead we POST
-// straight to Firestore's REST `:commit` endpoint, which accepts plain POST.
-// ---------------------------------------------------------------------------
 
 const FIRESTORE_COMMIT_URL =
   `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}` +
@@ -62,9 +48,6 @@ function toFirestoreValue(value) {
   return { stringValue: String(value) };
 }
 
-// Fire-and-forget update that is safe to call during pagehide/hidden.
-// Uses sendBeacon (survives unload); falls back to a keepalive fetch if the
-// beacon queue is full or unavailable.
 function sendExitUpdate(fields) {
   const fieldPaths = Object.keys(fields);
   const fieldsPayload = {};
@@ -88,8 +71,6 @@ function sendExitUpdate(fields) {
   }
 
   if (!sent) {
-    // Beacon queue full, blocked, or unsupported - keepalive fetch is the
-    // next best thing for surviving unload.
     fetch(FIRESTORE_COMMIT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -103,7 +84,6 @@ function currentDurationSeconds() {
   return Math.max(1, Math.round((Date.now() - startTime) / 1000));
 }
 
-// 1. Log visit immediately on page load
 setDoc(pageviewRef, {
   path: path,
   durationSeconds: 0,
@@ -113,7 +93,6 @@ setDoc(pageviewRef, {
   lastActiveAt: serverTimestamp()
 }).catch(err => console.error("Analytics open logging failed:", err)); 
 
-// Helper function to update duration without setting closedAt
 function updateDuration() {
   const durationSeconds = currentDurationSeconds(); 
 
@@ -123,7 +102,6 @@ function updateDuration() {
   }).catch(err => console.error("Analytics duration update failed:", err)); 
 }
 
-// 2. Heartbeat Mechanism (3-second interval captures quick visits)
 const HEARTBEAT_INTERVAL_MS = 3000;
 setInterval(() => {
   if (document.visibilityState === "visible") {
@@ -131,32 +109,96 @@ setInterval(() => {
   }
 }, HEARTBEAT_INTERVAL_MS);
 
-// 3. Save accumulated time on tab hide without marking tab as closed
 window.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    // The tab may just be backgrounded, or it may be closing right now -
-    // there's no way to tell which from this event alone, and on mobile the
-    // page can be suspended/killed immediately after this fires with no
-    // further chance to run JS. Use the beacon path so the write survives
-    // either outcome.
     sendExitUpdate({
       durationSeconds: currentDurationSeconds(),
       lastActiveAt: new Date(),
       closedAt: new Date()
     });
   } else if (document.visibilityState === "visible") {
-    // Tab is confirmed alive again - plenty of time for a normal SDK call.
     updateDoc(pageviewRef, {
       closedAt: null 
     }).catch(err => console.error("Analytics reopen logging failed:", err));
   }
 });
 
-// 4. Explicitly mark tab closure on page unload/close
-window.addEventListener("pagehide", () => {
-  sendExitUpdate({
-    durationSeconds: currentDurationSeconds(),
-    lastActiveAt: new Date(),
-    closedAt: new Date()
+// ---------------------------------------------------------------------------
+// "Support Us" click tracking, rate-limited per Device ID
+// ---------------------------------------------------------------------------
+
+export const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+
+// Retrieves or generates a unique identifier for this browser device.
+export function getOrCreateDeviceId() {
+  let deviceId = localStorage.getItem("aurora_device_id");
+  if (!deviceId) {
+    deviceId = typeof crypto !== "undefined" && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : 'device_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+    localStorage.setItem("aurora_device_id", deviceId);
+  }
+  return deviceId;
+}
+
+// Truncates the device ID for UI display.
+export function maskDeviceId(id) {
+  const str = String(id);
+  return str.length > 8 ? str.slice(0, 8) + "..." : str;
+}
+
+// Reads the current cooldown/click state for a given Device ID.
+export async function getSupportStatus(deviceId) {
+  const supporterRef = doc(db, "supporters", deviceId);
+  const snap = await getDoc(supporterRef);
+  if (!snap.exists()) return { remainingMs: 0, clicks: 0 };
+
+  const data = snap.data();
+  const last = data.lastClickAtMillis || 0;
+  const remainingMs = Math.max(0, SUPPORT_COOLDOWN_MS - (Date.now() - last));
+  return { remainingMs, clicks: data.clicks || 0 };
+}
+
+export function subscribeSupportCounter(callback) {
+  const counterRef = doc(db, "counters", "supportCounter");
+  return onSnapshot(counterRef, (snap) => {
+    callback(snap.exists() ? (snap.data().count || 0) : 0);
+  }, (err) => {
+    console.error("Support: counter subscription failed:", err);
   });
-});
+}
+
+// Attempts to register a support click for the given Device ID.
+export async function registerSupportClick(deviceId) {
+  const supporterRef = doc(db, "supporters", deviceId);
+  const counterRef = doc(db, "counters", "supportCounter");
+
+  return runTransaction(db, async (tx) => {
+    const supporterSnap = await tx.get(supporterRef);
+    const now = Date.now();
+    const prevClicks = supporterSnap.exists() ? (supporterSnap.data().clicks || 0) : 0;
+
+    if (supporterSnap.exists()) {
+      const last = supporterSnap.data().lastClickAtMillis || 0;
+      const remainingMs = SUPPORT_COOLDOWN_MS - (now - last);
+      if (remainingMs > 0) {
+        return { success: false, remainingMs, clicks: prevClicks };
+      }
+    }
+
+    const counterSnap = await tx.get(counterRef);
+    const prevTotal = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
+    const newTotal = prevTotal + 1;
+    const newClicks = prevClicks + 1;
+
+    tx.set(counterRef, { count: newTotal }, { merge: true });
+    tx.set(supporterRef, {
+      deviceId: String(deviceId),
+      lastClickAtMillis: now,
+      clicks: newClicks,
+      dateStr: getHKTDateString()
+    }, { merge: true });
+
+    return { success: true, remainingMs: SUPPORT_COOLDOWN_MS, clicks: newClicks, totalSupporters: newTotal };
+  });
+}
