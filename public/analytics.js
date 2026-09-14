@@ -34,10 +34,10 @@ const pageviewRef = doc(collection(db, "pageviews"));
 
 const FIRESTORE_COMMIT_URL =
   `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}` +
-  `/databases/(default)/documents:commit?key=${firebaseConfig.apiKey}`;
+  `/databases/(default)/documents:commit?key=${firebaseConfig.apiKey}`; 
 
 const PAGEVIEW_DOC_PATH =
-  `projects/${firebaseConfig.projectId}/databases/(default)/documents/pageviews/${pageviewRef.id}`;
+  `projects/${firebaseConfig.projectId}/databases/(default)/documents/pageviews/${pageviewRef.id}`; 
 
 function toFirestoreValue(value) {
   if (value === null) return { nullValue: null };
@@ -46,7 +46,7 @@ function toFirestoreValue(value) {
     return Number.isInteger(value) ? { integerValue: value } : { doubleValue: value };
   }
   return { stringValue: String(value) };
-}
+} 
 
 function sendExitUpdate(fields) {
   const fieldPaths = Object.keys(fields);
@@ -78,11 +78,11 @@ function sendExitUpdate(fields) {
       keepalive: true
     }).catch((err) => console.error("Analytics exit beacon fallback failed:", err));
   }
-}
+} 
 
 function currentDurationSeconds() {
   return Math.max(1, Math.round((Date.now() - startTime) / 1000));
-}
+} 
 
 setDoc(pageviewRef, {
   path: path,
@@ -102,34 +102,35 @@ function updateDuration() {
   }).catch(err => console.error("Analytics duration update failed:", err)); 
 }
 
-const HEARTBEAT_INTERVAL_MS = 3000;
+const HEARTBEAT_INTERVAL_MS = 3000; 
 setInterval(() => {
   if (document.visibilityState === "visible") {
     updateDuration();
   }
-}, HEARTBEAT_INTERVAL_MS);
+}, HEARTBEAT_INTERVAL_MS); 
 
+// Sync duration when switching away, without recording a closed event
 window.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    sendExitUpdate({
-      durationSeconds: currentDurationSeconds(),
-      lastActiveAt: new Date(),
-      closedAt: new Date()
-    });
-  } else if (document.visibilityState === "visible") {
-    updateDoc(pageviewRef, {
-      closedAt: null 
-    }).catch(err => console.error("Analytics reopen logging failed:", err));
+    updateDuration();
   }
+});
+
+// Record closedAt ONLY on actual tab close, browser close, or page navigation
+window.addEventListener("pagehide", () => {
+  sendExitUpdate({
+    durationSeconds: currentDurationSeconds(),
+    lastActiveAt: new Date(),
+    closedAt: new Date()
+  });
 });
 
 // ---------------------------------------------------------------------------
 // "Support Us" click tracking, rate-limited per Device ID
 // ---------------------------------------------------------------------------
 
-export const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+export const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes 
 
-// Retrieves or generates a unique identifier for this browser device.
 export function getOrCreateDeviceId() {
   let deviceId = localStorage.getItem("aurora_device_id");
   if (!deviceId) {
@@ -141,13 +142,16 @@ export function getOrCreateDeviceId() {
   return deviceId;
 }
 
-// Truncates the device ID for UI display.
 export function maskDeviceId(id) {
   const str = String(id);
   return str.length > 8 ? str.slice(0, 8) + "..." : str;
 }
 
-// Reads the current cooldown/click state for a given Device ID.
+export function maskIP(ip) {
+  const str = String(ip);
+  return str.length > 8 ? str.slice(0, 8) + "..." : str;
+} 
+
 export async function getSupportStatus(deviceId) {
   const supporterRef = doc(db, "supporters", deviceId);
   const snap = await getDoc(supporterRef);
@@ -166,9 +170,8 @@ export function subscribeSupportCounter(callback) {
   }, (err) => {
     console.error("Support: counter subscription failed:", err);
   });
-}
+} 
 
-// Attempts to register a support click for the given Device ID.
 export async function registerSupportClick(deviceId) {
   const supporterRef = doc(db, "supporters", deviceId);
   const counterRef = doc(db, "counters", "supportCounter");

@@ -358,28 +358,6 @@
     background: var(--line);
   }
 
-  /* ---------- SU Info Card Styling ---------- */
-  .su-info-card {
-    line-height: 1.95;
-    font-size: 1.05rem;
-    color: rgba(223, 246, 242, 0.9);
-  }
-
-  .su-paragraph {
-    margin-bottom: 1.25rem;
-    text-align: justify;
-  }
-
-  .su-paragraph:last-child {
-    margin-bottom: 0;
-  }
-
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-  }
-
   .glass-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -388,81 +366,6 @@
     border-radius: 16px;
     padding: 28px;
     transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
-  }
-
-  .glass-card:hover {
-    transform: translateY(-4px) !important;
-    border-color: rgba(127, 233, 240, 0.5);
-  }
-
-  .team-card {
-    text-align: center;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    cursor: pointer;
-  }
-
-  .team-card:hover {
-    box-shadow: 0 0 20px rgba(46, 230, 184, 0.2);
-  }
-
-  /* Member Avatar Styling */
-  .avatar-wrapper {
-    width: 88px;
-    height: 88px;
-    margin: 0 auto 16px;
-    position: relative;
-  }
-
-  .member-avatar {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--aurora-cyan);
-    box-shadow: 0 0 12px rgba(127, 233, 240, 0.25);
-    transition: transform 0.3s ease, border-color 0.3s ease;
-  }
-
-  .team-card:hover .member-avatar {
-    transform: scale(1.05);
-    border-color: var(--aurora-teal);
-    box-shadow: 0 0 16px rgba(46, 230, 184, 0.4);
-  }
-
-  /* Member Information Styling */
-  .member-role {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: var(--aurora-teal);
-    margin-bottom: 6px;
-    letter-spacing: 0.02em;
-  }
-
-  .member-name {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: #ffffff;
-    margin-bottom: 4px;
-  }
-
-  .member-class {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: rgba(223, 246, 242, 0.65);
-    margin-bottom: 10px;
-    letter-spacing: 0.05em;
-  }
-
-  .member-handle {
-    font-size: 0.85rem;
-    color: var(--aurora-cyan);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
   }
 
   footer {
@@ -484,7 +387,7 @@
     letter-spacing: 0.2em;
     color: var(--support-blue);
     text-transform: uppercase;
-    margin-bottom: 4px;
+    margin-bottom: 28px;
   }
 
   .support-count {
@@ -505,12 +408,6 @@
     0% { transform: scale(1); }
     30% { transform: scale(1.08); text-shadow: 0 0 45px rgba(110, 195, 255, 0.85), 0 0 90px rgba(110, 195, 255, 0.4); }
     100% { transform: scale(1); }
-  }
-
-  .support-count-sub {
-    margin-top: 10px;
-    font-size: 0.95rem;
-    color: rgba(223, 246, 242, 0.65);
   }
 
   .support-action {
@@ -556,14 +453,6 @@
     font-size: 0.95rem;
     color: rgba(223, 246, 242, 0.75);
     min-height: 1.4em;
-    text-align: center;
-  }
-
-  .support-info-card {
-    margin-top: 60px;
-    line-height: 1.9;
-    font-size: 1.02rem;
-    color: rgba(223, 246, 242, 0.9);
     text-align: center;
   }
 
@@ -724,8 +613,8 @@
   <main class="page-container">
     <div class="header-section">
       <h1 class="page-title i18n" data-en="Support Us" data-zh="支持我們">Support Us</h1>
-      <p class="page-description i18n" data-en="Every tap below is a small vote of confidence in Cabinet Aurora. Show your support once every 10 minutes and help us light up the counter!" data-zh="每一次點擊都是對候選內閣 Aurora 的一份支持。每 10 分鐘可以支持一次，一起點亮以下的支持人數吧！">
-        Every tap below is a small vote of confidence in Cabinet Aurora. Show your support once every 10 minutes and help us light up the counter!
+      <p class="page-description i18n" data-en="Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life. " data-zh="每一次點擊都是對候選內閣 Aurora 的一份支持。每 10 分鐘可以支持一次，一起點亮以下的支持人數吧！">
+        Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life. 
       </p>
     </div>
 
@@ -754,15 +643,14 @@
 
   <script src="load-components.js"></script>
 
-  <!-- Support Us: Device-ID-rate-limited click tracking -->
+  <!-- Support Us: Live dynamic vote tracking -->
   <script type="module">
     import {
       getOrCreateDeviceId,
       maskDeviceId,
       getSupportStatus,
       registerSupportClick,
-      subscribeSupportCounter,
-      SUPPORT_COOLDOWN_MS
+      subscribeSupportCounter
     } from './analytics.js';
 
     const btn = document.getElementById('support-btn');
@@ -774,7 +662,6 @@
     let myDeviceId = null;
     let countdownTimer = null;
 
-    // Text shown on the button/status while the countdown is running vs. ready.
     const btnLabels = {
       en: { ready: 'Support Us 💙', sent: 'Thank you! 💙', checking: 'Checking your status...', offline: 'Unavailable' },
       zh: { ready: '支持我們 💙', sent: '謝謝支持！💙', checking: '正在核實狀態...', offline: '暫時無法使用' }
@@ -799,7 +686,6 @@
     function bumpCount(value) {
       countEl.textContent = value.toLocaleString();
       countEl.classList.remove('bump');
-      // Force reflow so the animation can retrigger on rapid updates.
       void countEl.offsetWidth;
       countEl.classList.add('bump');
     }
@@ -863,6 +749,7 @@
         if (result.success) {
           statusEl.textContent = currentLangCode() === 'zh' ? '感謝你的支持！💙' : 'Thank you for your support! 💙';
           if (typeof result.totalSupporters === 'number') bumpCount(result.totalSupporters);
+
           startCountdown(result.remainingMs);
         } else {
           statusEl.textContent = currentLangCode() === 'zh' ? '你最近已經支持過了。' : "You've already supported recently.";
