@@ -1090,21 +1090,22 @@
         let totalTimeSeconds = 0;
 
         const validRoutes = ['/admin', '/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks'];
+        const metricRoutes = ['/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks'];
 
         const pageMetrics = {};
-        validRoutes.forEach(route => {
+        metricRoutes.forEach(route => {
           pageMetrics[route] = { views: 0, totalTime: 0 };
         });
 
         dailyCountsByRoute = { 'all': {} };
-        validRoutes.forEach(route => dailyCountsByRoute[route] = {});
+        metricRoutes.forEach(route => dailyCountsByRoute[route] = {});
 
         const now = new Date();
         for (let i = 6; i >= 0; i--) {
           const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
           const key = getHKTDateString(d);
           dailyCountsByRoute['all'][key] = 0;
-          validRoutes.forEach(route => dailyCountsByRoute[route][key] = 0);
+          metricRoutes.forEach(route => dailyCountsByRoute[route][key] = 0);
         }
 
         allActivityLogs = [];
@@ -1139,17 +1140,25 @@
 
           const userLabel = data.userEmail || data.userName || null;
 
-          totalViews++;
-          totalTimeSeconds += duration;
+          // Only aggregate metrics, KPIs, and chart data for user-facing subpages
+          if (path !== '/admin') {
+            totalViews++;
+            totalTimeSeconds += duration;
 
-          pageMetrics[path].views++;
-          pageMetrics[path].totalTime += duration;
+            if (pageMetrics[path]) {
+              pageMetrics[path].views++;
+              pageMetrics[path].totalTime += duration;
+            }
 
-          if (dailyCountsByRoute['all'].hasOwnProperty(dateStr)) {
-            dailyCountsByRoute['all'][dateStr]++;
-            dailyCountsByRoute[path][dateStr]++;
+            if (dailyCountsByRoute['all'].hasOwnProperty(dateStr)) {
+              dailyCountsByRoute['all'][dateStr]++;
+              if (dailyCountsByRoute[path]) {
+                dailyCountsByRoute[path][dateStr]++;
+              }
+            }
           }
 
+          // /admin entries are still recorded in allActivityLogs
           if (openDate && !isNaN(openDate.getTime())) {
             allActivityLogs.push({
               path: path,
@@ -1193,7 +1202,7 @@
         });
         document.getElementById('kpi-top-page').textContent = maxViews > 0 ? topPage : 'None';
 
-        renderDestinationFilterButtons(validRoutes);
+        renderDestinationFilterButtons(metricRoutes);
         renderCharts(pageMetrics);
         renderLogPreview();
 
@@ -1201,7 +1210,7 @@
         console.error("Error subscribing to real-time pageviews:", err);
       });
     }
-
+    
     function renderDestinationFilterButtons(validRoutes) {
       const container = document.getElementById('destination-filter-container');
       const routes = ['all', ...validRoutes];
