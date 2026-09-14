@@ -6,6 +6,8 @@
 <title>Aurora — Student Feedback</title>
 <link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
 
+<script type="module" src="analytics.js"></script>
+
 <link rel="preload" href="assets/aurora-logo.png" as="image">
 <link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
 
@@ -90,7 +92,6 @@
     color: #ffffff; border-color: rgba(127, 233, 240, 0.4); background: rgba(127, 233, 240, 0.1);
   }
 
-  /* ---------- Hamburger Button ---------- */
   .hamburger-btn {
     display: none;
     background: transparent;
@@ -125,7 +126,6 @@
     transform: translateY(-8px) rotate(-45deg);
   }
 
-  /* ---------- Mobile Navigation Overlay ---------- */
   .nav-overlay {
     position: fixed;
     inset: 0;
@@ -310,7 +310,6 @@
   .faq-item-title { font-weight: 600; font-size: 1.05rem; color: var(--aurora-cyan); margin-bottom: 8px; }
   .faq-item-desc { font-size: 0.9rem; color: rgba(223, 246, 242, 0.85); line-height: 1.6; }
 
-  /* Modal */
   .modal-overlay {
     position: fixed; inset: 0; z-index: 2000;
     background: rgba(5, 11, 18, 0.85); backdrop-filter: blur(12px);
@@ -324,7 +323,6 @@
     border-radius: 16px; width: 100%; max-width: 480px; padding: 28px; text-align: center;
   }
 
-  /* Progress Bar Styles */
   .progress-container {
     width: 100%;
     height: 10px;
@@ -354,60 +352,20 @@
 
   footer { position: relative; z-index: 1; text-align: center; padding: 0 6vw 40px; font-size: 0.78rem; color: rgba(223, 246, 242, 0.4); }
 
-  /* ---------- Mobile Drawer Media Query ---------- */
   @media (max-width: 768px) {
-    .hamburger-btn {
-      display: flex;
-    }
-
-    .navbar {
-      justify-content: flex-start;
-      gap: 16px;
-      padding: 0.8rem 1rem;
-    }
-
-    .nav-title {
-      display: inline-block;
-    }
-
+    .hamburger-btn { display: flex; }
+    .navbar { justify-content: flex-start; gap: 16px; padding: 0.8rem 1rem; }
+    .nav-title { display: inline-block; }
     .nav-links {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 260px;
-      height: 100vh;
-      height: 100dvh;
-      background: rgba(10, 26, 32, 0.95);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-right: 1px solid rgba(127, 233, 240, 0.25);
-      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 80px 20px 24px;
-      gap: 0.8rem;
-      transform: translateX(-100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 99;
+      position: fixed; top: 0; left: 0; width: 260px; height: 100vh; height: 100dvh;
+      background: rgba(10, 26, 32, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(127, 233, 240, 0.25); box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+      flex-direction: column; align-items: flex-start; padding: 80px 20px 24px; gap: 0.8rem;
+      transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); z-index: 99;
     }
-
-    .nav-links.active {
-      transform: translateX(0);
-    }
-
-    .nav-btn {
-      width: 100%;
-      text-align: left;
-      padding: 10px 16px;
-      font-size: 0.95rem;
-    }
-
-    .lang-toggle {
-      bottom: 16px;
-      right: 16px;
-      padding: 8px 14px;
-      font-size: 0.8rem;
-    }
+    .nav-links.active { transform: translateX(0); }
+    .nav-btn { width: 100%; text-align: left; padding: 10px 16px; font-size: 0.95rem; }
+    .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
   }
 </style>
 </head>
@@ -415,7 +373,6 @@
 
   <div id="preloader"></div>
 
-  <!-- Floating Bottom-Right Language Toggle Button -->
   <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language"> 
     <span class="lang-icon">🌐</span>
     <span id="lang-text">繁體中文</span>
@@ -456,7 +413,6 @@
     </div>
 
     <div class="feedback-grid">
-      <!-- Submit Feedback Form -->
       <div class="glass-panel">
         <h2 class="panel-title i18n" data-en="Submit Anonymous Feedback" data-zh="提交匿名意見">Submit Anonymous Feedback</h2>
         <div class="form-group">
@@ -476,15 +432,11 @@
         <button id="fb-submit-btn" class="submit-btn i18n" data-en="Submit Feedback" data-zh="提交反饋" disabled>Submit Feedback</button>
       </div>
 
-      <!-- Published Responses Section -->
       <div class="glass-panel">
         <h2 class="panel-title i18n" data-en="Submitted Feedbacks & Answers" data-zh="已提交意見及回應">Submitted Feedbacks & Answers</h2>
-        <div id="feedbacks-container" class="feedback-list">
-          <!-- Dynamically filled -->
-        </div>
+        <div id="feedbacks-container" class="feedback-list"></div>
       </div>
 
-      <!-- FAQ Section -->
       <div class="glass-panel">
         <h2 class="panel-title i18n" data-en="Frequently Asked Questions (FAQ)" data-zh="常見問題 (FAQ)">Frequently Asked Questions (FAQ)</h2>
         <div class="faq-list">
@@ -529,9 +481,9 @@
 
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora" data-zh="優才（楊殷有娣）書院  -  2026–27 1號候選內閣 Aurora">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora</footer>
 
-  <script src="load-components.js"></script>
+  <script src="load-components.js" onerror="console.warn('load-components.js failed to load.')"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, 
       collection, 
@@ -549,8 +501,13 @@
       measurementId: "G-ZWE0Z6VTZK"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    let db = null;
+    try {
+      const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+      db = getFirestore(app);
+    } catch (err) {
+      console.warn("Firestore setup failed or offline:", err);
+    }
 
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
@@ -587,7 +544,7 @@
 
     setLanguage(currentLang);
 
-    document.getElementById('lang-btn').addEventListener('click', () => {
+    document.getElementById('lang-btn')?.addEventListener('click', () => {
       if (isSwitching) return;
       isSwitching = true;
       document.body.classList.remove('is-loaded');
@@ -635,30 +592,37 @@
     const submitBtn = document.getElementById('fb-submit-btn');
 
     function validateForm() {
+      if (!titleInput || !descInput || !submitBtn) return;
       const titleWords = countWords(titleInput.value);
       const descWords = countWords(descInput.value);
 
-      titleCounter.textContent = `${titleWords} / 3 words`;
-      titleCounter.classList.toggle('valid', titleWords >= 3);
+      if (titleCounter) {
+        titleCounter.textContent = `${titleWords} / 3 words`;
+        titleCounter.classList.toggle('valid', titleWords >= 3);
+      }
 
-      descCounter.textContent = `${descWords} / 20 words`;
-      descCounter.classList.toggle('valid', descWords >= 20);
+      if (descCounter) {
+        descCounter.textContent = `${descWords} / 20 words`;
+        descCounter.classList.toggle('valid', descWords >= 20);
+      }
 
       submitBtn.disabled = !(titleWords >= 3 && descWords >= 20);
     }
 
-    titleInput.addEventListener('input', validateForm);
-    descInput.addEventListener('input', validateForm);
+    titleInput?.addEventListener('input', validateForm);
+    descInput?.addEventListener('input', validateForm);
 
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function openModal(id) { document.getElementById(id)?.classList.add('active'); }
+    function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
 
-    document.getElementById('status-action-btn').addEventListener('click', () => closeModal('modal-status'));
+    document.getElementById('status-action-btn')?.addEventListener('click', () => closeModal('modal-status'));
 
     function startProgressBar(estimatedSeconds = 4) {
       const progressContainer = document.getElementById('status-progress-container');
       const progressBar = document.getElementById('status-progress-bar');
       const timeRemaining = document.getElementById('status-time-remaining');
+
+      if (!progressContainer || !progressBar || !timeRemaining) return;
 
       progressContainer.style.display = 'block';
       timeRemaining.style.display = 'block';
@@ -688,17 +652,18 @@
       const progressBar = document.getElementById('status-progress-bar');
       const timeRemaining = document.getElementById('status-time-remaining');
 
-      progressBar.style.width = '100%';
-      timeRemaining.textContent = currentLang === 'zh' ? '完成！' : 'Completed!';
+      if (progressBar) progressBar.style.width = '100%';
+      if (timeRemaining) timeRemaining.textContent = currentLang === 'zh' ? '完成！' : 'Completed!';
 
       setTimeout(() => {
-        progressContainer.style.display = 'none';
-        timeRemaining.style.display = 'none';
+        if (progressContainer) progressContainer.style.display = 'none';
+        if (timeRemaining) timeRemaining.style.display = 'none';
       }, 500);
     }
 
     async function saveFeedback(title, description) {
       try {
+        if (!db) throw new Error("Database offline or uninitialized.");
         await addDoc(collection(db, "feedbacks"), {
           title: title,
           description: description,
@@ -712,8 +677,8 @@
           ? '感謝您的寶貴意見！我們會儘快為您處理。'
           : 'Thank you for your feedback! Our team will review it soon.';
 
-        titleInput.value = '';
-        descInput.value = '';
+        if (titleInput) titleInput.value = '';
+        if (descInput) descInput.value = '';
         validateForm();
       } catch (err) {
         console.error("Firestore Save Error:", err);
@@ -722,7 +687,7 @@
       }
     }
 
-    submitBtn.addEventListener('click', async () => {
+    submitBtn?.addEventListener('click', async () => {
       const title = titleInput.value.trim();
       const description = descInput.value.trim();
 
@@ -791,10 +756,22 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function revealPage() {
       renderPublicFeedbacks();
-      setTimeout(() => { document.body.classList.add('is-loaded'); }, 300);
-    });
+      setTimeout(() => { 
+        document.body.classList.add('is-loaded'); 
+      }, 300);
+    }
+
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+      revealPage();
+    } else {
+      document.addEventListener('DOMContentLoaded', revealPage);
+    }
+
+    setTimeout(() => {
+      document.body.classList.add('is-loaded');
+    }, 1200);
   </script>
 </body>
 </html>
