@@ -263,34 +263,8 @@
 </head>
 <body>
 
-  <div id="preloader"></div>
-
-  <!-- Floating Bottom-Right Language Toggle Button -->
-  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
-    <span class="lang-icon">🌐</span>
-    <span id="lang-text">繁體中文</span>
-  </button> 
-
-  <div class="nav-overlay" id="nav-overlay"></div>
-
-  <header class="navbar">
-    <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Navigation">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-    <a href="index.html" class="nav-brand">
-      <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo" onerror="this.style.display='none'">
-      <span class="nav-title">Aurora</span>
-    </a>
-    <nav class="nav-links" id="nav-links">
-      <a href="aboutus.html" class="nav-btn i18n" data-en="About Us" data-zh="關於我們">About Us</a>
-      <a href="activities.html" class="nav-btn i18n" data-en="Activities" data-zh="活動">Activities</a>
-      <a href="welfare.html" class="nav-btn i18n" data-en="Welfare" data-zh="福利">Welfare</a>
-      <a href="schedule.html" class="nav-btn active i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
-      <a href="feedbacks.html" class="nav-btn i18n" data-en="Feedback" data-zh="意見反饋">Feedback</a>
-    </nav>
-  </header>
+  <!-- Replaced inline header/nav components with panel container -->
+  <div id="panel-container"></div>
 
   <div class="sky">
     <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
@@ -482,7 +456,7 @@
 
     setLanguage(currentLang);
 
-    document.getElementById('lang-btn').addEventListener('click', () => {
+    document.getElementById('lang-btn')?.addEventListener('click', () => {
       if (isSwitching) return;
       isSwitching = true;
 
