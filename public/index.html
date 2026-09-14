@@ -8,9 +8,12 @@
 
 <script type="module" src="analytics.js"></script>
 
-<!-- Asset Preloading -->
+<!-- Asset & Component Preloading -->
+<link rel="preload" href="panel.html" as="fetch" crossorigin>
 <link rel="preload" href="assets/aurora-logo.png" as="image">
 <link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+
+<script src="load-components.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -497,7 +500,6 @@
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
 
   <script>
-    // Language Preference Setup
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
 
@@ -540,7 +542,6 @@
       });
     }
 
-    // Page Load & Video Auto-Recovery Setup
     let pageRevealed = false;
     function revealPage() {
       if (pageRevealed) return;
@@ -575,8 +576,5 @@
       revealPage();
     });
   </script>
-
-  <!-- Load Navigation Panel Component -->
-  <script src="load-components.js"></script>
 </body>
 </html>
