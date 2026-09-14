@@ -254,6 +254,11 @@ export async function generateFingerprint() {
 }
 
 export async function getOrCreateDeviceId() {
+  // NOTE: localStorage is cleared in Incognito / a fresh browser profile,
+  // but generateFingerprint() is deterministic (same hardware/software
+  // signals -> same SHA-256 hash), so re-generating it lands on the same
+  // ID anyway. We still cache it locally purely to avoid recomputing it
+  // (canvas/audio/font probing) on every page load.
   let deviceId = localStorage.getItem("aurora_device_id");
   if (!deviceId) {
     deviceId = await generateFingerprint();
@@ -270,17 +275,104 @@ export function maskDeviceId(id) {
 export function maskIP(ip) {
   const str = String(ip);
   return str.length > 8 ? str.slice(0, 8) + "..." : str;
-} 
+}
 
-export async function getSupportStatus(deviceId) {
+async function sha256Hex(str) {
+  const msgBuffer = new TextEncoder().encode(str);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ---------------------------------------------------------------------------
+// Solution 2: IP address lookup (used as a second, independent cooldown key
+// alongside the device fingerprint, so an incognito window or a fresh
+// browser profile on the SAME network can't reset the 10-minute cooldown).
+// ---------------------------------------------------------------------------
+
+export async function getPublicIP() {
+  try {
+    const res = await fetch("https://api.ipify.org?format=json");
+    if (!res.ok) throw new Error("IP lookup returned " + res.status);
+    const data = await res.json();
+    return data.ip || null;
+  } catch (err) {
+    console.error("Analytics: public IP lookup failed:", err);
+    return null; // Support flow degrades gracefully to fingerprint-only if this fails.
+  }
+}
+
+export async function getIpHash(ip) {
+  if (!ip) return null;
+  const hash = await sha256Hex("aurora_ip_salt_v1:" + ip);
+  return "ip_" + hash.substring(0, 24);
+}
+
+// ---------------------------------------------------------------------------
+// Solution 3: Best-effort device model / platform label for the admin table.
+// Chrome/Android exposes a real model string via User-Agent Client Hints;
+// everywhere else (desktop Chrome, Safari, Firefox) this falls back to a
+// coarse OS/device label parsed from the user agent string.
+// ---------------------------------------------------------------------------
+
+export async function getDeviceInfo() {
+  let model = null;
+  let platformLabel = navigator.platform || "";
+
+  try {
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      const uaData = await navigator.userAgentData.getHighEntropyValues(["model", "platform", "platformVersion"]);
+      if (uaData.model) model = uaData.model;
+      if (uaData.platform) platformLabel = uaData.platform;
+    }
+  } catch (e) {}
+
+  if (!model) {
+    const ua = navigator.userAgent || "";
+    const androidMatch = ua.match(/Android[^;]*;\s*([^)]+?)(?:\s+Build|\))/);
+    if (androidMatch && androidMatch[1]) {
+      model = androidMatch[1].trim();
+    } else if (/iPhone/.test(ua)) {
+      model = "iPhone";
+    } else if (/iPad/.test(ua)) {
+      model = "iPad";
+    } else if (/Macintosh/.test(ua)) {
+      model = "Mac";
+    } else if (/Windows/.test(ua)) {
+      model = "Windows PC";
+    } else if (/Linux/.test(ua)) {
+      model = "Linux PC";
+    } else {
+      model = platformLabel || "Unknown";
+    }
+  }
+
+  return { model, platform: platformLabel };
+}
+
+export async function getSupportStatus(deviceId, ipHash) {
   const supporterRef = doc(db, "supporters", deviceId);
-  const snap = await getDoc(supporterRef);
-  if (!snap.exists()) return { remainingMs: 0, clicks: 0 };
+  const supporterSnap = await getDoc(supporterRef);
 
-  const data = snap.data();
-  const last = data.lastClickAtMillis || 0;
-  const remainingMs = Math.max(0, SUPPORT_COOLDOWN_MS - (Date.now() - last));
-  return { remainingMs, clicks: data.clicks || 0 };
+  let remainingMs = 0;
+  let clicks = 0;
+
+  if (supporterSnap.exists()) {
+    const data = supporterSnap.data();
+    const last = data.lastClickAtMillis || 0;
+    remainingMs = Math.max(remainingMs, SUPPORT_COOLDOWN_MS - (Date.now() - last));
+    clicks = data.clicks || 0;
+  }
+
+  if (ipHash) {
+    const ipRef = doc(db, "ipCooldowns", ipHash);
+    const ipSnap = await getDoc(ipRef);
+    if (ipSnap.exists()) {
+      const ipLast = ipSnap.data().lastClickAtMillis || 0;
+      remainingMs = Math.max(remainingMs, SUPPORT_COOLDOWN_MS - (Date.now() - ipLast));
+    }
+  }
+
+  return { remainingMs: Math.max(0, remainingMs), clicks };
 }
 
 export function subscribeSupportCounter(callback) {
@@ -292,21 +384,38 @@ export function subscribeSupportCounter(callback) {
   });
 } 
 
-export async function registerSupportClick(deviceId) {
+export async function registerSupportClick(deviceId, extra = {}) {
+  const { ipAddress = null, ipHash = null, deviceModel = null, platform = null } = extra;
+
   const supporterRef = doc(db, "supporters", deviceId);
   const counterRef = doc(db, "counters", "supportCounter");
+  const ipRef = ipHash ? doc(db, "ipCooldowns", ipHash) : null;
 
   return runTransaction(db, async (tx) => {
+    // All reads must happen before any writes in a Firestore transaction.
     const supporterSnap = await tx.get(supporterRef);
+    const ipSnap = ipRef ? await tx.get(ipRef) : null;
+
     const now = Date.now();
     const prevClicks = supporterSnap.exists() ? (supporterSnap.data().clicks || 0) : 0;
 
+    // Cooldown is enforced against BOTH the device fingerprint and the IP
+    // address independently - whichever one is still cooling down blocks
+    // the click. This is what stops "switch profile / incognito" bypasses:
+    // even if the fingerprint were somehow different, the IP-keyed record
+    // still remembers the recent click.
+    let remainingMs = 0;
     if (supporterSnap.exists()) {
       const last = supporterSnap.data().lastClickAtMillis || 0;
-      const remainingMs = SUPPORT_COOLDOWN_MS - (now - last);
-      if (remainingMs > 0) {
-        return { success: false, remainingMs, clicks: prevClicks };
-      }
+      remainingMs = Math.max(remainingMs, SUPPORT_COOLDOWN_MS - (now - last));
+    }
+    if (ipSnap && ipSnap.exists()) {
+      const ipLast = ipSnap.data().lastClickAtMillis || 0;
+      remainingMs = Math.max(remainingMs, SUPPORT_COOLDOWN_MS - (now - ipLast));
+    }
+
+    if (remainingMs > 0) {
+      return { success: false, remainingMs, clicks: prevClicks };
     }
 
     const counterSnap = await tx.get(counterRef);
@@ -319,8 +428,19 @@ export async function registerSupportClick(deviceId) {
       deviceId: String(deviceId),
       lastClickAtMillis: now,
       clicks: newClicks,
-      dateStr: getHKTDateString()
+      dateStr: getHKTDateString(),
+      ...(ipAddress ? { ip: ipAddress } : {}),
+      ...(deviceModel ? { deviceModel } : {}),
+      ...(platform ? { platform } : {})
     }, { merge: true });
+
+    if (ipRef) {
+      tx.set(ipRef, {
+        ip: ipAddress || "",
+        deviceId: String(deviceId),
+        lastClickAtMillis: now
+      }, { merge: true });
+    }
 
     return { success: true, remainingMs: SUPPORT_COOLDOWN_MS, clicks: newClicks, totalSupporters: newTotal };
   });

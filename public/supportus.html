@@ -650,7 +650,10 @@
       maskDeviceId,
       getSupportStatus,
       registerSupportClick,
-      subscribeSupportCounter
+      subscribeSupportCounter,
+      getPublicIP,
+      getIpHash,
+      getDeviceInfo
     } from './analytics.js';
 
     const btn = document.getElementById('support-btn');
@@ -660,6 +663,9 @@
     const barDeviceEl = document.getElementById('bar-device');
 
     let myDeviceId = null;
+    let myIpAddress = null;
+    let myIpHash = null;
+    let myDeviceInfo = { model: null, platform: null };
     let countdownTimer = null;
 
     const btnLabels = {
@@ -726,7 +732,15 @@
         return;
       }
 
-      const status = await getSupportStatus(myDeviceId);
+      // Best-effort IP + device model lookups. Both degrade gracefully:
+      // if the IP lookup fails, cooldown enforcement just falls back to
+      // fingerprint-only, same as before.
+      const [ip, deviceInfo] = await Promise.all([getPublicIP(), getDeviceInfo()]);
+      myIpAddress = ip;
+      myIpHash = await getIpHash(ip);
+      myDeviceInfo = deviceInfo;
+
+      const status = await getSupportStatus(myDeviceId, myIpHash);
       updateBottomBar(status.clicks);
 
       if (status.remainingMs > 0) {
@@ -743,7 +757,12 @@
       btn.textContent = '...';
 
       try {
-        const result = await registerSupportClick(myDeviceId);
+        const result = await registerSupportClick(myDeviceId, {
+          ipAddress: myIpAddress,
+          ipHash: myIpHash,
+          deviceModel: myDeviceInfo.model,
+          platform: myDeviceInfo.platform
+        });
         updateBottomBar(result.clicks);
 
         if (result.success) {

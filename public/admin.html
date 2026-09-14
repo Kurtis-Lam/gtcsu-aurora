@@ -802,6 +802,8 @@
             <tr>
               <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-supporters"></th>
               <th>Browser Fingerprint / Device ID</th>
+              <th>IP Address</th>
+              <th>Device Model</th>
               <th>Votes Cast</th>
               <th>Last Click (HKT)</th>
               <th>Cooldown Status</th>
@@ -809,7 +811,7 @@
             </tr>
           </thead>
           <tbody id="supporters-table-body">
-            <tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
+            <tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
           </tbody>
         </table>
       </div>
@@ -870,7 +872,7 @@
       signOut, 
       onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { SUPPORT_COOLDOWN_MS } from "./analytics.js";
+    import { SUPPORT_COOLDOWN_MS, maskIP } from "./analytics.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
@@ -1610,7 +1612,7 @@
       document.getElementById('kpi-unique-supporters').textContent = latestSupporterDocs.length.toLocaleString();
 
       if (!latestSupporterDocs.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
         document.getElementById('kpi-last-support').textContent = 'None yet';
         const selectAll = document.getElementById('select-all-supporters');
         if (selectAll) selectAll.checked = false;
@@ -1633,12 +1635,17 @@
           ? `<span class="event-tag closed">On cooldown</span>`
           : `<span class="event-tag opened">Ready</span>`;
 
+        const ipDisplay = s.ip ? escapeHtml(maskIP(s.ip)) : '<span style="color:rgba(223,246,242,0.4);">—</span>';
+        const modelDisplay = s.deviceModel ? escapeHtml(s.deviceModel) : '<span style="color:rgba(223,246,242,0.4);">—</span>';
+
         rows += `
           <tr>
             <td style="text-align: center;">
               <input type="checkbox" class="supporter-checkbox" value="${s.id}" data-clicks="${s.clicks || 0}">
             </td>
             <td>${escapeHtml(devId)}</td>
+            <td title="${s.ip ? escapeHtml(s.ip) : ''}">${ipDisplay}</td>
+            <td>${modelDisplay}</td>
             <td>${s.clicks || 0}</td>
             <td>${lastClickDate ? formatHKTTime(lastClickDate) : 'N/A'}</td>
             <td>${cooldownLabel}</td>
