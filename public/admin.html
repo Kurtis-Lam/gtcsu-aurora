@@ -779,8 +779,8 @@
 
     // Route color mapping
     const routeColors = {
+      '/admin': '#ffffff',      // Black
       '/': '#ff4d4d',          // Red
-      '/admin': '#ff9f43',      // Orange
       '/aboutus': '#ff9f43',   // Orange
       '/activities': '#ffd166',// Yellow
       '/welfare': '#06d6a0',   // Green
@@ -960,7 +960,7 @@
         let totalViews = 0;
         let totalTimeSeconds = 0;
 
-        const validRoutes = ['/', '/admin', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks'];
+        const validRoutes = ['/admin', '/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks'];
 
         const pageMetrics = {};
         validRoutes.forEach(route => {
@@ -1001,8 +1001,6 @@
             closeDate = data.closedAt.toDate();
           } else if (data.closedAt) {
             closeDate = new Date(data.closedAt);
-          } else if (duration > 0 && openDate) {
-            closeDate = new Date(openDate.getTime() + duration * 1000);
           }
 
           let dateStr = data.dateStr;
