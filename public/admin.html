@@ -553,7 +553,7 @@
     letter-spacing: 0.05em;
   }
 
-  .input-text, .input-textarea {
+  .input-text, .input-textarea, .select-input {
     width: 100%;
     background: rgba(5, 11, 18, 0.7);
     border: 1px solid rgba(127, 233, 240, 0.2);
@@ -562,6 +562,13 @@
     color: #ffffff;
     font-family: inherit;
     font-size: 0.9rem;
+  }
+
+  .select-input {
+    width: auto;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
   }
 
   .input-textarea { min-height: 80px; resize: vertical; }
@@ -634,8 +641,13 @@
     font-family: 'Manrope', monospace;
   }
 
-  .supporters-table tr:hover {
-    background: rgba(110, 195, 255, 0.05);
+  .supporters-table tr.clickable-row {
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .supporters-table tr.clickable-row:hover {
+    background: rgba(110, 195, 255, 0.12);
   }
 
   .supporters-header {
@@ -651,6 +663,30 @@
     display: flex;
     gap: 10px;
     align-items: center;
+  }
+
+  .detail-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    background: rgba(5, 11, 18, 0.6);
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+  }
+
+  .detail-field label {
+    font-size: 0.75rem;
+    color: var(--aurora-cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-field span {
+    font-size: 0.95rem;
+    color: #ffffff;
+    word-break: break-all;
+    font-family: monospace;
   }
 
   @media (max-width: 1024px) {
@@ -791,7 +827,18 @@
 
       <div class="supporters-table-wrap">
         <div class="supporters-header">
-          <h3 class="chart-title">Registered Voter Devices</h3>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <h3 class="chart-title">Registered Voter Devices</h3>
+            <!-- Top Sorting Dropdown -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label for="supporters-sort-select" style="font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600;">Sort By:</label>
+              <select id="supporters-sort-select" class="select-input">
+                <option value="time">⏱️ Latest Time</option>
+                <option value="votes">🔥 Most Votes</option>
+                <option value="cooldown">⏳ On Cooldown</option>
+              </select>
+            </div>
+          </div>
           <div class="supporters-actions">
             <button class="nav-btn nav-btn-danger" id="delete-selected-votes-btn">❌ Delete Selected Votes</button>
             <button class="nav-btn nav-btn-danger" id="reset-votes-btn">🗑 Reset All Votes</button>
@@ -812,6 +859,27 @@
           </thead>
           <tbody id="supporters-table-body">
             <tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Realtime Support Click Activity Logs -->
+      <div class="supporters-table-wrap" style="margin-top: 24px;">
+        <div class="supporters-header">
+          <h3 class="chart-title">Support Click History Logs <span style="font-size: 0.75rem; color: rgba(223,246,242,0.5);">(Click any row to view full device info)</span></h3>
+        </div>
+        <table class="supporters-table">
+          <thead>
+            <tr>
+              <th>Timestamp (HKT)</th>
+              <th>Time Ago</th>
+              <th>Browser Fingerprint / Device ID</th>
+              <th>IP Address</th>
+              <th>Device Model</th>
+            </tr>
+          </thead>
+          <tbody id="support-logs-table-body">
+            <tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading support click logs...</td></tr>
           </tbody>
         </table>
       </div>
@@ -846,6 +914,18 @@
           <button id="prev-page-btn" class="page-btn" disabled>← Previous</button>
           <button id="next-page-btn" class="page-btn" disabled>Next →</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device / Support Log Detail Modal -->
+  <div id="detail-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 550px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="detail-modal-title">📱 Full Log & Device Details</h2>
+        <button id="close-detail-modal-btn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" id="detail-modal-body" style="display: flex; flex-direction: column; gap: 12px;">
       </div>
     </div>
   </div>
@@ -901,7 +981,8 @@
       '/activities': '#ffd166',
       '/welfare': '#06d6a0',   
       '/schedule': '#118ab2',  
-      '/feedbacks': '#8338ec'  
+      '/feedbacks': '#8338ec',
+      '/supportus': '#6ec3ff'
     };
 
     let dailyCountsByRoute = {};
@@ -910,6 +991,7 @@
     let allActivityLogs = [];
     let currentPage = 1;
     const LOGS_PER_PAGE = 20;
+    let currentSortMode = 'time';
 
     function getHKTDateString(date = new Date()) {
       return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(date);
@@ -949,6 +1031,12 @@
 
       const diffDay = Math.floor(diffHour / 24);
       return `${diffDay}d ago`;
+    }
+
+    // Device ID Truncation Helper
+    function maskDeviceId(id) {
+      if (!id || id === '(unknown)') return 'xxxx...';
+      return id.length > 8 ? `${id.slice(0, 4)}...${id.slice(-4)}` : 'xxxx...';
     }
 
     const tabAnalyticsBtn = document.getElementById('tab-analytics-btn');
@@ -1015,6 +1103,54 @@
         logsModal.classList.add('hidden');
       }
     });
+
+    // Detail Modal Handlers
+    const detailModal = document.getElementById('detail-modal');
+    const closeDetailModalBtn = document.getElementById('close-detail-modal-btn');
+
+    closeDetailModalBtn.addEventListener('click', () => {
+      detailModal.classList.add('hidden');
+    });
+
+    detailModal.addEventListener('click', (e) => {
+      if (e.target === detailModal) detailModal.classList.add('hidden');
+    });
+
+    function showLogDetailsModal(info) {
+      const modalBody = document.getElementById('detail-modal-body');
+      modalBody.innerHTML = `
+        <div class="detail-field">
+          <label>Full Device ID / Fingerprint</label>
+          <span style="color: var(--aurora-teal);">${escapeHtml(info.deviceId || 'N/A')}</span>
+        </div>
+        <div class="detail-field">
+          <label>Full IP Address</label>
+          <span>${escapeHtml(info.ip || 'N/A')}</span>
+        </div>
+        <div class="detail-field">
+          <label>Device Model / User Agent</label>
+          <span style="font-family: sans-serif; font-size: 0.85rem; color: rgba(223, 246, 242, 0.9);">${escapeHtml(info.deviceModel || 'N/A')}</span>
+        </div>
+        <div class="detail-field">
+          <label>Total Votes Cast</label>
+          <span style="color: var(--support-blue); font-weight: 700;">${info.clicks !== undefined ? info.clicks : 'N/A'}</span>
+        </div>
+        <div class="detail-field">
+          <label>Timestamp / Last Action</label>
+          <span>${escapeHtml(info.timeStr || 'N/A')} (${escapeHtml(info.timeAgo || 'N/A')})</span>
+        </div>
+        <div class="detail-field">
+          <label>Cooldown Status</label>
+          <div>${info.cooldownHtml || 'N/A'}</div>
+        </div>
+        ${info.note ? `
+        <div class="detail-field">
+          <label>Admin Note</label>
+          <span style="font-family: sans-serif; color: #ffd166;">${escapeHtml(info.note)}</span>
+        </div>` : ''}
+      `;
+      detailModal.classList.remove('hidden');
+    }
 
     prevPageBtn.addEventListener('click', () => {
       if (currentPage > 1) {
@@ -1089,8 +1225,8 @@
         let totalViews = 0;
         let totalTimeSeconds = 0;
 
-        const validRoutes = ['/admin', '/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks'];
-        const metricRoutes = ['/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks'];
+        const validRoutes = ['/admin', '/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks', '/supportus'];
+        const metricRoutes = ['/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks', '/supportus'];
 
         const pageMetrics = {};
         metricRoutes.forEach(route => {
@@ -1133,7 +1269,7 @@
             closeDate = new Date(data.closedAt);
           }
 
-          let dateStr = data.dateStr;
+          let dateStr = openDate ? getHKTDateString(openDate) : data.dateStr;
           if (!dateStr && openDate) {
             dateStr = getHKTDateString(openDate);
           }
@@ -1587,11 +1723,20 @@
 
     let supportersUnsubCounter = null;
     let supportersUnsubList = null;
+    let supportLogsUnsub = null;
     let latestSupporterDocs = [];
+    let latestSupportLogs = [];
+
+    // Sorting Dropdown Event Listener
+    document.getElementById('supporters-sort-select').addEventListener('change', (e) => {
+      currentSortMode = e.target.value;
+      renderSupportersTable();
+    });
 
     function loadSupportersData() {
       if (supportersUnsubCounter) supportersUnsubCounter();
       if (supportersUnsubList) supportersUnsubList();
+      if (supportLogsUnsub) supportLogsUnsub();
 
       supportersUnsubCounter = onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
         const total = snap.exists() ? (snap.data().count || 0) : 0;
@@ -1605,6 +1750,14 @@
         });
         renderSupportersTable();
       }, (err) => console.error("Error subscribing to supporters:", err));
+
+      supportLogsUnsub = onSnapshot(collection(db, "supportLogs"), (querySnapshot) => {
+        latestSupportLogs = [];
+        querySnapshot.forEach((docSnap) => {
+          latestSupportLogs.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderSupportLogsTable();
+      }, (err) => console.error("Error subscribing to support logs:", err));
     }
 
     function renderSupportersTable() {
@@ -1619,10 +1772,28 @@
         return;
       }
 
-      const sorted = [...latestSupporterDocs].sort((a, b) => (b.lastClickAtMillis || 0) - (a.lastClickAtMillis || 0));
+      const sorted = [...latestSupporterDocs].sort((a, b) => {
+        const lastA = a.lastClickAtMillis || 0;
+        const lastB = b.lastClickAtMillis || 0;
+        const clicksA = a.clicks || 0;
+        const clicksB = b.clicks || 0;
 
-      const mostRecent = sorted[0];
-      document.getElementById('kpi-last-support').textContent = mostRecent.lastClickAtMillis
+        const isCooldownA = lastA ? (SUPPORT_COOLDOWN_MS - (Date.now() - lastA)) > 0 : false;
+        const isCooldownB = lastB ? (SUPPORT_COOLDOWN_MS - (Date.now() - lastB)) > 0 : false;
+
+        if (currentSortMode === 'votes') {
+          return clicksB - clicksA || lastB - lastA;
+        } else if (currentSortMode === 'cooldown') {
+          if (isCooldownA !== isCooldownB) return isCooldownA ? -1 : 1;
+          return lastB - lastA;
+        } else {
+          // Default: Latest Time
+          return lastB - lastA;
+        }
+      });
+
+      const mostRecent = [...latestSupporterDocs].sort((a, b) => (b.lastClickAtMillis || 0) - (a.lastClickAtMillis || 0))[0];
+      document.getElementById('kpi-last-support').textContent = mostRecent?.lastClickAtMillis
         ? getRelativeTimeAgo(new Date(mostRecent.lastClickAtMillis))
         : 'None yet';
 
@@ -1631,25 +1802,27 @@
         const devId = s.deviceId || s.id || '(unknown)';
         const lastClickDate = s.lastClickAtMillis ? new Date(s.lastClickAtMillis) : null;
         const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
-        const cooldownLabel = remainingMs > 0
+        const isCooldown = remainingMs > 0;
+        const cooldownLabel = isCooldown
           ? `<span class="event-tag closed">On cooldown</span>`
           : `<span class="event-tag opened">Ready</span>`;
 
+        const maskedId = maskDeviceId(devId);
         const ipDisplay = s.ip ? escapeHtml(maskIP(s.ip)) : '<span style="color:rgba(223,246,242,0.4);">—</span>';
         const modelDisplay = s.deviceModel ? escapeHtml(s.deviceModel) : '<span style="color:rgba(223,246,242,0.4);">—</span>';
 
         rows += `
-          <tr>
-            <td style="text-align: center;">
+          <tr class="clickable-row" data-id="${s.id}">
+            <td style="text-align: center;" onclick="event.stopPropagation();">
               <input type="checkbox" class="supporter-checkbox" value="${s.id}" data-clicks="${s.clicks || 0}">
             </td>
-            <td>${escapeHtml(devId)}</td>
+            <td title="Click to view full Device ID">${escapeHtml(maskedId)}</td>
             <td title="${s.ip ? escapeHtml(s.ip) : ''}">${ipDisplay}</td>
             <td>${modelDisplay}</td>
             <td>${s.clicks || 0}</td>
             <td>${lastClickDate ? formatHKTTime(lastClickDate) : 'N/A'}</td>
             <td>${cooldownLabel}</td>
-            <td>
+            <td onclick="event.stopPropagation();">
               <div style="display: flex; gap: 6px; align-items: center;">
                 <input type="text" class="input-text supporter-note-input" data-id="${s.id}" value="${escapeHtml(s.note || '')}" placeholder="Who is this?" style="padding: 6px 8px; font-size: 0.8rem;">
                 <button class="btn btn-publish save-note-btn" data-id="${s.id}" style="padding: 6px 10px; font-size: 0.75rem;">Save</button>
@@ -1660,6 +1833,30 @@
       });
 
       tbody.innerHTML = rows;
+
+      // Row Click Listener for detailed info popup
+      tbody.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const docId = row.getAttribute('data-id');
+          const s = sorted.find(item => item.id === docId);
+          if (!s) return;
+
+          const lastClickDate = s.lastClickAtMillis ? new Date(s.lastClickAtMillis) : null;
+          const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
+          const isCooldown = remainingMs > 0;
+
+          showLogDetailsModal({
+            deviceId: s.deviceId || s.id,
+            ip: s.ip,
+            deviceModel: s.deviceModel,
+            clicks: s.clicks || 0,
+            timeStr: lastClickDate ? formatHKTTime(lastClickDate) : 'N/A',
+            timeAgo: lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A',
+            cooldownHtml: isCooldown ? `<span class="event-tag closed">On cooldown</span>` : `<span class="event-tag opened">Ready</span>`,
+            note: s.note
+          });
+        });
+      });
 
       tbody.querySelectorAll('.save-note-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -1672,6 +1869,68 @@
           } catch (err) {
             alert("Failed to save note: " + err.message);
           }
+        });
+      });
+    }
+
+    function renderSupportLogsTable() {
+      const tbody = document.getElementById('support-logs-table-body');
+      if (!tbody) return;
+
+      if (!latestSupportLogs.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No support click logs recorded yet.</td></tr>`;
+        return;
+      }
+
+      const sortedLogs = [...latestSupportLogs].sort((a, b) => {
+        const timeA = a.timestampMillis || (a.timestamp?.toMillis ? a.timestamp.toMillis() : 0);
+        const timeB = b.timestampMillis || (b.timestamp?.toMillis ? b.timestamp.toMillis() : 0);
+        return timeB - timeA;
+      });
+
+      let rows = '';
+      sortedLogs.forEach((log) => {
+        const logDate = log.timestampMillis 
+          ? new Date(log.timestampMillis) 
+          : (log.timestamp?.toDate ? log.timestamp.toDate() : null);
+        const devId = log.deviceId || '(unknown)';
+        const maskedId = maskDeviceId(devId);
+        const ipDisplay = log.ip ? escapeHtml(maskIP(log.ip)) : '<span style="color:rgba(223,246,242,0.4);">—</span>';
+        const modelDisplay = log.deviceModel ? escapeHtml(log.deviceModel) : '<span style="color:rgba(223,246,242,0.4);">—</span>';
+
+        rows += `
+          <tr class="clickable-row" data-log-id="${log.id}">
+            <td style="font-family: monospace;">${logDate ? formatHKTTime(logDate) : 'N/A'}</td>
+            <td><strong style="color: var(--support-blue);">${logDate ? getRelativeTimeAgo(logDate) : 'N/A'}</strong></td>
+            <td title="Click to view full Device ID">${escapeHtml(maskedId)}</td>
+            <td title="${log.ip ? escapeHtml(log.ip) : ''}">${ipDisplay}</td>
+            <td>${modelDisplay}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rows;
+
+      // Log Row Click Event Listener for Modal Popup
+      tbody.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const logId = row.getAttribute('data-log-id');
+          const log = sortedLogs.find(item => item.id === logId);
+          if (!log) return;
+
+          const logDate = log.timestampMillis 
+            ? new Date(log.timestampMillis) 
+            : (log.timestamp?.toDate ? log.timestamp.toDate() : null);
+
+          showLogDetailsModal({
+            deviceId: log.deviceId || '(unknown)',
+            ip: log.ip,
+            deviceModel: log.deviceModel,
+            clicks: 'N/A (Historical Click Log)',
+            timeStr: logDate ? formatHKTTime(logDate) : 'N/A',
+            timeAgo: logDate ? getRelativeTimeAgo(logDate) : 'N/A',
+            cooldownHtml: `<span class="event-tag opened">Recorded Event</span>`
+          });
         });
       });
     }
@@ -1720,17 +1979,19 @@
 
     document.getElementById('reset-votes-btn').addEventListener('click', async () => {
       if (!currentUser) return;
-      if (!confirm("Are you sure you want to delete all vote records and reset the support counter to 0? This cannot be undone.")) return;
+      if (!confirm("Are you sure you want to delete all vote records, support logs, and reset the support counter to 0? This cannot be undone.")) return;
 
       try {
         const querySnapshot = await getDocs(collection(db, "supporters"));
+        const logsSnapshot = await getDocs(collection(db, "supportLogs"));
         const batch = writeBatch(db);
 
         querySnapshot.forEach((docSnap) => batch.delete(docSnap.ref));
+        logsSnapshot.forEach((docSnap) => batch.delete(docSnap.ref));
         batch.set(doc(db, "counters", "supportCounter"), { count: 0 });
 
         await batch.commit();
-        alert("All votes and supporter history records have been successfully reset!");
+        alert("All votes, support history logs, and supporter records have been successfully reset!");
       } catch (err) {
         alert("Failed to reset votes: " + err.message);
       }

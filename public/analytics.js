@@ -85,9 +85,29 @@ function sendExitUpdate(fields) {
   }
 } 
 
+let accumulatedMs = 0;
+let visibleSince = document.visibilityState === "visible" ? Date.now() : null;
+
+function flushVisibleTime() {
+  if (visibleSince !== null) {
+    accumulatedMs += Date.now() - visibleSince;
+    visibleSince = null;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    flushVisibleTime();
+    updateDuration();
+  } else {
+    visibleSince = Date.now();
+  }
+});
+
 function currentDurationSeconds() {
-  return Math.max(1, Math.round((Date.now() - startTime) / 1000));
-} 
+  const liveMs = accumulatedMs + (visibleSince !== null ? Date.now() - visibleSince : 0);
+  return Math.max(1, Math.round(liveMs / 1000));
+}
 
 setDoc(pageviewRef, {
   path: path,
@@ -254,11 +274,6 @@ export async function generateFingerprint() {
 }
 
 export async function getOrCreateDeviceId() {
-  // NOTE: localStorage is cleared in Incognito / a fresh browser profile,
-  // but generateFingerprint() is deterministic (same hardware/software
-  // signals -> same SHA-256 hash), so re-generating it lands on the same
-  // ID anyway. We still cache it locally purely to avoid recomputing it
-  // (canvas/audio/font probing) on every page load.
   let deviceId = localStorage.getItem("aurora_device_id");
   if (!deviceId) {
     deviceId = await generateFingerprint();
@@ -284,9 +299,7 @@ async function sha256Hex(str) {
 }
 
 // ---------------------------------------------------------------------------
-// Solution 2: IP address lookup (used as a second, independent cooldown key
-// alongside the device fingerprint, so an incognito window or a fresh
-// browser profile on the SAME network can't reset the 10-minute cooldown).
+// Solution 2: IP address lookup
 // ---------------------------------------------------------------------------
 
 export async function getPublicIP() {
@@ -297,7 +310,7 @@ export async function getPublicIP() {
     return data.ip || null;
   } catch (err) {
     console.error("Analytics: public IP lookup failed:", err);
-    return null; // Support flow degrades gracefully to fingerprint-only if this fails.
+    return null;
   }
 }
 
@@ -308,10 +321,7 @@ export async function getIpHash(ip) {
 }
 
 // ---------------------------------------------------------------------------
-// Solution 3: Best-effort device model / platform label for the admin table.
-// Chrome/Android exposes a real model string via User-Agent Client Hints;
-// everywhere else (desktop Chrome, Safari, Firefox) this falls back to a
-// coarse OS/device label parsed from the user agent string.
+// Solution 3: Device model / platform label
 // ---------------------------------------------------------------------------
 
 export async function getDeviceInfo() {
@@ -390,6 +400,7 @@ export async function registerSupportClick(deviceId, extra = {}) {
   const supporterRef = doc(db, "supporters", deviceId);
   const counterRef = doc(db, "counters", "supportCounter");
   const ipRef = ipHash ? doc(db, "ipCooldowns", ipHash) : null;
+  const supportLogRef = doc(collection(db, "supportLogs"));
 
   return runTransaction(db, async (tx) => {
     // All reads must happen before any writes in a Firestore transaction.
@@ -399,11 +410,6 @@ export async function registerSupportClick(deviceId, extra = {}) {
     const now = Date.now();
     const prevClicks = supporterSnap.exists() ? (supporterSnap.data().clicks || 0) : 0;
 
-    // Cooldown is enforced against BOTH the device fingerprint and the IP
-    // address independently - whichever one is still cooling down blocks
-    // the click. This is what stops "switch profile / incognito" bypasses:
-    // even if the fingerprint were somehow different, the IP-keyed record
-    // still remembers the recent click.
     let remainingMs = 0;
     if (supporterSnap.exists()) {
       const last = supporterSnap.data().lastClickAtMillis || 0;
@@ -441,6 +447,16 @@ export async function registerSupportClick(deviceId, extra = {}) {
         lastClickAtMillis: now
       }, { merge: true });
     }
+
+    // Write individual support action log entry
+    tx.set(supportLogRef, {
+      deviceId: String(deviceId),
+      ip: ipAddress || "",
+      deviceModel: deviceModel || "",
+      timestamp: serverTimestamp(),
+      timestampMillis: now,
+      dateStr: getHKTDateString()
+    });
 
     return { success: true, remainingMs: SUPPORT_COOLDOWN_MS, clicks: newClicks, totalSupporters: newTotal };
   });
