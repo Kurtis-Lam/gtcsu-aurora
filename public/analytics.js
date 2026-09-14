@@ -10,6 +10,10 @@ import {
   runTransaction,
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"; 
+import { 
+  getAuth, 
+  onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
@@ -22,6 +26,7 @@ const firebaseConfig = {
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig); 
 const db = getFirestore(app); 
+const auth = getAuth(app);
 
 function getHKTDateString(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(date);
@@ -92,6 +97,16 @@ setDoc(pageviewRef, {
   openedAt: serverTimestamp(),
   lastActiveAt: serverTimestamp()
 }).catch(err => console.error("Analytics open logging failed:", err)); 
+
+// Track signed-in Google user if available
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    updateDoc(pageviewRef, {
+      userEmail: user.email || "",
+      userName: user.displayName || user.email || ""
+    }).catch(err => console.error("Analytics user update failed:", err));
+  }
+});
 
 function updateDuration() {
   const durationSeconds = currentDurationSeconds(); 

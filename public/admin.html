@@ -336,6 +336,18 @@
   .event-tag.opened { background: rgba(46, 230, 184, 0.2); color: var(--aurora-teal); }
   .event-tag.closed { background: rgba(255, 107, 107, 0.2); color: var(--aurora-red); }
 
+  .log-user-tag {
+    font-size: 0.72rem;
+    color: var(--aurora-cyan);
+    background: rgba(127, 233, 240, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .log-time-ago {
     font-size: 0.75rem;
     color: var(--aurora-cyan);
@@ -635,6 +647,12 @@
     flex-wrap: wrap;
   }
 
+  .supporters-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
   @media (max-width: 1024px) {
     .charts-grid { grid-template-columns: 1fr; }
   }
@@ -752,7 +770,7 @@
       <main id="admin-container" class="admin-grid"></main>
     </div>
 
-    <!-- Supporters View (supportus.html "Support Us" button, IP-rate-limited) -->
+    <!-- Supporters View (supportus.html "Support Us" button, Rate-limited) -->
     <div id="supporters-section" class="hidden">
       <div class="kpi-grid">
         <div class="kpi-card">
@@ -761,33 +779,38 @@
           <span class="kpi-subtitle">All-time count shown on supportus.html</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-title">Unique Supporters (by IP)</span>
+          <span class="kpi-title">Unique Supporters</span>
           <span class="kpi-value support-value" id="kpi-unique-supporters">0</span>
-          <span class="kpi-subtitle">Distinct public IP addresses</span>
+          <span class="kpi-subtitle">Distinct registered voter devices</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-title">Most Recent Support</span>
           <span class="kpi-value support-value" id="kpi-last-support" style="font-size: 1.3rem;">None yet</span>
-          <span class="kpi-subtitle">Time since last click</span>
+          <span class="kpi-subtitle">Time since last vote</span>
         </div>
       </div>
 
       <div class="supporters-table-wrap">
         <div class="supporters-header">
-          <h3 class="chart-title">Supporters by IP Address</h3>
-          <button class="nav-btn nav-btn-danger" id="reset-supporters-btn">🗑 Reset Supporters</button>
+          <h3 class="chart-title">Registered Voter Devices</h3>
+          <div class="supporters-actions">
+            <button class="nav-btn nav-btn-danger" id="delete-selected-votes-btn">❌ Delete Selected Votes</button>
+            <button class="nav-btn nav-btn-danger" id="reset-votes-btn">🗑 Reset All Votes</button>
+          </div>
         </div>
         <table class="supporters-table">
           <thead>
             <tr>
-              <th>IP Address (masked)</th>
-              <th>Clicks</th>
+              <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-supporters"></th>
+              <th>MAC Address / Device ID</th>
+              <th>Votes Cast</th>
               <th>Last Click (HKT)</th>
               <th>Cooldown Status</th>
+              <th>Admin Note</th>
             </tr>
           </thead>
           <tbody id="supporters-table-body">
-            <tr><td colspan="4" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
+            <tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
           </tbody>
         </table>
       </div>
@@ -807,6 +830,7 @@
             <tr>
               <th>Page</th>
               <th>Action</th>
+              <th>User / Account</th>
               <th>Hong Kong Time (HKT)</th>
               <th>Time Ago</th>
             </tr>
@@ -848,11 +872,7 @@
       signOut, 
       onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    // Reuses the already-initialized Firebase app/module instance from
-    // analytics.js (loaded via <script type="module" src="analytics.js"> in
-    // <head>) - the browser caches ES modules by URL, so this import does
-    // not re-run analytics.js's side effects.
-    import { maskIP, SUPPORT_COOLDOWN_MS } from "./analytics.js";
+    import { SUPPORT_COOLDOWN_MS } from "./analytics.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
@@ -874,15 +894,14 @@
     let timeSpentChartInstance = null;
     let dailyViewsChartInstance = null;
 
-    // Route color mapping
     const routeColors = {
-      '/admin': '#ffffff',      // Black
-      '/': '#ff4d4d',          // Red
-      '/aboutus': '#ff9f43',   // Orange
-      '/activities': '#ffd166',// Yellow
-      '/welfare': '#06d6a0',   // Green
-      '/schedule': '#118ab2',  // Blue
-      '/feedbacks': '#8338ec'  // Purple
+      '/admin': '#ffffff',      
+      '/': '#ff4d4d',          
+      '/aboutus': '#ff9f43',   
+      '/activities': '#ffd166',
+      '/welfare': '#06d6a0',   
+      '/schedule': '#118ab2',  
+      '/feedbacks': '#8338ec'  
     };
 
     let dailyCountsByRoute = {};
@@ -932,11 +951,13 @@
       return `${diffDay}d ago`;
     }
 
-    // Tab Navigation Switcher
     const tabAnalyticsBtn = document.getElementById('tab-analytics-btn');
     const tabFeedbackBtn = document.getElementById('tab-feedback-btn');
+    const tabSupportersBtn = document.getElementById('tab-supporters-btn');
+    
     const analyticsSection = document.getElementById('analytics-section');
     const feedbackSection = document.getElementById('feedback-section');
+    const supportersSection = document.getElementById('supporters-section');
 
     tabAnalyticsBtn.addEventListener('click', () => {
       tabAnalyticsBtn.classList.add('active');
@@ -946,9 +967,6 @@
       feedbackSection.classList.add('hidden');
       supportersSection.classList.add('hidden');
     });
-
-    const tabSupportersBtn = document.getElementById('tab-supporters-btn');
-    const supportersSection = document.getElementById('supporters-section');
 
     tabFeedbackBtn.addEventListener('click', () => {
       tabFeedbackBtn.classList.add('active');
@@ -968,7 +986,6 @@
       feedbackSection.classList.add('hidden');
     });
 
-    // Modal Event Listeners
     const logsModal = document.getElementById('logs-modal');
     const openCardBtn = document.getElementById('open-logs-modal-card');
     const expandLogsBtn = document.getElementById('expand-logs-btn');
@@ -1014,7 +1031,6 @@
       }
     });
 
-    // Reset All Analytics Data
     document.getElementById('reset-data-btn').addEventListener('click', async () => {
       if (!currentUser) return;
       if (!confirm("Are you sure you want to delete and reset all pageview analytics data? This cannot be undone.")) return;
@@ -1038,7 +1054,6 @@
       }
     });
 
-    // Auth Listeners
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
@@ -1108,7 +1123,7 @@
           if (data.openedAt?.toDate) openDate = data.openedAt.toDate();
           else if (data.timestamp?.toDate) openDate = data.timestamp.toDate();
           else if (data.openedAt) openDate = new Date(data.openedAt);
-          else openDate = new Date();
+          else if (data.timestamp) openDate = new Date(data.timestamp);
 
           let closeDate = null;
           if (data.closedAt?.toDate) {
@@ -1122,6 +1137,8 @@
             dateStr = getHKTDateString(openDate);
           }
 
+          const userLabel = data.userEmail || data.userName || null;
+
           totalViews++;
           totalTimeSeconds += duration;
 
@@ -1133,25 +1150,28 @@
             dailyCountsByRoute[path][dateStr]++;
           }
 
-          if (openDate) {
+          if (openDate && !isNaN(openDate.getTime())) {
             allActivityLogs.push({
               path: path,
               event: 'Opened',
               date: openDate,
-              timestamp: openDate.getTime()
+              timestamp: openDate.getTime(),
+              user: userLabel
             });
           }
 
-          if (closeDate) {
+          if (closeDate && !isNaN(closeDate.getTime())) {
             allActivityLogs.push({
               path: path,
               event: 'Closed',
               date: closeDate,
-              timestamp: closeDate.getTime()
+              timestamp: closeDate.getTime(),
+              user: userLabel
             });
           }
         });
 
+        // Strictly sort newest logs on top
         allActivityLogs.sort((a, b) => b.timestamp - a.timestamp);
 
         document.getElementById('kpi-total-views').textContent = totalViews.toLocaleString();
@@ -1220,12 +1240,14 @@
         const pColor = routeColors[log.path] || '#7fe9f0';
         const isOpened = log.event === 'Opened';
         const relativeAgo = getRelativeTimeAgo(log.date);
+        const userInfo = log.user ? `<span class="log-user-tag" title="${escapeHtml(log.user)}">👤 ${escapeHtml(log.user)}</span>` : '';
 
         html += `
           <div class="log-item" style="border-left-color: ${pColor};">
             <div class="log-item-left">
               <span class="page-pill" style="background-color: ${pColor};">${escapeHtml(log.path)}</span>
               <span class="event-tag ${isOpened ? 'opened' : 'closed'}">${log.event.toUpperCase()}</span>
+              ${userInfo}
             </div>
             <div style="text-align: right;">
               <div class="log-time-ago">${relativeAgo}</div>
@@ -1253,12 +1275,15 @@
       const pageLogs = allActivityLogs.slice(startIndex, endIndex);
 
       if (!pageLogs.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No logs available</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No logs available</td></tr>`;
       } else {
         let rows = '';
         pageLogs.forEach(log => {
           const pColor = routeColors[log.path] || '#7fe9f0';
           const isOpened = log.event === 'Opened';
+          const userText = log.user 
+            ? `<span style="color: var(--aurora-cyan); font-weight: 600;">👤 ${escapeHtml(log.user)}</span>` 
+            : `<span style="color: rgba(223,246,242,0.4);">Visitor (Anonymous)</span>`;
           
           rows += `
             <tr>
@@ -1268,6 +1293,7 @@
               <td>
                 <span class="event-tag ${isOpened ? 'opened' : 'closed'}">${log.event.toUpperCase()}</span>
               </td>
+              <td>${userText}</td>
               <td style="font-family: monospace;">${formatHKTTime(log.date)}</td>
               <td><strong style="color: var(--aurora-cyan);">${getRelativeTimeAgo(log.date)}</strong></td>
             </tr>
@@ -1553,9 +1579,6 @@
       return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
     }
 
-    // ---------------------------------------------------------------------
-    // Supporters ("Support Us" IP-rate-limited button on supportus.html)
-    // ---------------------------------------------------------------------
     let supportersUnsubCounter = null;
     let supportersUnsubList = null;
     let latestSupporterDocs = [];
@@ -1583,11 +1606,14 @@
       document.getElementById('kpi-unique-supporters').textContent = latestSupporterDocs.length.toLocaleString();
 
       if (!latestSupporterDocs.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
         document.getElementById('kpi-last-support').textContent = 'None yet';
+        const selectAll = document.getElementById('select-all-supporters');
+        if (selectAll) selectAll.checked = false;
         return;
       }
 
+      // Sort by time with newest on top
       const sorted = [...latestSupporterDocs].sort((a, b) => (b.lastClickAtMillis || 0) - (a.lastClickAtMillis || 0));
 
       const mostRecent = sorted[0];
@@ -1597,8 +1623,7 @@
 
       let rows = '';
       sorted.forEach((s) => {
-        const ip = s.ip || '(unknown)';
-        const masked = ip !== '(unknown)' ? maskIP(ip) : ip;
+        const devId = s.deviceId || s.id || '(unknown)';
         const lastClickDate = s.lastClickAtMillis ? new Date(s.lastClickAtMillis) : null;
         const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
         const cooldownLabel = remainingMs > 0
@@ -1607,20 +1632,90 @@
 
         rows += `
           <tr>
-            <td>${escapeHtml(masked)}</td>
+            <td style="text-align: center;">
+              <input type="checkbox" class="supporter-checkbox" value="${s.id}" data-clicks="${s.clicks || 0}">
+            </td>
+            <td>${escapeHtml(devId)}</td>
             <td>${s.clicks || 0}</td>
             <td>${lastClickDate ? formatHKTTime(lastClickDate) : 'N/A'}</td>
             <td>${cooldownLabel}</td>
+            <td>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="text" class="input-text supporter-note-input" data-id="${s.id}" value="${escapeHtml(s.note || '')}" placeholder="Who is this?" style="padding: 6px 8px; font-size: 0.8rem;">
+                <button class="btn btn-publish save-note-btn" data-id="${s.id}" style="padding: 6px 10px; font-size: 0.75rem;">Save</button>
+              </div>
+            </td>
           </tr>
         `;
       });
 
       tbody.innerHTML = rows;
+
+      // Attach save note event listeners
+      tbody.querySelectorAll('.save-note-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.getAttribute('data-id');
+          const input = tbody.querySelector(`.supporter-note-input[data-id="${id}"]`);
+          const note = input ? input.value.trim() : '';
+          try {
+            await updateDoc(doc(db, "supporters", id), { note: note });
+            alert("Note saved successfully!");
+          } catch (err) {
+            alert("Failed to save note: " + err.message);
+          }
+        });
+      });
     }
 
-    document.getElementById('reset-supporters-btn').addEventListener('click', async () => {
+    // Select All Checkbox Handler
+    document.getElementById('select-all-supporters')?.addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.supporter-checkbox');
+      checkboxes.forEach(cb => cb.checked = e.target.checked);
+    });
+
+    // Delete Selected Votes Action
+    document.getElementById('delete-selected-votes-btn')?.addEventListener('click', async () => {
       if (!currentUser) return;
-      if (!confirm("Are you sure you want to delete all supporter records and reset the counter to 0? This cannot be undone.")) return;
+      const checkedBoxes = Array.from(document.querySelectorAll('.supporter-checkbox:checked'));
+      if (checkedBoxes.length === 0) {
+        alert("Please select at least one supporter to delete.");
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to delete ${checkedBoxes.length} selected supporter record(s)? This will adjust the vote count accordingly.`)) return;
+
+      try {
+        let totalClicksToRemove = 0;
+        const batch = writeBatch(db);
+
+        checkedBoxes.forEach(cb => {
+          const clicks = parseInt(cb.getAttribute('data-clicks') || '0', 10);
+          totalClicksToRemove += clicks;
+          batch.delete(doc(db, "supporters", cb.value));
+        });
+
+        // Update main support counter value
+        const counterRef = doc(db, "counters", "supportCounter");
+        const counterSnap = await getDoc(counterRef);
+        const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
+        const updatedCount = Math.max(0, currentCount - totalClicksToRemove);
+
+        batch.set(counterRef, { count: updatedCount }, { merge: true });
+
+        await batch.commit();
+        alert(`Successfully deleted ${checkedBoxes.length} supporter record(s) and adjusted total vote count by -${totalClicksToRemove}.`);
+        
+        const selectAll = document.getElementById('select-all-supporters');
+        if (selectAll) selectAll.checked = false;
+      } catch (err) {
+        alert("Failed to delete selected votes: " + err.message);
+      }
+    });
+
+    // Delete All Votes Action
+    document.getElementById('reset-votes-btn').addEventListener('click', async () => {
+      if (!currentUser) return;
+      if (!confirm("Are you sure you want to delete all vote records and reset the support counter to 0? This cannot be undone.")) return;
 
       try {
         const querySnapshot = await getDocs(collection(db, "supporters"));
@@ -1630,9 +1725,9 @@
         batch.set(doc(db, "counters", "supportCounter"), { count: 0 });
 
         await batch.commit();
-        alert("Supporter data has been reset!");
+        alert("All votes and supporter history records have been successfully reset!");
       } catch (err) {
-        alert("Failed to reset supporter data: " + err.message);
+        alert("Failed to reset votes: " + err.message);
       }
     });
   </script>
