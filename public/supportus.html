@@ -630,12 +630,12 @@
     </div>
   </main>
 
-  <!-- Bottom-Left Device / Click Info Bar -->
+  <!-- Bottom-Left Device / Fingerprint Info Bar -->
   <div class="support-info-bar">
     <span class="i18n" data-en="Your supports:" data-zh="你的支持次數：">Your supports:</span>
     <strong id="bar-clicks">0</strong>
     <span class="dot">•</span>
-    <span class="i18n" data-en="Device ID:" data-zh="裝置 ID：">Device ID:</span>
+    <span class="i18n" data-en="Device Fingerprint:" data-zh="裝置指紋：">Device Fingerprint:</span>
     <code id="bar-device">—</code>
   </div>
 
@@ -643,7 +643,7 @@
 
   <script src="load-components.js"></script>
 
-  <!-- Support Us: Live dynamic vote tracking -->
+  <!-- Support Us: Live dynamic vote tracking with Browser Fingerprinting -->
   <script type="module">
     import {
       getOrCreateDeviceId,
@@ -716,7 +716,7 @@
         countEl.textContent = count.toLocaleString();
       });
 
-      myDeviceId = getOrCreateDeviceId();
+      myDeviceId = await getOrCreateDeviceId();
 
       if (!myDeviceId) {
         btn.textContent = btnLabels[currentLangCode()].offline;
@@ -806,7 +806,6 @@
       }, 350);
     });
 
-    // Mobile Navigation Drawer Controls
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const navLinks = document.getElementById('nav-links');
     const navOverlay = document.getElementById('nav-overlay');

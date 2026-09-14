@@ -755,7 +755,6 @@
           <div class="chart-header">
             <h3 class="chart-title">Daily Visitor Views (Last 7 Days - HKT)</h3>
             <div id="destination-filter-container" class="destination-filter-bar">
-              <!-- Filter buttons populated dynamically -->
             </div>
           </div>
           <div class="chart-canvas-container">
@@ -802,7 +801,7 @@
           <thead>
             <tr>
               <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-supporters"></th>
-              <th>MAC Address / Device ID</th>
+              <th>Browser Fingerprint / Device ID</th>
               <th>Votes Cast</th>
               <th>Last Click (HKT)</th>
               <th>Cooldown Status</th>
@@ -836,7 +835,6 @@
             </tr>
           </thead>
           <tbody id="logs-table-body">
-            <!-- Dynamically populated -->
           </tbody>
         </table>
       </div>
@@ -1140,7 +1138,6 @@
 
           const userLabel = data.userEmail || data.userName || null;
 
-          // Only aggregate metrics, KPIs, and chart data for user-facing subpages
           if (path !== '/admin') {
             totalViews++;
             totalTimeSeconds += duration;
@@ -1158,7 +1155,6 @@
             }
           }
 
-          // /admin entries are still recorded in allActivityLogs
           if (openDate && !isNaN(openDate.getTime())) {
             allActivityLogs.push({
               path: path,
@@ -1180,7 +1176,6 @@
           }
         });
 
-        // Strictly sort newest logs on top
         allActivityLogs.sort((a, b) => b.timestamp - a.timestamp);
 
         document.getElementById('kpi-total-views').textContent = totalViews.toLocaleString();
@@ -1622,7 +1617,6 @@
         return;
       }
 
-      // Sort by time with newest on top
       const sorted = [...latestSupporterDocs].sort((a, b) => (b.lastClickAtMillis || 0) - (a.lastClickAtMillis || 0));
 
       const mostRecent = sorted[0];
@@ -1660,7 +1654,6 @@
 
       tbody.innerHTML = rows;
 
-      // Attach save note event listeners
       tbody.querySelectorAll('.save-note-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           const id = e.target.getAttribute('data-id');
@@ -1676,13 +1669,11 @@
       });
     }
 
-    // Select All Checkbox Handler
     document.getElementById('select-all-supporters')?.addEventListener('change', (e) => {
       const checkboxes = document.querySelectorAll('.supporter-checkbox');
       checkboxes.forEach(cb => cb.checked = e.target.checked);
     });
 
-    // Delete Selected Votes Action
     document.getElementById('delete-selected-votes-btn')?.addEventListener('click', async () => {
       if (!currentUser) return;
       const checkedBoxes = Array.from(document.querySelectorAll('.supporter-checkbox:checked'));
@@ -1703,7 +1694,6 @@
           batch.delete(doc(db, "supporters", cb.value));
         });
 
-        // Update main support counter value
         const counterRef = doc(db, "counters", "supportCounter");
         const counterSnap = await getDoc(counterRef);
         const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
@@ -1721,7 +1711,6 @@
       }
     });
 
-    // Delete All Votes Action
     document.getElementById('reset-votes-btn').addEventListener('click', async () => {
       if (!currentUser) return;
       if (!confirm("Are you sure you want to delete all vote records and reset the support counter to 0? This cannot be undone.")) return;

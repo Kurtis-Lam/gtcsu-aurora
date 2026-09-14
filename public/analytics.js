@@ -98,7 +98,6 @@ setDoc(pageviewRef, {
   lastActiveAt: serverTimestamp()
 }).catch(err => console.error("Analytics open logging failed:", err)); 
 
-// Track signed-in Google user if available
 onAuthStateChanged(auth, (user) => {
   if (user) {
     updateDoc(pageviewRef, {
@@ -124,14 +123,12 @@ setInterval(() => {
   }
 }, HEARTBEAT_INTERVAL_MS); 
 
-// Sync duration when switching away, without recording a closed event
 window.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     updateDuration();
   }
 });
 
-// Record closedAt ONLY on actual tab close, browser close, or page navigation
 window.addEventListener("pagehide", () => {
   sendExitUpdate({
     durationSeconds: currentDurationSeconds(),
@@ -141,17 +138,125 @@ window.addEventListener("pagehide", () => {
 });
 
 // ---------------------------------------------------------------------------
-// "Support Us" click tracking, rate-limited per Device ID
+// Solution 1: Hardware Browser Fingerprinting Engine (No Sign-In Required)
 // ---------------------------------------------------------------------------
 
 export const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes 
 
-export function getOrCreateDeviceId() {
+export async function generateFingerprint() {
+  const components = [];
+
+  // 1. Screen resolution, color depth & pixel density
+  components.push(`${screen.width}x${screen.height}x${screen.colorDepth}`);
+  components.push(`pixelRatio:${window.devicePixelRatio || 1}`);
+
+  // 2. Core hardware specs & locale parameters
+  components.push(`concurrency:${navigator.hardwareConcurrency || 'unknown'}`);
+  components.push(`deviceMemory:${navigator.deviceMemory || 'unknown'}`);
+  components.push(`maxTouchPoints:${navigator.maxTouchPoints || 0}`);
+  components.push(`platform:${navigator.platform || ''}`);
+  components.push(`language:${navigator.language || ''}`);
+  components.push(`timezone:${Intl.DateTimeFormat().resolvedOptions().timeZone || ''}`);
+
+  // 3. WebGL GPU Vendor & Renderer
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (gl) {
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        components.push(`gpuVendor:${gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)}`);
+        components.push(`gpuRenderer:${gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)}`);
+      }
+      components.push(`glVersion:${gl.getParameter(gl.VERSION)}`);
+    }
+  } catch (e) {}
+
+  // 4. Canvas Rendering Fingerprint
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 50;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.textBaseline = "top";
+      ctx.font = "14px 'Arial', sans-serif";
+      ctx.fillStyle = "#f60";
+      ctx.fillRect(125, 1, 62, 20);
+      ctx.fillStyle = "#069";
+      ctx.fillText("AuroraFP,123", 2, 15);
+      ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+      ctx.fillText("AuroraFP,123", 4, 17);
+      components.push(`canvas:${canvas.toDataURL()}`);
+    }
+  } catch (e) {}
+
+  // 5. Audio Stack Fingerprint
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const audioCtx = new AudioContext();
+      components.push(`audioRate:${audioCtx.sampleRate}`);
+      components.push(`audioChannels:${audioCtx.destination.maxChannelCount}`);
+      if (audioCtx.state !== 'closed') {
+        audioCtx.close().catch(() => {});
+      }
+    }
+  } catch (e) {}
+
+  // 6. Installed Fonts Probing
+  try {
+    const fontList = ['Arial', 'Courier New', 'Georgia', 'Helvetica', 'Times New Roman', 'Trebuchet MS', 'Verdana', 'Segoe UI', 'Roboto'];
+    const availableFonts = [];
+    const container = document.body || document.documentElement;
+    if (container) {
+      const span = document.createElement('span');
+      span.style.position = 'absolute';
+      span.style.left = '-9999px';
+      span.style.fontSize = '72px';
+      span.innerHTML = 'mmmmmmmmmlli';
+      container.appendChild(span);
+
+      span.style.fontFamily = 'monospace';
+      const baseWidth = span.offsetWidth;
+
+      for (const font of fontList) {
+        span.style.fontFamily = `'${font}', monospace`;
+        if (span.offsetWidth !== baseWidth) {
+          availableFonts.push(font);
+        }
+      }
+      container.removeChild(span);
+      components.push(`fonts:${availableFonts.join(',')}`);
+    }
+  } catch (e) {}
+
+  // 7. Installed Plugins Count
+  try {
+    components.push(`plugins:${navigator.plugins ? navigator.plugins.length : 0}`);
+  } catch (e) {}
+
+  // Generate deterministic SHA-256 fingerprint hash string
+  const str = components.join('||');
+  if (crypto && crypto.subtle && crypto.subtle.digest) {
+    const msgBuffer = new TextEncoder().encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return 'fp_' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 24);
+  } else {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return 'fp_' + Math.abs(hash).toString(16);
+  }
+}
+
+export async function getOrCreateDeviceId() {
   let deviceId = localStorage.getItem("aurora_device_id");
   if (!deviceId) {
-    deviceId = typeof crypto !== "undefined" && crypto.randomUUID 
-      ? crypto.randomUUID() 
-      : 'device_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+    deviceId = await generateFingerprint();
     localStorage.setItem("aurora_device_id", deviceId);
   }
   return deviceId;
@@ -159,7 +264,7 @@ export function getOrCreateDeviceId() {
 
 export function maskDeviceId(id) {
   const str = String(id);
-  return str.length > 8 ? str.slice(0, 8) + "..." : str;
+  return str.length > 12 ? str.slice(0, 12) + "..." : str;
 }
 
 export function maskIP(ip) {
