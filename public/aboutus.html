@@ -375,6 +375,73 @@
     margin-bottom: 0;
   }
 
+  /* ---------- Promo Video Styling (Optimized) ---------- */
+  .promo-video-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    background: #000;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    aspect-ratio: 16 / 9;
+  }
+
+  .promo-video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+  }
+
+  .play-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 11, 18, 0.7);
+    cursor: pointer;
+    transition: background 0.3s ease;
+    z-index: 10;
+  }
+
+  .play-overlay:hover {
+    background: rgba(5, 11, 18, 0.4);
+  }
+
+  .play-button {
+    width: 72px;
+    height: 72px;
+    background: rgba(46, 230, 184, 0.2);
+    border: 2px solid var(--aurora-teal);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 6px; /* Optical centering for play triangle */
+    box-shadow: 0 0 20px rgba(46, 230, 184, 0.4);
+    transition: transform 0.3s ease, background 0.3s ease;
+  }
+
+  .play-overlay:hover .play-button {
+    transform: scale(1.1);
+    background: var(--aurora-teal);
+  }
+
+  .play-overlay:hover .play-button svg {
+    fill: var(--void);
+  }
+
+  .play-button svg {
+    width: 32px;
+    height: 32px;
+    fill: var(--aurora-teal);
+    transition: fill 0.3s ease;
+  }
+
   .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -567,7 +634,8 @@
     <div class="section-block fade-in">
       <h2 class="section-heading i18n" data-en="Our Vision" data-zh="Aurora 的理念">Our Vision</h2>
       <div class="glass-card su-info-card">
-        <p class="su-paragraph i18n" 
+        <!-- INLINE STYLE ADDED TO MAKE TEXT SMALLER -->
+        <p class="su-paragraph i18n" style="font-size: 0.9rem;"
            data-en="Aurora represents the &ldquo;Aurora Borealis&rdquo;, a natural wonder formed by the interplay of vibrant colors in the dark night sky. We chose the name Aurora because we firmly believe that every student possesses unique strengths. Just as an aurora encompasses a spectrum of diverse colors, every student on campus shines with their own distinct radiance. We hope the Student Union will serve as a bridge of communication between students and the school, working together to foster a positive campus atmosphere." 
            data-zh="Aurora 代表著「極光」，是黑夜中不同顏色交織而成的自然奇蹟。取名為Aurora，是因為我們深信每一位同學都有獨一無二的長處。正如極光包含著種種不同色彩，校園內的每一位學生亦都擁有著屬於自己獨特的光芒。我們希望學生會能夠成為學生與學校溝通的橋樑，合作建立良好的校園氛圍。">
           Aurora represents the "Aurora Borealis", a natural wonder formed by the interplay of vibrant colors in the dark night sky. We chose the name Aurora because we firmly believe that every student possesses unique strengths. Just as an aurora encompasses a spectrum of diverse colors, every student on campus shines with their own distinct radiance. We hope the Student Union will serve as a bridge of communication between students and the school, working together to foster a positive campus atmosphere.
@@ -577,6 +645,22 @@
            data-zh="此外，極光亦象徵著「希望與破曉」。這代表著我們內閣真摯的決心，希望同學能夠積極，樂觀地享受校園生活。我們將認真聆聽同學們的意見，全心全力為學校和師生付出，致力為同學營造愉快充實的校園生活，留下一段難忘的青春回憶。">
           Furthermore, Aurora symbolizes "Hope and Dawn". This reflects our cabinet's sincere determination to inspire students to actively and optimistically enjoy their campus life. We will earnestly listen to students' opinions and dedicate ourselves wholeheartedly to the school, teachers, and students—striving to create a joyful, fulfilling campus experience and leaving behind unforgettable memories of youth.
         </p>
+      </div>
+    </div>
+
+    <!-- ADDED: SU Promotion Video -->
+    <div class="section-block fade-in">
+      <h2 class="section-heading i18n" data-en="SU Promotion Video" data-zh="學生會宣傳影片">SU Promotion Video</h2>
+      <div class="promo-video-wrapper">
+        <!-- Preload="none" prevents the 570MB file from loading automatically -->
+        <video id="promoVideo" class="promo-video" controls preload="none"></video>
+        
+        <!-- Lazy-load Play Button Overlay -->
+        <div id="playOverlay" class="play-overlay" onclick="startPromoVideo()">
+          <div class="play-button">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -761,6 +845,19 @@
         });
       }, 350);
     });
+
+    // ADDED: Logic to inject video source only upon interaction to avoid buffering 570 MB
+    function startPromoVideo() {
+      const video = document.getElementById('promoVideo');
+      const overlay = document.getElementById('playOverlay');
+      
+      if (!video.src) {
+        video.src = 'assets/promo_vid.mp4';
+      }
+      
+      video.play();
+      overlay.style.display = 'none';
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       const video = document.getElementById('bg-video');
