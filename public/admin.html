@@ -20,6 +20,7 @@
     --aurora-cyan: #7fe9f0;
     --aurora-violet: #8f8cf0;
     --aurora-red: #ff6b6b;
+    --support-blue: #6ec3ff;
     --card-bg: rgba(10, 26, 32, 0.85);
     --card-border: rgba(127, 233, 240, 0.2);
   }
@@ -585,6 +586,55 @@
 
   .hidden { display: none !important; }
 
+  /* Supporters Tab */
+  .kpi-value.support-value { color: var(--support-blue); }
+
+  .supporters-table-wrap {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+  }
+
+  .supporters-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    text-align: left;
+  }
+
+  .supporters-table th {
+    background: rgba(110, 195, 255, 0.1);
+    color: var(--support-blue);
+    padding: 10px 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .supporters-table td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(127, 233, 240, 0.1);
+    color: rgba(223, 246, 242, 0.9);
+    font-family: 'Manrope', monospace;
+  }
+
+  .supporters-table tr:hover {
+    background: rgba(110, 195, 255, 0.05);
+  }
+
+  .supporters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
   @media (max-width: 1024px) {
     .charts-grid { grid-template-columns: 1fr; }
   }
@@ -622,6 +672,7 @@
     <div class="tab-bar">
       <button class="tab-btn active" id="tab-analytics-btn">📊 Site Analytics</button>
       <button class="tab-btn" id="tab-feedback-btn">💬 Feedback Moderation</button>
+      <button class="tab-btn" id="tab-supporters-btn">💙 Supporters</button>
     </div>
 
     <!-- Analytics Dashboard View -->
@@ -700,6 +751,47 @@
     <div id="feedback-section" class="hidden">
       <main id="admin-container" class="admin-grid"></main>
     </div>
+
+    <!-- Supporters View (supportus.html "Support Us" button, IP-rate-limited) -->
+    <div id="supporters-section" class="hidden">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-title">Total Support Clicks</span>
+          <span class="kpi-value support-value" id="kpi-total-supports">0</span>
+          <span class="kpi-subtitle">All-time count shown on supportus.html</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Unique Supporters (by IP)</span>
+          <span class="kpi-value support-value" id="kpi-unique-supporters">0</span>
+          <span class="kpi-subtitle">Distinct public IP addresses</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Most Recent Support</span>
+          <span class="kpi-value support-value" id="kpi-last-support" style="font-size: 1.3rem;">None yet</span>
+          <span class="kpi-subtitle">Time since last click</span>
+        </div>
+      </div>
+
+      <div class="supporters-table-wrap">
+        <div class="supporters-header">
+          <h3 class="chart-title">Supporters by IP Address</h3>
+          <button class="nav-btn nav-btn-danger" id="reset-supporters-btn">🗑 Reset Supporters</button>
+        </div>
+        <table class="supporters-table">
+          <thead>
+            <tr>
+              <th>IP Address (masked)</th>
+              <th>Clicks</th>
+              <th>Last Click (HKT)</th>
+              <th>Cooldown Status</th>
+            </tr>
+          </thead>
+          <tbody id="supporters-table-body">
+            <tr><td colspan="4" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- Detailed Activity Logs Modal Popup -->
@@ -756,6 +848,11 @@
       signOut, 
       onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    // Reuses the already-initialized Firebase app/module instance from
+    // analytics.js (loaded via <script type="module" src="analytics.js"> in
+    // <head>) - the browser caches ES modules by URL, so this import does
+    // not re-run analytics.js's side effects.
+    import { maskIP, SUPPORT_COOLDOWN_MS } from "./analytics.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
@@ -844,15 +941,31 @@
     tabAnalyticsBtn.addEventListener('click', () => {
       tabAnalyticsBtn.classList.add('active');
       tabFeedbackBtn.classList.remove('active');
+      tabSupportersBtn.classList.remove('active');
       analyticsSection.classList.remove('hidden');
       feedbackSection.classList.add('hidden');
+      supportersSection.classList.add('hidden');
     });
+
+    const tabSupportersBtn = document.getElementById('tab-supporters-btn');
+    const supportersSection = document.getElementById('supporters-section');
 
     tabFeedbackBtn.addEventListener('click', () => {
       tabFeedbackBtn.classList.add('active');
       tabAnalyticsBtn.classList.remove('active');
+      tabSupportersBtn.classList.remove('active');
       feedbackSection.classList.remove('hidden');
       analyticsSection.classList.add('hidden');
+      supportersSection.classList.add('hidden');
+    });
+
+    tabSupportersBtn.addEventListener('click', () => {
+      tabSupportersBtn.classList.add('active');
+      tabAnalyticsBtn.classList.remove('active');
+      tabFeedbackBtn.classList.remove('active');
+      supportersSection.classList.remove('hidden');
+      analyticsSection.classList.add('hidden');
+      feedbackSection.classList.add('hidden');
     });
 
     // Modal Event Listeners
@@ -938,6 +1051,7 @@
         
         loadAnalyticsData();
         loadAdminFeedbacks();
+        loadSupportersData();
       } else {
         currentUser = null;
         document.getElementById('login-view').classList.remove('hidden');
@@ -1438,6 +1552,89 @@
     function escapeHtml(str) { 
       return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
     }
+
+    // ---------------------------------------------------------------------
+    // Supporters ("Support Us" IP-rate-limited button on supportus.html)
+    // ---------------------------------------------------------------------
+    let supportersUnsubCounter = null;
+    let supportersUnsubList = null;
+    let latestSupporterDocs = [];
+
+    function loadSupportersData() {
+      if (supportersUnsubCounter) supportersUnsubCounter();
+      if (supportersUnsubList) supportersUnsubList();
+
+      supportersUnsubCounter = onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
+        const total = snap.exists() ? (snap.data().count || 0) : 0;
+        document.getElementById('kpi-total-supports').textContent = total.toLocaleString();
+      }, (err) => console.error("Error subscribing to support counter:", err));
+
+      supportersUnsubList = onSnapshot(collection(db, "supporters"), (querySnapshot) => {
+        latestSupporterDocs = [];
+        querySnapshot.forEach((docSnap) => {
+          latestSupporterDocs.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderSupportersTable();
+      }, (err) => console.error("Error subscribing to supporters:", err));
+    }
+
+    function renderSupportersTable() {
+      const tbody = document.getElementById('supporters-table-body');
+      document.getElementById('kpi-unique-supporters').textContent = latestSupporterDocs.length.toLocaleString();
+
+      if (!latestSupporterDocs.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
+        document.getElementById('kpi-last-support').textContent = 'None yet';
+        return;
+      }
+
+      const sorted = [...latestSupporterDocs].sort((a, b) => (b.lastClickAtMillis || 0) - (a.lastClickAtMillis || 0));
+
+      const mostRecent = sorted[0];
+      document.getElementById('kpi-last-support').textContent = mostRecent.lastClickAtMillis
+        ? getRelativeTimeAgo(new Date(mostRecent.lastClickAtMillis))
+        : 'None yet';
+
+      let rows = '';
+      sorted.forEach((s) => {
+        const ip = s.ip || '(unknown)';
+        const masked = ip !== '(unknown)' ? maskIP(ip) : ip;
+        const lastClickDate = s.lastClickAtMillis ? new Date(s.lastClickAtMillis) : null;
+        const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
+        const cooldownLabel = remainingMs > 0
+          ? `<span class="event-tag closed">On cooldown</span>`
+          : `<span class="event-tag opened">Ready</span>`;
+
+        rows += `
+          <tr>
+            <td>${escapeHtml(masked)}</td>
+            <td>${s.clicks || 0}</td>
+            <td>${lastClickDate ? formatHKTTime(lastClickDate) : 'N/A'}</td>
+            <td>${cooldownLabel}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rows;
+    }
+
+    document.getElementById('reset-supporters-btn').addEventListener('click', async () => {
+      if (!currentUser) return;
+      if (!confirm("Are you sure you want to delete all supporter records and reset the counter to 0? This cannot be undone.")) return;
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "supporters"));
+        const batch = writeBatch(db);
+
+        querySnapshot.forEach((docSnap) => batch.delete(docSnap.ref));
+        batch.set(doc(db, "counters", "supportCounter"), { count: 0 });
+
+        await batch.commit();
+        alert("Supporter data has been reset!");
+      } catch (err) {
+        alert("Failed to reset supporter data: " + err.message);
+      }
+    });
   </script>
 </body>
 </html>
