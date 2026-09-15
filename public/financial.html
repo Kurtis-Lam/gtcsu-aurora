@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora - Annual Financial Plan</title>
+<link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
+
+<script type="module" src="analytics.js"></script>
+
+<!-- Asset & Component Preloading --> 
+<link rel="preload" href="panel.html" as="fetch" crossorigin>
+<link rel="preload" href="assets/aurora-logo.png" as="image">
+<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+
+<script src="load-components.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,500&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --void: #050b12;
+    --deep: #0a1a20;
+    --ink: #dff6f2;
+    --aurora-teal: #2fe6b8;
+    --aurora-green: #6ee89a;
+    --aurora-cyan: #7fe9f0;
+    --aurora-violet: #8f8cf0;
+    --star: #ffffff;
+    --line: rgba(223, 246, 242, 0.18);
+    --glass-bg: rgba(10, 26, 32, 0.55);
+    --glass-border: rgba(127, 233, 240, 0.2);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html,body{
+    min-height:100%;
+    background:var(--void);
+    color:var(--ink);
+    font-family:'Manrope', sans-serif;
+    overflow-x:hidden;
+  }
+
+  /* ---------- Solid Black Preloader Overlay ---------- */
+  #preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #000000;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+
+  body.is-loaded #preloader {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  /* ---------- Header / Navbar Component Styling ---------- */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 72px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6vw;
+    background: rgba(5, 11, 18, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(127, 233, 240, 0.15);
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #ffffff;
+  }
+
+  .nav-logo {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+  }
+
+  .nav-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #ffffff;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .nav-btn {
+    color: rgba(223, 246, 242, 0.8);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+  }
+
+  .nav-btn:hover,
+  .nav-btn.active {
+    color: var(--aurora-cyan);
+    text-shadow: 0 0 8px rgba(127, 233, 240, 0.4);
+  }
+
+  /* Mobile Hamburger Button */
+  .hamburger-btn {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 26px;
+    height: 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 1001;
+  }
+
+  .hamburger-btn span {
+    width: 100%;
+    height: 2px;
+    background-color: var(--aurora-cyan);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+
+  .hamburger-btn.open span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+  .hamburger-btn.open span:nth-child(2) {
+    opacity: 0;
+  }
+  .hamburger-btn.open span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 11, 18, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .nav-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ---------- Initial Hidden UI States ---------- */
+  .navbar, 
+  .header-section,
+  .section-block,
+  footer,
+  .lang-toggle {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.35s ease-in, transform 0.35s ease-in;
+    pointer-events: none;
+  }
+
+  /* Reveal sequence after preloader fades */
+  body.is-loaded .navbar,
+  body.is-loaded .header-section,
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.is-loaded .navbar { transition-delay: 0.15s; }
+  body.is-loaded .header-section { transition-delay: 0.35s; }
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+
+  /* ---------- Fade-in Scroll Reveal Effect ---------- */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  .fade-in.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; }
+    .navbar, .header-section, .section-block, .fade-in, footer, .lang-toggle { 
+      transition: none !important; 
+      opacity: 1 !important; 
+      transform: none !important; 
+    }
+  }
+
+  /* ---------- Floating Bottom-Right Language Button ---------- */
+  .lang-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #eafffb;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+  }
+
+  .lang-toggle:hover {
+    border-color: rgba(127, 233, 240, 0.8);
+    background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3);
+    transform: translateY(-2px);
+  }
+
+  /* ---------- Video Background ---------- */
+  .sky{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    overflow:hidden;
+    background: var(--void);
+  }
+
+  .bg-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+    filter: brightness(1);
+  }
+
+  .sky-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.2) 0%, rgba(5, 11, 18, 0.6) 100%),
+                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.7) 100%);
+    pointer-events: none;
+  }
+
+  /* ---------- Layout & Content ---------- */
+  .page-container {
+    position: relative;
+    z-index: 1;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 104px 6vw 80px; /* Offset top padding to clear fixed header cleanly */
+  }
+
+  .header-section {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .page-subtitle {
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    color: var(--aurora-cyan);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    color: #ffffff;
+    margin-bottom: 16px;
+    text-shadow: 0 0 20px rgba(127, 233, 240, 0.3);
+  }
+
+  .page-description {
+    max-width: 720px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: rgba(223, 246, 242, 0.85);
+  }
+
+  .section-block {
+    margin-bottom: 60px;
+  }
+
+  .section-heading {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem;
+    color: var(--aurora-teal);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* ---------- Financial Table Styling ---------- */
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .financial-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.95rem;
+    color: rgba(223, 246, 242, 0.9);
+    min-width: 680px;
+  }
+
+  .financial-table th,
+  .financial-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(223, 246, 242, 0.08);
+  }
+
+  .financial-table th {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--aurora-cyan);
+    background: rgba(6, 13, 22, 0.6);
+    text-transform: uppercase;
+  }
+
+  .financial-table tbody tr {
+    transition: background 0.25s ease;
+  }
+
+  .financial-table tbody tr:hover {
+    background: rgba(127, 233, 240, 0.06);
+  }
+
+  .financial-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .financial-table .total-row {
+    background: rgba(10, 26, 32, 0.85);
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .financial-table .total-row td {
+    border-top: 1px solid rgba(127, 233, 240, 0.3);
+    color: #ffffff;
+  }
+
+  .amount-col {
+    text-align: right;
+    font-family: 'Manrope', monospace;
+    font-weight: 600;
+  }
+
+  /* ---------- Detailed Activity Table (theme grouping) ---------- */
+  .financial-table .theme-header td {
+    background: rgba(46, 230, 184, 0.08);
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    color: var(--aurora-teal);
+    letter-spacing: 0.05em;
+    border-top: 1px solid rgba(127, 233, 240, 0.25);
+  }
+
+  .financial-table .subtotal-row td {
+    background: rgba(10, 26, 32, 0.7);
+    font-weight: 600;
+    color: var(--aurora-cyan);
+    border-top: 1px dashed rgba(127, 233, 240, 0.25);
+  }
+
+  .note-text {
+    font-size: 0.82rem;
+    color: rgba(223, 246, 242, 0.55);
+  }
+
+  .note-text a {
+    color: var(--aurora-cyan);
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(127, 233, 240, 0.5);
+  }
+
+  .note-text a:hover {
+    color: var(--aurora-teal);
+  }
+
+  .remaining-note {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: rgba(223, 246, 242, 0.7);
+    text-align: right;
+    padding-right: 8px;
+  }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 0 6vw 40px;
+    font-size: 0.78rem;
+    color: rgba(223, 246, 242, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    .page-container { padding: 88px 4vw 60px; }
+    .hamburger-btn { display: flex; }
+    .nav-links {
+      position: fixed;
+      top: 72px;
+      right: -100%;
+      width: 240px;
+      height: calc(100vh - 72px);
+      background: rgba(5, 11, 18, 0.95);
+      backdrop-filter: blur(20px);
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 30px 24px;
+      gap: 20px;
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 999;
+    }
+    .nav-links.active {
+      right: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Black Preloader Overlay -->
+  <div id="preloader"></div>
+
+  <!-- Floating Bottom-Right Language Toggle Button -->
+  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
+    <span class="lang-icon">🌐</span>
+    <span id="lang-text">繁體中文</span>
+  </button>
+
+  <!-- Dynamic Navigation Panel Mount Point -->
+  <div id="panel-container"></div>
+
+  <!-- Video Background -->
+  <div class="sky">
+    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
+      <source src="assets/background.mp4" type="video/mp4">
+    </video>
+    <div class="sky-overlay"></div>
+  </div>
+
+  <main class="page-container">
+    <div class="header-section">
+      <p class="page-subtitle i18n" data-en="2026–2027 Financial Budget Overview" data-zh="2026–2027 年度財政預算總覽">2026–2027 Financial Budget Overview</p>
+      <h1 class="page-title i18n" data-en="Detailed Activity Budget Breakdown" data-zh="活動預算詳細明細">Detailed Activity Budget Breakdown</h1>
+      <p class="page-description i18n" 
+         data-en="All expenditure details will be personally checked by the Treasurer and President before being submitted to the school for final approval." 
+         data-zh="所有支出明細都會由財政幹事以及主席親自檢查，再交予學校審批。">
+        All expenditure details will be personally checked by the Treasurer and President before being submitted to the school for final approval.
+      </p>
+    </div>
+
+    <!-- SECTION: Detailed Activity Budget Breakdown -->
+    <div class="section-block fade-in">
+      <h2 class="section-heading i18n" data-en="Detailed Activity Budget Breakdown" data-zh="活動預算詳細明細">Detailed Activity Budget Breakdown</h2>
+      <div class="table-wrapper">
+        <table class="financial-table">
+          <thead>
+            <tr>
+              <th class="i18n" data-en="Theme" data-zh="主題" style="width: 14%;">Theme</th>
+              <th class="i18n" data-en="Activity" data-zh="活動" style="width: 20%;">Activity</th>
+              <th class="i18n" data-en="Item & Breakdown" data-zh="購買物品及明細" style="width: 34%;">Item & Breakdown</th>
+              <th class="amount-col i18n" data-en="Price (HKD)" data-zh="價錢 (HKD)" style="width: 12%;">Price (HKD)</th>
+              <th class="i18n" data-en="Notes" data-zh="備註" style="width: 20%;">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="Halloween" data-zh="萬聖節">Halloween</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Trick or Treat" data-zh="Trick or treat">Trick or Treat</td>
+              <td class="i18n" data-en="Candy — $50 × 4" data-zh="糖果 — $50*4">Candy — $50 × 4</td>
+              <td class="amount-col">$200</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td class="i18n" data-en="Halloween & Cosplay Decorations" data-zh="萬聖節&cosplay裝飾">Halloween & Cosplay Decorations</td>
+              <td class="amount-col">$250</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Instant Photo Booth" data-zh="即影即有">Instant Photo Booth</td>
+              <td class="i18n" data-en="Photo paper — $150 (20 sheets) × 3" data-zh="相紙 — $150（20張）*3">Photo paper — $150 (20 sheets) × 3</td>
+              <td class="amount-col">$450</td>
+              <td></td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" class="i18n" data-en="Halloween Subtotal" data-zh="萬聖節小結">Halloween Subtotal</td>
+              <td class="amount-col">$900</td>
+              <td></td>
+            </tr>
+
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="Christmas" data-zh="聖誕節">Christmas</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Singing Contest" data-zh="Singing Contest">Singing Contest</td>
+              <td class="i18n" data-en="Prizes — $70 × 5" data-zh="獎品 — $70*5">Prizes — $70 × 5</td>
+              <td class="amount-col">$350</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td class="i18n" data-en="Lucky draw prizes — $75 × 3" data-zh="大抽獎獎品 — $75*3">Lucky draw prizes — $75 × 3</td>
+              <td class="amount-col">$225</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Christmas Wish" data-zh="聖誕許願">Christmas Wish</td>
+              <td class="i18n" data-en="Cards — $100" data-zh="卡片 — $100">Cards — $100</td>
+              <td class="amount-col">$100</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td class="i18n" data-en="Christmas decorations — $300" data-zh="聖誕裝飾 — $300">Christmas decorations — $300</td>
+              <td class="amount-col">$300</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Dancing Contest" data-zh="Dancing Contest">Dancing Contest</td>
+              <td class="i18n" data-en="Prizes — $50 × 5" data-zh="獎品 — $50*5">Prizes — $50 × 5</td>
+              <td class="amount-col">$250</td>
+              <td></td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" class="i18n" data-en="Christmas Subtotal" data-zh="聖誕節小結">Christmas Subtotal</td>
+              <td class="amount-col">$1,225</td>
+              <td></td>
+            </tr>
+
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="Easter" data-zh="復活節">Easter</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Easter Decorations" data-zh="復活節裝飾">Easter Decorations</td>
+              <td class="i18n" data-en="Decorations — $300" data-zh="復活裝飾 — $300">Decorations — $300</td>
+              <td class="amount-col">$300</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Easter Egg Hunt" data-zh="尋找復活蛋">Easter Egg Hunt</td>
+              <td class="i18n" data-en="Prizes + props — $250" data-zh="獎品+道具 — $250">Prizes + props — $250</td>
+              <td class="amount-col">$250</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Instant Photo Booth" data-zh="即影即有">Instant Photo Booth</td>
+              <td class="i18n" data-en="Photo paper — $150 (20 sheets) × 3" data-zh="相紙 — $150（20張）*3">Photo paper — $150 (20 sheets) × 3</td>
+              <td class="amount-col">$450</td>
+              <td></td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" class="i18n" data-en="Easter Subtotal" data-zh="復活節小結">Easter Subtotal</td>
+              <td class="amount-col">$1,000</td>
+              <td></td>
+            </tr>
+
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="Mid-Autumn Festival" data-zh="中秋節">Mid-Autumn Festival</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Mid-Autumn Festival Activity" data-zh="中秋節活動">Mid-Autumn Festival Activity</td>
+              <td class="i18n" data-en="Prizes + props — $250" data-zh="獎品+道具 — $250">Prizes + props — $250</td>
+              <td class="amount-col">$250</td>
+              <td></td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" class="i18n" data-en="Mid-Autumn Festival Subtotal" data-zh="中秋節小結">Mid-Autumn Festival Subtotal</td>
+              <td class="amount-col">$250</td>
+              <td></td>
+            </tr>
+
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="Recurring Activities" data-zh="定期活動">Recurring Activities</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Inter-class Ball Games" data-zh="班際球類比賽">Inter-class Ball Games</td>
+              <td class="i18n" data-en="N/A" data-zh="無">N/A</td>
+              <td class="amount-col">$0</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Random Dance" data-zh="隨機舞蹈">Random Dance</td>
+              <td class="i18n" data-en="N/A" data-zh="無">N/A</td>
+              <td class="amount-col">$0</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Campus Song Requests" data-zh="校園點歌">Campus Song Requests</td>
+              <td class="i18n" data-en="N/A" data-zh="無">N/A</td>
+              <td class="amount-col">$0</td>
+              <td></td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" class="i18n" data-en="Recurring Activities Subtotal" data-zh="定期活動小結">Recurring Activities Subtotal</td>
+              <td class="amount-col">$0</td>
+              <td></td>
+            </tr>
+
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="Standing Activities" data-zh="常規活動">Standing Activities</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Subject Friendly Competition" data-zh="學科友誼競賽">Subject Friendly Competition</td>
+              <td class="i18n" data-en="Prizes — $35 × 3 (by ranking)" data-zh="獎品 — $35*3（名次）">Prizes — $35 × 3 (by ranking)</td>
+              <td class="amount-col">$105</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Movie Night" data-zh="Movie Night">Movie Night</td>
+              <td class="i18n" data-en="Drink packs — $20 (6-pack) × 5 packs" data-zh="紙包飲品 — $20（6包）*5（pack）">Drink packs — $20 (6-pack) × 5 packs</td>
+              <td class="amount-col">$100</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Gamebooth Day" data-zh="Gamebooth Day">Gamebooth Day</td>
+              <td class="i18n" data-en="Prizes — $3,000" data-zh="獎品 — $3000">Prizes — $3,000</td>
+              <td class="amount-col">$3,000</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Chess Competition" data-zh="國際象棋比賽">Chess Competition</td>
+              <td class="i18n" data-en="Prizes — $35 × 3" data-zh="獎品 — $35*3">Prizes — $35 × 3</td>
+              <td class="amount-col">$105</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Campus Photography Competition" data-zh="校園攝影比賽">Campus Photography Competition</td>
+              <td class="i18n" data-en="Prizes — $35 × 3" data-zh="獎品 — $35*3">Prizes — $35 × 3</td>
+              <td class="amount-col">$105</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Rubik's Cube Competition" data-zh="扭計骰比賽">Rubik's Cube Competition</td>
+              <td class="i18n" data-en="Prizes — $35 × 3" data-zh="獎品 — $35*3">Prizes — $35 × 3</td>
+              <td class="amount-col">$105</td>
+              <td class="note-text i18n" data-en="Participants bring their own cube" data-zh="參賽者自備">Participants bring their own cube</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Tongue Twister Competition" data-zh="急口令比賽">Tongue Twister Competition</td>
+              <td class="i18n" data-en="Prizes — $35 × 3" data-zh="獎品 — $35*3">Prizes — $35 × 3</td>
+              <td class="amount-col">$105</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Esports Competition" data-zh="電競比賽">Esports Competition</td>
+              <td class="i18n" data-en="Prizes — $35 × 3" data-zh="獎品 — $35*3">Prizes — $35 × 3</td>
+              <td class="amount-col">$105</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Handmade Accessories Workshop" data-zh="手工飾品工作坊">Handmade Accessories Workshop</td>
+              <td class="i18n" data-en="Materials — $70 × 5" data-zh="材料 — $70*5">Materials — $70 × 5</td>
+              <td class="amount-col">$350</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="SU Activity Design Competition" data-zh="SU 活動設計比賽">SU Activity Design Competition</td>
+              <td class="i18n" data-en="Supplies — $400" data-zh="物資 — $400">Supplies — $400</td>
+              <td class="amount-col">$400</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Beyblade Competition" data-zh="爆旋陀螺大賽">Beyblade Competition</td>
+              <td class="i18n" data-en="Arena — $0" data-zh="陀螺盤 — $0">Arena — $0</td>
+              <td class="amount-col">$0</td>
+              <td class="note-text i18n" data-en="Provided by the Student Union" data-zh="SU自備">Provided by the Student Union</td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" class="i18n" data-en="Standing Activities Subtotal" data-zh="常規活動小結">Standing Activities Subtotal</td>
+              <td class="amount-col">$4,480</td>
+              <td></td>
+            </tr>
+
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="Post-Exam Activities" data-zh="試後活動">Post-Exam Activities</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Water Fight" data-zh="水戰">Water Fight</td>
+              <td class="i18n" data-en="Water balloons — $600" data-zh="水彈 — $600">Water balloons — $600</td>
+              <td class="amount-col">$600</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Campus Life Simulator" data-zh="校園人生模擬器">Campus Life Simulator</td>
+              <td class="i18n" data-en="Props — $950" data-zh="道具 — $950">Props — $950</td>
+              <td class="amount-col">$950</td>
+              <td></td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" class="i18n" data-en="Post-Exam Activities Subtotal" data-zh="試後活動小結">Post-Exam Activities Subtotal</td>
+              <td class="amount-col">$1,550</td>
+              <td></td>
+            </tr>
+
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="In-School Welfare" data-zh="校內福利">In-School Welfare</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Umbrella Loan Service" data-zh="雨傘借用服務">Umbrella Loan Service</td>
+              <td class="i18n" data-en="Umbrellas — $40 × 5" data-zh="雨傘 — $40*5">Umbrellas — $40 × 5</td>
+              <td class="amount-col">$200</td>
+              <td class="note-text"><a href="https://detail.tmall.com/item.htm?id=645401623734" target="_blank" rel="noopener" class="i18n" data-en="Reference link" data-zh="參考連結">Reference link</a></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Hot Drink Distribution" data-zh="熱飲派發服務">Hot Drink Distribution</td>
+              <td class="i18n" data-en="Instant drinks — $450" data-zh="即溶飲品 — $450">Instant drinks — $450</td>
+              <td class="amount-col">$450</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Ice Cream Delivery Service" data-zh="雪糕派送服務">Ice Cream Delivery Service</td>
+              <td class="i18n" data-en="Ice cream — $5,500" data-zh="雪糕 — $5500">Ice cream — $5,500</td>
+              <td class="amount-col">$5,500</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Sports Day Tattoo Stickers" data-zh="運動會水印貼紙">Sports Day Tattoo Stickers</td>
+              <td class="i18n" data-en="Tattoo stickers — $200" data-zh="水印貼紙 — $200">Tattoo stickers — $200</td>
+              <td class="amount-col">$200</td>
+              <td class="note-text"><a href="https://item.taobao.com/item.htm?id=556740554215" target="_blank" rel="noopener" class="i18n" data-en="Reference link" data-zh="參考連結">Reference link</a></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Track & Field Booklet Design Competition" data-zh="陸運會小冊子設計比賽">Track & Field Booklet Design Competition</td>
+              <td class="i18n" data-en="Cold drinks — $900" data-zh="冷飲 — $900">Cold drinks — $900</td>
+              <td class="amount-col">$900</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Teachers' Day" data-zh="敬師日">Teachers' Day</td>
+              <td class="i18n" data-en="Gift (custom bookmarks) + Cards" data-zh="禮物 （訂製書籤）+ 卡片">Gift (custom bookmarks) + Cards</td>
+              <td class="amount-col">$1,000</td>
+              <td class="note-text i18n" data-en="Bookmarks × 70, Mugs × 15 (Ghibli custom gift store), both can be engraved" data-zh="書籤 *70, Mug*15（吉卜力禮品定制連鎖）, both can 刻字">Bookmarks × 70, Mugs × 15 (Ghibli custom gift store), both can be engraved</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Hand Warmer Giveaway" data-zh="贈送暖包">Hand Warmer Giveaway</td>
+              <td class="i18n" data-en="Hand warmers — $25 (30-pack) × 30" data-zh="暖包 — $25（30包）*30">Hand warmers — $25 (30-pack) × 30</td>
+              <td class="amount-col">$750</td>
+              <td class="note-text"><a href="https://e.tb.cn/h.80T7Gsg462DboIK?tk=575ngJKfkqGMF287" target="_blank" rel="noopener" class="i18n" data-en="Reference link" data-zh="參考連結">Reference link</a></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Watermelon Giveaway" data-zh="西瓜派發">Watermelon Giveaway</td>
+              <td class="i18n" data-en="Watermelons — $45 × 10" data-zh="西瓜 — $45*10">Watermelons — $45 × 10</td>
+              <td class="amount-col">$450</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="HKDSE Cheering Cards" data-zh="公開試打氣">HKDSE Cheering Cards</td>
+              <td class="i18n" data-en="Cards — $150" data-zh="卡片 — $150">Cards — $150</td>
+              <td class="amount-col">$150</td>
+              <td class="note-text"><a href="https://item.taobao.com/item.htm?id=714453750411" target="_blank" rel="noopener" class="i18n" data-en="Reference link" data-zh="參考連結">Reference link</a></td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" class="i18n" data-en="In-School Welfare Subtotal" data-zh="校內福利小結">In-School Welfare Subtotal</td>
+              <td class="amount-col">$9,600</td>
+              <td></td>
+            </tr>
+
+            <tr class="total-row">
+              <td colspan="3" class="i18n" data-en="Total (Activities Above)" data-zh="以上活動總計">Total (Activities Above)</td>
+              <td class="amount-col" style="color: var(--aurora-violet);">$19,005 <span class="i18n" data-en="(Total Budget: $20,000)" data-zh="(總預算: $20,000)" style="font-size: 0.85rem; font-weight: 400; color: rgba(223, 246, 242, 0.7);">(Total Budget: $20,000)</span></td>
+              <td></td>
+            </tr>
+
+            <tr class="theme-header"><td colspan="5" class="i18n" data-en="Election & Publicity Activities" data-zh="選舉/宣傳活動">Election & Publicity Activities</td></tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Candy Giveaway" data-zh="派糖">Candy Giveaway</td>
+              <td class="i18n" data-en="Candy — $30 × 10" data-zh="糖果 — $30*10">Candy — $30 × 10</td>
+              <td class="amount-col">$300</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Custom A4 Folder Giveaway" data-zh="派訂製A4 folder">Custom A4 Folder Giveaway</td>
+              <td class="i18n" data-en="A4 folders — $300" data-zh="A4 folder — $300">A4 folders — $300</td>
+              <td class="amount-col">$300</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="i18n" data-en="Flyer Distribution" data-zh="派發宣傳單張">Flyer Distribution</td>
+              <td class="i18n" data-en="Flyers — $150" data-zh="宣傳單張 — $150">Flyers — $150</td>
+              <td class="amount-col">$150</td>
+              <td></td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="3" class="i18n" data-en="Election & Publicity Total" data-zh="選舉/宣傳活動總計">Election & Publicity Total</td>
+              <td class="amount-col" style="color: var(--aurora-violet);">$750 <span class="i18n" data-en="(Total Budget: $800)" data-zh="(總預算: $800)" style="font-size: 0.85rem; font-weight: 400; color: rgba(223, 246, 242, 0.7);">(Total Budget: $800)</span></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
+
+  <script>
+    let currentLang = localStorage.getItem('aurora_lang') || 'en';
+    let isSwitching = false;
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('aurora_lang', lang);
+      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+
+      document.querySelectorAll('.i18n').forEach(el => {
+        const text = el.getAttribute(`data-${lang}`);
+        if (text) el.innerHTML = text;
+      });
+
+      const langText = document.getElementById('lang-text');
+      if (langText) {
+        langText.textContent = lang === 'en' ? '繁體中文' : 'English';
+      }
+    }
+
+    setLanguage(currentLang);
+
+    document.getElementById('lang-btn').addEventListener('click', () => {
+      if (isSwitching) return;
+      isSwitching = true;
+
+      document.body.classList.remove('is-loaded');
+
+      setTimeout(() => {
+        setLanguage(currentLang === 'en' ? 'zh' : 'en');
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            document.body.classList.add('is-loaded');
+            setTimeout(() => { isSwitching = false; }, 1200);
+          });
+        });
+      }, 350);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const video = document.getElementById('bg-video');
+      let pageRevealed = false;
+
+      const observerOptions = {
+        root: null,
+        rootMargin: '400px 0px 400px 0px',
+        threshold: 0.01
+      };
+
+      const fadeObserver = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+
+      function revealPage() {
+        if (pageRevealed) return;
+        pageRevealed = true;
+
+        if (video) {
+          video.play().catch(() => {});
+        }
+
+        document.body.classList.add('is-loaded');
+        document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+      }
+
+      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
+
+      const logoImage = new Image();
+      logoImage.src = 'assets/aurora-logo.png';
+      const logoLoaded = new Promise((resolve) => {
+        if (logoImage.complete) resolve();
+        else {
+          logoImage.onload = resolve;
+          logoImage.onerror = resolve;
+        }
+      });
+
+      const videoLoaded = new Promise((resolve) => {
+        if (!video) return resolve();
+        if (video.readyState >= 3) {
+          resolve();
+        } else {
+          const onCanPlay = () => {
+            video.removeEventListener('canplaythrough', onCanPlay);
+            video.removeEventListener('loadeddata', onCanPlay);
+            resolve();
+          };
+          video.addEventListener('canplaythrough', onCanPlay);
+          video.addEventListener('loadeddata', onCanPlay);
+        }
+      });
+
+      const fallbackTimer = new Promise((resolve) => setTimeout(resolve, 3000));
+
+      Promise.race([
+        Promise.all([fontsLoaded, logoLoaded, videoLoaded]),
+        fallbackTimer
+      ]).then(() => {
+        revealPage();
+      });
+    });
+  </script>
+</body>
+</html>
