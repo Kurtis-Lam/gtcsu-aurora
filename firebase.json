@@ -11,6 +11,10 @@
       {
         "source": "**",
         "destination": "/index.html"
+      },
+      {
+        "source": "/dev",
+        "destination": "/dev.html"
       }
     ]
   }
