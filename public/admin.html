@@ -1190,8 +1190,23 @@
       }
     });
 
+    // Client-side allow-list check. This is defense-in-depth only — the
+    // real security boundary is firestore.rules' isAdmin(); this just
+    // avoids showing a signed-in, non-admin Google account a broken
+    // dashboard full of permission-denied errors.
+    const ADMIN_EMAILS = ["kurtislam100@gmail.com", "xtshh524@gmail.com"];
+
     onAuthStateChanged(auth, (user) => {
       if (user) {
+        if (!ADMIN_EMAILS.includes(user.email)) {
+          currentUser = null;
+          alert("This Google account is not authorized to access the admin portal.");
+          signOut(auth);
+          document.getElementById('login-view').classList.remove('hidden');
+          document.getElementById('admin-view').classList.add('hidden');
+          return;
+        }
+
         currentUser = user;
         document.getElementById('login-view').classList.add('hidden');
         document.getElementById('admin-view').classList.remove('hidden');
