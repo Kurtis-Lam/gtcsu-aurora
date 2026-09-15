@@ -161,7 +161,7 @@ window.addEventListener("pagehide", () => {
 // Solution 1: Hardware Browser Fingerprinting Engine (No Sign-In Required)
 // ---------------------------------------------------------------------------
 
-export const SUPPORT_COOLDOWN_MS = 1000
+export const SUPPORT_COOLDOWN_MS = 60000
 
 export async function generateFingerprint() {
   const components = [];
