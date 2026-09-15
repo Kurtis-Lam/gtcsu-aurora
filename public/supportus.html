@@ -613,7 +613,7 @@
   <main class="page-container">
     <div class="header-section">
       <h1 class="page-title i18n" data-en="Support Us" data-zh="支持我們">Support Us</h1>
-      <p class="page-description i18n" data-en="Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life." data-zh="每一次點擊都是對候選內閣 Aurora 的一份支持，一起點亮以下的支持人數吧！">
+      <p class="page-description i18n" data-en="Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life. " data-zh="每一次點擊都是對候選內閣 Aurora 的一份支持。每 10 分鐘可以支持一次，一起點亮以下的支持人數吧！">
         Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life. 
       </p>
     </div>
@@ -666,6 +666,7 @@
     let myIpAddress = null;
     let myIpHash = null;
     let myDeviceInfo = { model: null, platform: null };
+    let countdownTimer = null;
 
     const btnLabels = {
       en: { ready: 'Support Us 💙', sent: 'Thank you! 💙', checking: 'Checking your status...', offline: 'Unavailable' },
@@ -674,6 +675,13 @@
 
     function currentLangCode() {
       return (localStorage.getItem('aurora_lang') || 'en') === 'zh' ? 'zh' : 'en';
+    }
+
+    function formatMMSS(ms) {
+      const totalSec = Math.max(0, Math.ceil(ms / 1000));
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${m}:${s.toString().padStart(2, '0')}`;
     }
 
     function updateBottomBar(clicks) {
@@ -686,6 +694,27 @@
       countEl.classList.remove('bump');
       void countEl.offsetWidth;
       countEl.classList.add('bump');
+    }
+
+    function startCountdown(remainingMs) {
+      clearInterval(countdownTimer);
+      let remaining = remainingMs;
+      btn.disabled = true;
+
+      const tick = () => {
+        if (remaining <= 0) {
+          clearInterval(countdownTimer);
+          btn.disabled = false;
+          btn.textContent = btnLabels[currentLangCode()].ready;
+          statusEl.textContent = '';
+          return;
+        }
+        btn.textContent = formatMMSS(remaining);
+        remaining -= 1000;
+      };
+
+      tick();
+      countdownTimer = setInterval(tick, 1000);
     }
 
     async function init() {
@@ -703,6 +732,9 @@
         return;
       }
 
+      // Best-effort IP + device model lookups. Both degrade gracefully:
+      // if the IP lookup fails, cooldown enforcement just falls back to
+      // fingerprint-only, same as before.
       const [ip, deviceInfo] = await Promise.all([getPublicIP(), getDeviceInfo()]);
       myIpAddress = ip;
       myIpHash = await getIpHash(ip);
@@ -711,8 +743,12 @@
       const status = await getSupportStatus(myDeviceId, myIpHash);
       updateBottomBar(status.clicks);
 
-      btn.disabled = false;
-      btn.textContent = btnLabels[currentLangCode()].ready;
+      if (status.remainingMs > 0) {
+        startCountdown(status.remainingMs);
+      } else {
+        btn.disabled = false;
+        btn.textContent = btnLabels[currentLangCode()].ready;
+      }
     }
 
     btn.addEventListener('click', async () => {
@@ -732,15 +768,17 @@
         if (result.success) {
           statusEl.textContent = currentLangCode() === 'zh' ? '感謝你的支持！💙' : 'Thank you for your support! 💙';
           if (typeof result.totalSupporters === 'number') bumpCount(result.totalSupporters);
+
+          startCountdown(result.remainingMs);
         } else {
-          statusEl.textContent = currentLangCode() === 'zh' ? '感謝你的支持！💙' : 'Thank you for your support! 💙';
+          statusEl.textContent = currentLangCode() === 'zh' ? '你最近已經支持過了。' : "You've already supported recently.";
+          startCountdown(result.remainingMs);
         }
       } catch (err) {
         console.error('Support click failed:', err);
-        statusEl.textContent = currentLangCode() === 'zh' ? '發生錯誤，請再試一次。' : 'Something went wrong - please try again.';
-      } finally {
         btn.disabled = false;
         btn.textContent = btnLabels[currentLangCode()].ready;
+        statusEl.textContent = currentLangCode() === 'zh' ? '發生錯誤，請再試一次。' : 'Something went wrong - please try again.';
       }
     });
 
