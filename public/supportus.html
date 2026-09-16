@@ -342,32 +342,6 @@
     margin-bottom: 70px;
   }
 
-  .section-heading {
-    font-family: 'Cinzel', serif;
-    font-size: 1.6rem;
-    color: var(--aurora-teal);
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .section-heading::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--line);
-  }
-
-  .glass-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 16px;
-    padding: 28px;
-    transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
-  }
-
   footer {
     position: relative;
     z-index: 1;
@@ -510,60 +484,20 @@
     }
   }
 
-  /* ---------- Mobile Drawer Media Query ---------- */
   @media (max-width: 768px) {
-    .hamburger-btn {
-      display: flex;
-    }
-
-    .navbar {
-      justify-content: flex-start;
-      gap: 16px;
-      padding: 0.8rem 1rem;
-    }
-
-    .nav-title {
-      display: inline-block;
-    }
-
+    .hamburger-btn { display: flex; }
+    .navbar { justify-content: flex-start; gap: 16px; padding: 0.8rem 1rem; }
+    .nav-title { display: inline-block; }
     .nav-links {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 260px;
-      height: 100vh;
-      height: 100dvh;
-      background: rgba(10, 26, 32, 0.95);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-right: 1px solid rgba(127, 233, 240, 0.25);
-      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 80px 20px 24px;
-      gap: 0.8rem;
-      transform: translateX(-100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 99;
+      position: fixed; top: 0; left: 0; width: 260px; height: 100vh; height: 100dvh;
+      background: rgba(10, 26, 32, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(127, 233, 240, 0.25); box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+      flex-direction: column; align-items: flex-start; padding: 80px 20px 24px; gap: 0.8rem;
+      transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); z-index: 99;
     }
-
-    .nav-links.active {
-      transform: translateX(0);
-    }
-
-    .nav-btn {
-      width: 100%;
-      text-align: left;
-      padding: 10px 16px;
-      font-size: 0.95rem;
-    }
-
-    .lang-toggle {
-      bottom: 16px;
-      right: 16px;
-      padding: 8px 14px;
-      font-size: 0.8rem;
-    }
+    .nav-links.active { transform: translateX(0); }
+    .nav-btn { width: 100%; text-align: left; padding: 10px 16px; font-size: 0.95rem; }
+    .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
   }
 </style>
 </head>
@@ -613,8 +547,8 @@
   <main class="page-container">
     <div class="header-section">
       <h1 class="page-title i18n" data-en="Support Us" data-zh="支持我們">Support Us</h1>
-      <p class="page-description i18n" data-en="Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life. " data-zh="每一次點擊都是對候選內閣 Aurora 的一份支持。每 10 分鐘可以支持一次，一起點亮以下的支持人數吧！">
-        Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life. 
+      <p class="page-description i18n" data-en="Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life." data-zh="每一次點擊都是對候選內閣 Aurora 的一份支持。每 10 分鐘可以支持一次，一起點亮以下的支持人數吧！">
+        Every tap below is a small vote of confidence for us! Press the counter to support us! The counter is updated in real life.
       </p>
     </div>
 
@@ -643,18 +577,30 @@
 
   <script src="load-components.js"></script>
 
-  <!-- Support Us: Live dynamic vote tracking with Browser Fingerprinting -->
+  <!-- Support Us: Dynamic vote tracking aligned with Firestore Security Rules -->
   <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, doc, getDoc, setDoc, onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import {
-      getOrCreateDeviceId,
-      maskDeviceId,
-      getSupportStatus,
-      registerSupportClick,
-      subscribeSupportCounter,
-      getPublicIP,
-      getIpHash,
-      getDeviceInfo
+      getOrCreateDeviceId, maskDeviceId, getPublicIP, getIpHash, getDeviceInfo
     } from './analytics.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
+      authDomain: "gtcsu-aurora.firebaseapp.com",
+      projectId: "gtcsu-aurora",
+      storageBucket: "gtcsu-aurora.firebasestorage.app",
+      messagingSenderId: "961705164297",
+      appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8",
+      measurementId: "G-ZWE0Z6VTZK"
+    };
+
+    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
     const btn = document.getElementById('support-btn');
     const statusEl = document.getElementById('support-status');
@@ -665,8 +611,8 @@
     let myDeviceId = null;
     let myIpAddress = null;
     let myIpHash = null;
-    let myDeviceInfo = { model: null, platform: null };
     let countdownTimer = null;
+    let cooldownDocKey = null;
 
     const btnLabels = {
       en: { ready: 'Support Us 💙', sent: 'Thank you! 💙', checking: 'Checking your status...', offline: 'Unavailable' },
@@ -687,13 +633,6 @@
     function updateBottomBar(clicks) {
       if (barClicksEl) barClicksEl.textContent = clicks;
       if (barDeviceEl) barDeviceEl.textContent = myDeviceId ? maskDeviceId(myDeviceId) : '—';
-    }
-
-    function bumpCount(value) {
-      countEl.textContent = value.toLocaleString();
-      countEl.classList.remove('bump');
-      void countEl.offsetWidth;
-      countEl.classList.add('bump');
     }
 
     function startCountdown(remainingMs) {
@@ -717,9 +656,37 @@
       countdownTimer = setInterval(tick, 1000);
     }
 
+    async function checkAndApplyCooldown() {
+      cooldownDocKey = myIpHash || myDeviceId;
+      if (!cooldownDocKey) return;
+
+      const cooldownRef = doc(db, "ipCooldowns", cooldownDocKey);
+      const snap = await getDoc(cooldownRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        const lastClick = data.lastClickAtMillis || 0;
+        const remaining = (lastClick + COOLDOWN_MS) - Date.now();
+
+        if (remaining > 0) {
+          startCountdown(remaining);
+        } else {
+          btn.disabled = false;
+          btn.textContent = btnLabels[currentLangCode()].ready;
+          statusEl.textContent = '';
+        }
+      } else {
+        btn.disabled = false;
+        btn.textContent = btnLabels[currentLangCode()].ready;
+        statusEl.textContent = '';
+      }
+    }
+
     async function init() {
-      subscribeSupportCounter((count) => {
-        countEl.textContent = count.toLocaleString();
+      onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
+        if (snap.exists()) {
+          countEl.textContent = (snap.data().count || 0).toLocaleString();
+        }
       });
 
       myDeviceId = await getOrCreateDeviceId();
@@ -732,23 +699,12 @@
         return;
       }
 
-      // Best-effort IP + device model lookups. Both degrade gracefully:
-      // if the IP lookup fails, cooldown enforcement just falls back to
-      // fingerprint-only, same as before.
-      const [ip, deviceInfo] = await Promise.all([getPublicIP(), getDeviceInfo()]);
+      const [ip] = await Promise.all([getPublicIP(), getDeviceInfo()]);
       myIpAddress = ip;
       myIpHash = await getIpHash(ip);
-      myDeviceInfo = deviceInfo;
 
-      const status = await getSupportStatus(myDeviceId, myIpHash);
-      updateBottomBar(status.clicks);
-
-      if (status.remainingMs > 0) {
-        startCountdown(status.remainingMs);
-      } else {
-        btn.disabled = false;
-        btn.textContent = btnLabels[currentLangCode()].ready;
-      }
+      updateBottomBar(1);
+      await checkAndApplyCooldown();
     }
 
     btn.addEventListener('click', async () => {
@@ -757,23 +713,45 @@
       btn.textContent = '...';
 
       try {
-        const result = await registerSupportClick(myDeviceId, {
-          ipAddress: myIpAddress,
-          ipHash: myIpHash,
-          deviceModel: myDeviceInfo.model,
-          platform: myDeviceInfo.platform
-        });
-        updateBottomBar(result.clicks);
+        cooldownDocKey = myIpHash || myDeviceId;
+        const cooldownRef = doc(db, "ipCooldowns", cooldownDocKey);
+        const snap = await getDoc(cooldownRef);
 
-        if (result.success) {
-          statusEl.textContent = currentLangCode() === 'zh' ? '感謝你的支持！💙' : 'Thank you for your support! 💙';
-          if (typeof result.totalSupporters === 'number') bumpCount(result.totalSupporters);
+        const now = Date.now();
+        if (snap.exists()) {
+          const data = snap.data();
+          const lastClick = data.lastClickAtMillis || 0;
+          const remaining = (lastClick + COOLDOWN_MS) - now;
 
-          startCountdown(result.remainingMs);
-        } else {
-          statusEl.textContent = currentLangCode() === 'zh' ? '你最近已經支持過了。' : "You've already supported recently.";
-          startCountdown(result.remainingMs);
+          if (remaining > 0) {
+            statusEl.textContent = currentLangCode() === 'zh' ? '你最近已經支持過了。' : "You've already supported recently.";
+            startCountdown(remaining);
+            return;
+          }
         }
+
+        const counterRef = doc(db, "counters", "supportCounter");
+        const counterSnap = await getDoc(counterRef);
+        if (counterSnap.exists()) {
+          const currentCount = counterSnap.data().count || 0;
+          await setDoc(counterRef, { count: currentCount + 1 });
+        } else {
+          await setDoc(counterRef, { count: 1 });
+        }
+
+        const cooldownData = {
+          deviceId: myDeviceId.substring(0, 64),
+          lastClickAtMillis: now
+        };
+        if (myIpAddress) {
+          cooldownData.ip = myIpAddress.substring(0, 64);
+        }
+
+        await setDoc(cooldownRef, cooldownData);
+
+        statusEl.textContent = currentLangCode() === 'zh' ? '感謝你的支持！💙' : 'Thank you for your support! 💙';
+        startCountdown(COOLDOWN_MS);
+
       } catch (err) {
         console.error('Support click failed:', err);
         btn.disabled = false;
