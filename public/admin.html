@@ -753,9 +753,9 @@
 
       <div class="supporters-table-wrap">
         <div class="supporters-header">
-          <h3 class="chart-title">Active IP Cooldowns</h3>
+          <h3 class="chart-title">Active IP & Device Cooldowns</h3>
           <div class="supporters-actions">
-            <button class="nav-btn" id="clean-cooldowns-btn">🧹 Clean Expired Cooldowns</button>
+            <button class="nav-btn" id="clean-cooldowns-btn">🧹 Refresh Supporters</button>
           </div>
         </div>
         <table class="supporters-table">
@@ -792,7 +792,7 @@
             </tr>
           </thead>
           <tbody id="support-logs-table-body">
-            <tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">Detailed vote history logging is disabled to conserve storage space. Only active cooldowns are stored.</td></tr>
+            <tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">Loading vote logs...</td></tr>
           </tbody>
         </table>
       </div>
@@ -925,7 +925,7 @@
 
     function maskDeviceId(id) {
       if (!id || id === '(unknown)') return 'xxxx...';
-      return id.length > 8 ? `${id.slice(0, 4)}...${id.slice(-4)}` : 'xxxx...';
+      return id.length > 8 ? `${id.slice(0, 4)}...${id.slice(-4)}` : id;
     }
 
     function maskIP(ip) {
@@ -958,6 +958,7 @@
       feedbackSection.classList.remove('hidden');
       analyticsSection.classList.add('hidden');
       supportersSection.classList.add('hidden');
+      loadAdminFeedbacks();
     });
 
     tabSupportersBtn.addEventListener('click', () => {
@@ -1475,7 +1476,13 @@
         items.forEach(item => {
           const status = item.status || 'pending';
           const badgeClass = status === 'approved' ? 'approved' : status === 'spam' ? 'spam' : 'pending';
-          const timeAgo = item.createdAt?.toDate ? getRelativeTimeAgo(item.createdAt.toDate()) : 'N/A';
+          
+          let timeAgo = 'N/A';
+          if (item.createdAt?.toDate) timeAgo = getRelativeTimeAgo(item.createdAt.toDate());
+          else if (item.submittedAtHKT) timeAgo = item.submittedAtHKT;
+
+          const titleDisplay = item.title ? `<h4 style="color: #ffffff; font-size: 1.05rem; margin-bottom: 6px;">${escapeHtml(item.title)}</h4>` : '';
+          const bodyDisplay = escapeHtml(item.content || item.text || '(No text content)');
 
           html += `
             <div class="card" id="feedback-card-${item.id}">
@@ -1485,12 +1492,13 @@
               </div>
               <div class="field-group">
                 <span class="field-label">Feedback Content</span>
-                <p style="white-space: pre-wrap; font-size: 0.95rem;">${escapeHtml(item.content || item.text || '')}</p>
+                ${titleDisplay}
+                <p style="white-space: pre-wrap; font-size: 0.95rem;">${bodyDisplay}</p>
               </div>
-              ${item.author ? `
+              ${(item.author || item.userName || item.userEmail) ? `
               <div class="field-group">
                 <span class="field-label">Author</span>
-                <p style="font-size: 0.85rem; color: var(--aurora-cyan);">${escapeHtml(item.author)}</p>
+                <p style="font-size: 0.85rem; color: var(--aurora-cyan);">${escapeHtml(item.author || item.userName || item.userEmail)}</p>
               </div>` : ''}
               <div class="actions">
                 <button class="btn btn-publish" onclick="window.updateFeedbackStatus('${item.id}', 'approved')">Approve</button>
@@ -1523,117 +1531,131 @@
     };
 
     // Clean expired cooldowns button handler
-    document.getElementById('clean-cooldowns-btn')?.addEventListener('click', async () => {
-      try {
-        const snap = await getDocs(collection(db, "ip_cooldowns"));
-        const now = Date.now();
-        const batch = writeBatch(db);
-        let cleanedCount = 0;
-
-        snap.forEach((docSnap) => {
-          const data = docSnap.data();
-          const expiresAt = data.expiresAt || (data.lastClick ? data.lastClick + 600000 : 0);
-          if (now >= expiresAt) {
-            batch.delete(docSnap.ref);
-            cleanedCount++;
-          }
-        });
-
-        if (cleanedCount > 0) {
-          await batch.commit();
-          alert(`Cleaned up ${cleanedCount} expired cooldown record(s).`);
-        } else {
-          alert("No expired cooldowns found.");
-        }
-        loadSupportersData();
-      } catch (err) {
-        alert("Error cleaning cooldowns: " + err.message);
-      }
+    document.getElementById('clean-cooldowns-btn')?.addEventListener('click', () => {
+      loadSupportersData();
     });
 
     async function loadSupportersData() {
       const tbody = document.getElementById('supporters-table-body');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading active cooldowns...</td></tr>`;
+      const logsTbody = document.getElementById('support-logs-table-body');
+
+      if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>`;
+      if (logsTbody) logsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">Loading support click logs...</td></tr>`;
 
       try {
-        const counterDoc = await getDoc(doc(db, "support_meta", "counter"));
+        // 1. Read Counter Document from counters/supportCounter
+        const counterDoc = await getDoc(doc(db, "counters", "supportCounter"));
         const totalSupports = counterDoc.exists() ? (counterDoc.data().count || 0) : 0;
         
         const kpiTotal = document.getElementById('kpi-total-supports');
         if (kpiTotal) kpiTotal.textContent = totalSupports.toLocaleString();
 
-        const querySnapshot = await getDocs(collection(db, "ip_cooldowns"));
+        // 2. Read Supporters collection from /supporters
+        const querySnapshot = await getDocs(collection(db, "supporters"));
         const now = Date.now();
-        const activeCooldowns = [];
-        const expiredRefBatch = writeBatch(db);
-        let expiredFound = false;
+        const SUPPORT_COOLDOWN_MS = 60000; // 60s cooldown standard
+        const supportersList = [];
 
         querySnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          const expiresAt = data.expiresAt || (data.lastClick ? data.lastClick + 600000 : 0);
-          if (now >= expiresAt) {
-            expiredRefBatch.delete(docSnap.ref);
-            expiredFound = true;
-          } else {
-            activeCooldowns.push({ id: docSnap.id, ...data, remainingMs: expiresAt - now });
-          }
+          supportersList.push({ id: docSnap.id, ...docSnap.data() });
         });
 
-        if (expiredFound) {
-          await expiredRefBatch.commit();
-        }
+        supportersList.sort((a, b) => (b.lastClickAtMillis || 0) - (a.lastClickAtMillis || 0));
+
+        const activeCooldowns = supportersList.filter(s => {
+          const last = s.lastClickAtMillis || 0;
+          return (now - last) < SUPPORT_COOLDOWN_MS;
+        });
 
         const kpiUnique = document.getElementById('kpi-unique-supporters');
         if (kpiUnique) kpiUnique.textContent = activeCooldowns.length.toLocaleString();
 
         const kpiLast = document.getElementById('kpi-last-support');
         if (kpiLast) {
-          if (activeCooldowns.length > 0) {
-            activeCooldowns.sort((a, b) => (b.lastClick || 0) - (a.lastClick || 0));
-            const latestTime = activeCooldowns[0].lastClick ? new Date(activeCooldowns[0].lastClick) : null;
-            kpiLast.textContent = latestTime ? getRelativeTimeAgo(latestTime) : 'Active';
+          if (supportersList.length > 0 && supportersList[0].lastClickAtMillis) {
+            kpiLast.textContent = getRelativeTimeAgo(new Date(supportersList[0].lastClickAtMillis));
           } else {
-            kpiLast.textContent = 'None active';
+            kpiLast.textContent = 'None yet';
           }
         }
 
-        if (!tbody) return;
+        // Render Supporters Table
+        if (tbody) {
+          if (supportersList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporter records stored in Firestore.</td></tr>`;
+          } else {
+            let rows = '';
+            supportersList.forEach(item => {
+              const lastClickMs = item.lastClickAtMillis || 0;
+              const elapsed = now - lastClickMs;
+              const isCoolingDown = elapsed < SUPPORT_COOLDOWN_MS;
+              const remainingSec = Math.ceil((SUPPORT_COOLDOWN_MS - elapsed) / 1000);
 
-        if (activeCooldowns.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No active IP / device cooldowns currently stored.</td></tr>`;
-        } else {
-          let rows = '';
-          activeCooldowns.forEach(item => {
-            const remainingSec = Math.ceil(item.remainingMs / 1000);
-            const mins = Math.floor(remainingSec / 60);
-            const secs = remainingSec % 60;
-            const cooldownStr = `${mins}m ${secs}s remaining`;
-            const lastClickStr = item.lastClick ? formatHKTTime(new Date(item.lastClick)) : 'N/A';
+              const cooldownStr = isCoolingDown
+                ? `<span class="badge pending">⏳ ${remainingSec}s remaining</span>`
+                : `<span class="badge approved">Ready</span>`;
+              
+              const lastClickStr = lastClickMs ? formatHKTTime(new Date(lastClickMs)) : 'N/A';
 
-            rows += `
-              <tr>
-                <td style="text-align:center;"><input type="checkbox" class="supporter-checkbox" value="${item.id}"></td>
-                <td><code>${escapeHtml(maskDeviceId(item.deviceId || item.id))}</code></td>
-                <td><code>${escapeHtml(maskIP(item.ipHash || '—'))}</code></td>
-                <td>${escapeHtml(item.deviceModel || 'Unknown')}</td>
-                <td>1</td>
-                <td>${lastClickStr}</td>
-                <td><span class="badge pending">⏳ ${cooldownStr}</span></td>
-                <td><span style="color: rgba(223,246,242,0.5);">On Cooldown</span></td>
-              </tr>
-            `;
-          });
-          tbody.innerHTML = rows;
+              rows += `
+                <tr>
+                  <td style="text-align:center;"><input type="checkbox" class="supporter-checkbox" value="${item.id}"></td>
+                  <td><code>${escapeHtml(maskDeviceId(item.deviceId || item.id))}</code></td>
+                  <td><code>${escapeHtml(maskIP(item.ip || '—'))}</code></td>
+                  <td>${escapeHtml(item.deviceModel || 'Unknown')} (${escapeHtml(item.platform || '')})</td>
+                  <td>${item.clicks || 1}</td>
+                  <td>${lastClickStr}</td>
+                  <td>${cooldownStr}</td>
+                  <td><span style="color: rgba(223,246,242,0.5);">${isCoolingDown ? 'Active Cooldown' : 'Supporter'}</span></td>
+                </tr>
+              `;
+            });
+            tbody.innerHTML = rows;
+          }
         }
 
-        const logsTbody = document.getElementById('support-logs-table-body');
+        // 3. Read Support Activity Logs from /supportLogs
+        const logsSnapshot = await getDocs(collection(db, "supportLogs"));
+        const logsList = [];
+
+        logsSnapshot.forEach(docSnap => {
+          logsList.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        logsList.sort((a, b) => {
+          const tA = a.timestampMillis || (a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0);
+          const tB = b.timestampMillis || (b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0);
+          return tB - tA;
+        });
+
         if (logsTbody) {
-          logsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">Detailed vote history logging is disabled to conserve storage space. Only active cooldowns are stored.</td></tr>`;
+          if (logsList.length === 0) {
+            logsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">No support click logs found in Firestore.</td></tr>`;
+          } else {
+            let logRows = '';
+            logsList.forEach(log => {
+              const logTime = log.timestampMillis 
+                ? new Date(log.timestampMillis) 
+                : (log.timestamp?.toDate ? log.timestamp.toDate() : null);
+
+              logRows += `
+                <tr>
+                  <td style="font-family: monospace;">${formatHKTTime(logTime)}</td>
+                  <td><strong style="color: var(--aurora-cyan);">${getRelativeTimeAgo(logTime)}</strong></td>
+                  <td><code>${escapeHtml(maskDeviceId(log.deviceId))}</code></td>
+                  <td><code>${escapeHtml(maskIP(log.ip))}</code></td>
+                  <td>${escapeHtml(log.deviceModel || 'Unknown')}</td>
+                </tr>
+              `;
+            });
+            logsTbody.innerHTML = logRows;
+          }
         }
 
       } catch (err) {
         console.error("Error loading supporters:", err);
         if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--aurora-red); padding: 30px;">Error loading supporters: ${escapeHtml(err.message)}</td></tr>`;
+        if (logsTbody) logsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--aurora-red); padding: 20px;">Error loading support logs: ${escapeHtml(err.message)}</td></tr>`;
       }
     }
   </script>
