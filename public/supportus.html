@@ -564,28 +564,45 @@
     </div>
   </main>
 
-  <!-- Bottom-Left Device / Fingerprint Info Bar -->
+  <!-- Bottom-Left Local Support-Click Counter -->
   <div class="support-info-bar">
     <span class="i18n" data-en="Your supports:" data-zh="你的支持次數：">Your supports:</span>
     <strong id="bar-clicks">0</strong>
-    <span class="dot">•</span>
-    <span class="i18n" data-en="Device Fingerprint:" data-zh="裝置指紋：">Device Fingerprint:</span>
-    <code id="bar-device">—</code>
   </div>
 
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
 
   <script src="load-components.js"></script>
 
-  <!-- Support Us: Dynamic vote tracking aligned with Firestore Security Rules -->
+  <!--
+    Support Us: vote tracking.
+
+    Everything specific to this page's "support counter" now lives here
+    rather than in the shared analytics.js — it isn't general site
+    analytics, it's a one-off, rate-limited counter feature.
+
+    Identity/rate-limiting: instead of browser fingerprinting (screen
+    size, WebGL renderer, canvas hash, audio fingerprint, installed
+    fonts, etc. — which, combined with an IP address, ends up MORE
+    identifying than the IP alone, and is not proportionate to collect
+    just to gate a support-counter button), this only ever computes a
+    salted SHA-256 hash of the visitor's public IP address. That hash is
+    the sole thing stored, and it's enough to enforce "once per network
+    per cooldown" regardless of browser, profile, or incognito mode,
+    since none of those change your IP address.
+
+    Security: the cooldown is enforced by firestore.rules, not just by
+    this script — see the comment on the `supporters/{ipHash}` rule.
+    That means the button being disabled client-side is just a UX nicety;
+    even if someone bypasses it entirely (e.g. by pasting Firestore SDK
+    calls into the console), the write will be rejected by Firestore
+    unless the cooldown has genuinely elapsed.
+  -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, doc, getDoc, setDoc, onSnapshot 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import {
-      getOrCreateDeviceId, maskDeviceId, getPublicIP, getIpHash, getDeviceInfo
-    } from './analytics.js';
+      getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
@@ -600,25 +617,67 @@
     const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Must match the `duration.value(10, 'm')` in firestore.rules — this
+    // copy only drives the on-page countdown display, the rule is what
+    // actually enforces it.
     const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
     const btn = document.getElementById('support-btn');
     const statusEl = document.getElementById('support-status');
     const countEl = document.getElementById('support-count');
     const barClicksEl = document.getElementById('bar-clicks');
-    const barDeviceEl = document.getElementById('bar-device');
 
-    let myDeviceId = null;
-    let myIpAddress = null;
     let myIpHash = null;
     let countdownTimer = null;
-    let cooldownDocKey = null;
 
     const btnLabels = {
       en: { ready: 'Support Us 💙', sent: 'Thank you! 💙', checking: 'Checking your status...', offline: 'Unavailable' },
       zh: { ready: '支持我們 💙', sent: '謝謝支持！💙', checking: '正在核實狀態...', offline: '暫時無法使用' }
     };
 
+    // ---------------------------------------------------------------
+    // Minimal identity: salted hash of the public IP only.
+    // ---------------------------------------------------------------
+    async function getPublicIP() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        if (!res.ok) throw new Error("IP lookup returned " + res.status);
+        const data = await res.json();
+        return data.ip || null;
+      } catch (err) {
+        console.error("Support: public IP lookup failed:", err);
+        return null;
+      }
+    }
+
+    async function sha256Hex(str) {
+      const msgBuffer = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function computeIpHash() {
+      const ip = await getPublicIP();
+      if (!ip) return null;
+      const hash = await sha256Hex("aurora_ip_salt_v1:" + ip);
+      return "ip_" + hash.substring(0, 24);
+    }
+
+    // Purely cosmetic local tally of how many times *this browser* has
+    // successfully voted — not used for any security decision.
+    function getLocalClickCount() {
+      return parseInt(localStorage.getItem('aurora_local_support_clicks') || '0', 10);
+    }
+    function bumpLocalClickCount() {
+      const next = getLocalClickCount() + 1;
+      localStorage.setItem('aurora_local_support_clicks', String(next));
+      return next;
+    }
+    function updateBottomBar() {
+      if (barClicksEl) {
+        barClicksEl.textContent = getLocalClickCount();
+      }
+    }
     function currentLangCode() {
       return (localStorage.getItem('aurora_lang') || 'en') === 'zh' ? 'zh' : 'en';
     }
@@ -628,11 +687,6 @@
       const m = Math.floor(totalSec / 60);
       const s = totalSec % 60;
       return `${m}:${s.toString().padStart(2, '0')}`;
-    }
-
-    function updateBottomBar(clicks) {
-      if (barClicksEl) barClicksEl.textContent = clicks;
-      if (barDeviceEl) barDeviceEl.textContent = myDeviceId ? maskDeviceId(myDeviceId) : '—';
     }
 
     function startCountdown(remainingMs) {
@@ -656,25 +710,22 @@
       countdownTimer = setInterval(tick, 1000);
     }
 
+    // How much cooldown is left, based on the supporter doc's
+    // server-set `lastClickAt` timestamp (not any client-supplied value).
+    function remainingCooldownMs(data) {
+      if (!data || !data.lastClickAt) return 0;
+      const lastClickMs = data.lastClickAt.toMillis ? data.lastClickAt.toMillis() : 0;
+      return Math.max(0, (lastClickMs + COOLDOWN_MS) - Date.now());
+    }
+
     async function checkAndApplyCooldown() {
-      cooldownDocKey = myIpHash || myDeviceId;
-      if (!cooldownDocKey) return;
+      if (!myIpHash) return;
 
-      const cooldownRef = doc(db, "ipCooldowns", cooldownDocKey);
-      const snap = await getDoc(cooldownRef);
+      const snap = await getDoc(doc(db, "supporters", myIpHash));
+      const remaining = snap.exists() ? remainingCooldownMs(snap.data()) : 0;
 
-      if (snap.exists()) {
-        const data = snap.data();
-        const lastClick = data.lastClickAtMillis || 0;
-        const remaining = (lastClick + COOLDOWN_MS) - Date.now();
-
-        if (remaining > 0) {
-          startCountdown(remaining);
-        } else {
-          btn.disabled = false;
-          btn.textContent = btnLabels[currentLangCode()].ready;
-          statusEl.textContent = '';
-        }
+      if (remaining > 0) {
+        startCountdown(remaining);
       } else {
         btn.disabled = false;
         btn.textContent = btnLabels[currentLangCode()].ready;
@@ -689,70 +740,73 @@
         }
       });
 
-      myDeviceId = await getOrCreateDeviceId();
+      updateBottomBar();
 
-      if (!myDeviceId) {
+      myIpHash = await computeIpHash();
+
+      if (!myIpHash) {
         btn.textContent = btnLabels[currentLangCode()].offline;
         statusEl.textContent = currentLangCode() === 'zh'
-          ? '無法核實你的裝置，請稍後再試。'
-          : 'Could not verify your device - please try again later.';
+          ? '無法核實你的網絡，請稍後再試。'
+          : 'Could not verify your network - please try again later.';
         return;
       }
 
-      const [ip] = await Promise.all([getPublicIP(), getDeviceInfo()]);
-      myIpAddress = ip;
-      myIpHash = await getIpHash(ip);
-
-      updateBottomBar(1);
       await checkAndApplyCooldown();
     }
 
     btn.addEventListener('click', async () => {
-      if (btn.disabled || !myDeviceId) return;
+      if (btn.disabled || !myIpHash) return;
       btn.disabled = true;
       btn.textContent = '...';
 
       try {
-        cooldownDocKey = myIpHash || myDeviceId;
-        const cooldownRef = doc(db, "ipCooldowns", cooldownDocKey);
-        const snap = await getDoc(cooldownRef);
+        const supporterRef = doc(db, "supporters", myIpHash);
+        const snap = await getDoc(supporterRef);
 
-        const now = Date.now();
         if (snap.exists()) {
           const data = snap.data();
-          const lastClick = data.lastClickAtMillis || 0;
-          const remaining = (lastClick + COOLDOWN_MS) - now;
+          const remaining = remainingCooldownMs(data);
 
           if (remaining > 0) {
             statusEl.textContent = currentLangCode() === 'zh' ? '你最近已經支持過了。' : "You've already supported recently.";
             startCountdown(remaining);
             return;
           }
+
+          // Server-enforced: Firestore rejects this write unless the
+          // cooldown has genuinely elapsed, regardless of what the
+          // client believes.
+          await updateDoc(supporterRef, {
+            clicks: (data.clicks || 0) + 1,
+            lastClickAt: serverTimestamp()
+          });
+        } else {
+          await setDoc(supporterRef, {
+            clicks: 1,
+            lastClickAt: serverTimestamp()
+          });
         }
 
         const counterRef = doc(db, "counters", "supportCounter");
         const counterSnap = await getDoc(counterRef);
         if (counterSnap.exists()) {
-          const currentCount = counterSnap.data().count || 0;
-          await setDoc(counterRef, { count: currentCount + 1 });
+          await updateDoc(counterRef, { count: (counterSnap.data().count || 0) + 1 });
         } else {
           await setDoc(counterRef, { count: 1 });
         }
 
-        const cooldownData = {
-          deviceId: myDeviceId.substring(0, 64),
-          lastClickAtMillis: now
-        };
-        if (myIpAddress) {
-          cooldownData.ip = myIpAddress.substring(0, 64);
-        }
-
-        await setDoc(cooldownRef, cooldownData);
+        bumpLocalClickCount();
+        updateBottomBar();
 
         statusEl.textContent = currentLangCode() === 'zh' ? '感謝你的支持！💙' : 'Thank you for your support! 💙';
         startCountdown(COOLDOWN_MS);
 
       } catch (err) {
+        // A permission-denied error here almost always means
+        // firestore.rules rejected the write (e.g. someone tried to
+        // skip the cooldown via the console) - that's the rules
+        // working as intended, not a bug.
         console.error('Support click failed:', err);
         btn.disabled = false;
         btn.textContent = btnLabels[currentLangCode()].ready;
