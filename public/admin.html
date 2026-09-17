@@ -41,8 +41,6 @@
     border-bottom: 1px solid rgba(127, 233, 240, 0.2);
     padding-bottom: 20px;
     margin-bottom: 30px;
-    flex-wrap: wrap;
-    gap: 16px;
   }
 
   h1 {
@@ -55,7 +53,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    flex-wrap: wrap;
   }
 
   .user-avatar {
@@ -193,7 +190,7 @@
     color: rgba(223, 246, 242, 0.5);
   }
 
-  /* Charts Grid */
+  /* Even 3-Column Graphs Grid */
   .charts-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -210,6 +207,7 @@
     flex-direction: column;
   }
 
+  /* Compact Bottom Chart Card */
   .bottom-chart-card {
     grid-column: 1 / -1;
     max-width: 900px;
@@ -221,6 +219,11 @@
     position: relative;
     height: 220px;
     width: 100%;
+  }
+
+  /* Slightly larger canvas for the circular (doughnut) chart */
+  .chart-canvas-container.donut-container {
+    height: 300px;
   }
 
   .chart-header {
@@ -238,6 +241,7 @@
     color: #ffffff;
   }
 
+  /* Destination Filter Buttons Bar */
   .destination-filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -283,7 +287,7 @@
     color: #ffffff;
   }
 
-  /* Log Preview List */
+  /* Log Preview List inside chart card */
   .log-preview-card {
     cursor: pointer;
     transition: border-color 0.2s ease;
@@ -526,6 +530,21 @@
   .badge.approved { background: rgba(46, 230, 184, 0.2); color: var(--aurora-teal); }
   .badge.spam { background: rgba(255, 107, 107, 0.2); color: var(--aurora-red); }
 
+  .logs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .log-banner {
+    background: rgba(46, 230, 184, 0.08);
+    border-left: 3px solid var(--aurora-teal);
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    color: var(--aurora-teal);
+    border-radius: 4px;
+  }
+
   .field-group {
     display: flex;
     flex-direction: column;
@@ -538,6 +557,26 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
+
+  .input-text, .input-textarea, .select-input {
+    width: 100%;
+    background: rgba(5, 11, 18, 0.7);
+    border: 1px solid rgba(127, 233, 240, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+
+  .select-input {
+    width: auto;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .input-textarea { min-height: 80px; resize: vertical; }
 
   .actions {
     display: flex;
@@ -556,7 +595,13 @@
   }
 
   .btn-publish { background: var(--aurora-teal); color: #050b12; }
-  .btn-publish:hover { opacity: 0.9; box-shadow: 0 0 10px rgba(46, 230, 184, 0.4); }
+  .btn-publish:hover:not(:disabled) { opacity: 0.9; box-shadow: 0 0 10px rgba(46, 230, 184, 0.4); }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none !important;
+  }
 
   .btn-spam { background: rgba(255, 107, 107, 0.2); color: var(--aurora-red); border: 1px solid var(--aurora-red); }
   .btn-spam:hover { background: rgba(255, 107, 107, 0.4); }
@@ -598,6 +643,16 @@
     padding: 12px;
     border-bottom: 1px solid rgba(127, 233, 240, 0.1);
     color: rgba(223, 246, 242, 0.9);
+    font-family: 'Manrope', monospace;
+  }
+
+  .supporters-table tr.clickable-row {
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .supporters-table tr.clickable-row:hover {
+    background: rgba(110, 195, 255, 0.12);
   }
 
   .supporters-header {
@@ -613,6 +668,30 @@
     display: flex;
     gap: 10px;
     align-items: center;
+  }
+
+  .detail-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    background: rgba(5, 11, 18, 0.6);
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+  }
+
+  .detail-field label {
+    font-size: 0.75rem;
+    color: var(--aurora-cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-field span {
+    font-size: 0.95rem;
+    color: #ffffff;
+    word-break: break-all;
+    font-family: monospace;
   }
 
   @media (max-width: 1024px) {
@@ -642,8 +721,6 @@
           <span id="user-name" class="user-name"></span>
           <span id="user-email" class="user-email"></span>
         </div>
-        <button id="prune-logs-btn" class="nav-btn nav-btn-danger">✂️ Prune Activity Logs</button>
-        <button id="reset-data-btn" class="nav-btn nav-btn-danger">🗑 Reset All Data</button>
         <button id="signout-btn" class="nav-btn">Sign Out</button>
         <a href="feedbacks.html" class="nav-btn">← View Site</a>
       </div>
@@ -688,7 +765,7 @@
           <div class="chart-header">
             <h3 class="chart-title">Page Views by Sub Destination</h3>
           </div>
-          <div class="chart-canvas-container">
+          <div class="chart-canvas-container donut-container">
             <canvas id="viewsByPageChart"></canvas>
           </div>
         </div>
@@ -713,11 +790,12 @@
           </div>
         </div>
 
-        <!-- Bottom Chart -->
+        <!-- Smaller Bottom Chart with Destination Selection Buttons -->
         <div class="chart-card bottom-chart-card">
           <div class="chart-header">
             <h3 class="chart-title">Daily Visitor Views (Last 7 Days - HKT)</h3>
-            <div id="destination-filter-container" class="destination-filter-bar"></div>
+            <div id="destination-filter-container" class="destination-filter-bar">
+            </div>
           </div>
           <div class="chart-canvas-container">
             <canvas id="dailyViewsChart"></canvas>
@@ -731,7 +809,7 @@
       <main id="admin-container" class="admin-grid"></main>
     </div>
 
-    <!-- Supporters View -->
+    <!-- Supporters View (supportus.html "Support Us" button, Rate-limited) -->
     <div id="supporters-section" class="hidden">
       <div class="kpi-grid">
         <div class="kpi-card">
@@ -740,59 +818,49 @@
           <span class="kpi-subtitle">All-time count shown on supportus.html</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-title">Active IP Cooldowns</span>
+          <span class="kpi-title">Unique Supporters</span>
           <span class="kpi-value support-value" id="kpi-unique-supporters">0</span>
-          <span class="kpi-subtitle">IPs/Devices currently on cooldown</span>
+          <span class="kpi-subtitle">Distinct registered voter devices</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-title">Most Recent Support</span>
           <span class="kpi-value support-value" id="kpi-last-support" style="font-size: 1.3rem;">None yet</span>
-          <span class="kpi-subtitle">Status of current votes</span>
+          <span class="kpi-subtitle">Time since last vote</span>
         </div>
       </div>
 
       <div class="supporters-table-wrap">
         <div class="supporters-header">
-          <h3 class="chart-title">Active IP & Device Cooldowns</h3>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <h3 class="chart-title">Registered Voter Devices</h3>
+            <!-- Top Sorting Dropdown -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label for="supporters-sort-select" style="font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600;">Sort By:</label>
+              <select id="supporters-sort-select" class="select-input">
+                <option value="time">⏱️ Latest Time</option>
+                <option value="votes">🔥 Most Votes</option>
+                <option value="cooldown">⏳ On Cooldown</option>
+              </select>
+            </div>
+          </div>
           <div class="supporters-actions">
-            <button class="nav-btn" id="clean-cooldowns-btn">🧹 Refresh Supporters</button>
+            <button class="nav-btn nav-btn-danger" id="delete-selected-votes-btn">❌ Delete Selected Votes</button>
+            <button class="nav-btn nav-btn-danger" id="reset-votes-btn">🗑 Reset All Votes</button>
           </div>
         </div>
         <table class="supporters-table">
           <thead>
             <tr>
               <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-supporters"></th>
-              <th>Browser Fingerprint / Device ID</th>
-              <th>IP Hash / Address</th>
-              <th>Device Model</th>
+              <th>Supporter (Hashed IP)</th>
               <th>Votes Cast</th>
-              <th>Last Click (HKT)</th>
+              <th>Last Vote</th>
               <th>Cooldown Status</th>
               <th>Admin Note</th>
             </tr>
           </thead>
           <tbody id="supporters-table-body">
-            <tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="supporters-table-wrap" style="margin-top: 24px;">
-        <div class="supporters-header">
-          <h3 class="chart-title">Support Click History Logs</h3>
-        </div>
-        <table class="supporters-table">
-          <thead>
-            <tr>
-              <th>Timestamp (HKT)</th>
-              <th>Time Ago</th>
-              <th>Browser Fingerprint / Device ID</th>
-              <th>IP Address</th>
-              <th>Device Model</th>
-            </tr>
-          </thead>
-          <tbody id="support-logs-table-body">
-            <tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">Loading vote logs...</td></tr>
+            <tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
           </tbody>
         </table>
       </div>
@@ -817,7 +885,8 @@
               <th>Time Ago</th>
             </tr>
           </thead>
-          <tbody id="logs-table-body"></tbody>
+          <tbody id="logs-table-body">
+          </tbody>
         </table>
       </div>
       <div class="pagination-container">
@@ -830,14 +899,42 @@
     </div>
   </div>
 
+  <!-- Device / Support Log Detail Modal -->
+  <div id="detail-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 550px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="detail-modal-title">📱 Full Log & Device Details</h2>
+        <button id="close-detail-modal-btn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" id="detail-modal-body" style="display: flex; flex-direction: column; gap: 12px;">
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getFirestore, collection, onSnapshot, updateDoc, deleteDoc, doc, getDoc, getDocs, writeBatch, deleteField
+      getFirestore, 
+      collection, 
+      onSnapshot, 
+      updateDoc, 
+      deleteDoc, 
+      doc, 
+      getDoc,
+      getDocs,
+      writeBatch,
+      arrayUnion, 
+      serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { 
-      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+      getAuth, 
+      signInWithPopup, 
+      GoogleAuthProvider, 
+      signOut, 
+      onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000;
 
     const firebaseConfig = {
       apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
@@ -860,14 +957,16 @@
     let dailyViewsChartInstance = null;
 
     const routeColors = {
-      '/admin': '#ffffff',      
-      '/': '#ff4d4d',          
-      '/aboutus': '#ff9f43',   
-      '/activities': '#ffd166',
-      '/welfare': '#06d6a0',   
-      '/schedule': '#118ab2',  
-      '/feedbacks': '#8338ec',
-      '/supportus': '#6ec3ff'
+      '/admin': '#ffffff',      // White
+      '/': '#ffd700',          // Yellow (/index)
+      '/index': '#ffd700',     // Yellow
+      '/aboutus': '#ff9800',   // Orange
+      '/activities': '#ff69b4',// Pink
+      '/welfare': '#9c27b0',   // Purple
+      '/schedule': '#0914e6',  // Dark Blue
+      '/financial': '#00b4d8', // Light Blue
+      '/feedbacks': '#2ecc71', // Light Green
+      '/supportus': '#009635'  // Dark Green
     };
 
     let dailyCountsByRoute = {};
@@ -876,16 +975,7 @@
     let allActivityLogs = [];
     let currentPage = 1;
     const LOGS_PER_PAGE = 20;
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
+    let currentSortMode = 'time';
 
     function getHKTDateString(date = new Date()) {
       return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(date);
@@ -903,6 +993,10 @@
         second: "2-digit",
         hour12: true
       }) + " (HKT)";
+    }
+
+    function getHKTTimeString() {
+      return formatHKTTime(new Date());
     }
 
     function getRelativeTimeAgo(date) {
@@ -923,17 +1017,11 @@
       return `${diffDay}d ago`;
     }
 
-    function maskDeviceId(id) {
-      if (!id || id === '(unknown)') return 'xxxx...';
-      return id.length > 8 ? `${id.slice(0, 4)}...${id.slice(-4)}` : id;
+    function maskId(id) {
+      if (!id) return 'xxxx...';
+      return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
     }
 
-    function maskIP(ip) {
-      if (!ip || ip === '—') return '—';
-      return ip.length > 10 ? `${ip.slice(0, 6)}...` : ip;
-    }
-
-    // Tabs
     const tabAnalyticsBtn = document.getElementById('tab-analytics-btn');
     const tabFeedbackBtn = document.getElementById('tab-feedback-btn');
     const tabSupportersBtn = document.getElementById('tab-supporters-btn');
@@ -958,7 +1046,6 @@
       feedbackSection.classList.remove('hidden');
       analyticsSection.classList.add('hidden');
       supportersSection.classList.add('hidden');
-      loadAdminFeedbacks();
     });
 
     tabSupportersBtn.addEventListener('click', () => {
@@ -968,7 +1055,6 @@
       supportersSection.classList.remove('hidden');
       analyticsSection.classList.add('hidden');
       feedbackSection.classList.add('hidden');
-      loadSupportersData();
     });
 
     const logsModal = document.getElementById('logs-modal');
@@ -991,10 +1077,54 @@
       renderLogsModal();
     });
 
-    closeModalBtn.addEventListener('click', () => logsModal.classList.add('hidden'));
-    logsModal.addEventListener('click', (e) => {
-      if (e.target === logsModal) logsModal.classList.add('hidden');
+    closeModalBtn.addEventListener('click', () => {
+      logsModal.classList.add('hidden');
     });
+
+    logsModal.addEventListener('click', (e) => {
+      if (e.target === logsModal) {
+        logsModal.classList.add('hidden');
+      }
+    });
+
+    const detailModal = document.getElementById('detail-modal');
+    const closeDetailModalBtn = document.getElementById('close-detail-modal-btn');
+
+    closeDetailModalBtn.addEventListener('click', () => {
+      detailModal.classList.add('hidden');
+    });
+
+    detailModal.addEventListener('click', (e) => {
+      if (e.target === detailModal) detailModal.classList.add('hidden');
+    });
+
+    function showLogDetailsModal(info) {
+      const modalBody = document.getElementById('detail-modal-body');
+      modalBody.innerHTML = `
+        <div class="detail-field">
+          <label>Supporter ID (Salted Hash of Public IP)</label>
+          <span style="color: var(--aurora-teal);">${escapeHtml(info.deviceId || 'N/A')}</span>
+        </div>
+        <div class="detail-field">
+          <label>Total Votes Cast</label>
+          <span style="color: var(--support-blue); font-weight: 700;">${info.clicks !== undefined ? info.clicks : 'N/A'}</span>
+        </div>
+        <div class="detail-field">
+          <label>Timestamp / Last Action</label>
+          <span>${escapeHtml(info.timeStr || 'N/A')} (${escapeHtml(info.timeAgo || 'N/A')})</span>
+        </div>
+        <div class="detail-field">
+          <label>Cooldown Status</label>
+          <div>${info.cooldownHtml || 'N/A'}</div>
+        </div>
+        ${info.note ? `
+        <div class="detail-field">
+          <label>Admin Note</label>
+          <span style="font-family: sans-serif; color: #ffd166;">${escapeHtml(info.note)}</span>
+        </div>` : ''}
+      `;
+      detailModal.classList.remove('hidden');
+    }
 
     prevPageBtn.addEventListener('click', () => {
       if (currentPage > 1) {
@@ -1011,98 +1141,7 @@
       }
     });
 
-    // Prune Activity Logs Handler
-    document.getElementById('prune-logs-btn')?.addEventListener('click', async () => {
-      if (!currentUser) return;
-      const userInput = prompt("Enter the number of latest page activity logs to preserve (e.g. 100):", "100");
-      if (userInput === null) return;
-
-      const preserveCount = parseInt(userInput, 10);
-      if (isNaN(preserveCount) || preserveCount < 0) {
-        alert("Please enter a valid non-negative integer.");
-        return;
-      }
-
-      if (allActivityLogs.length <= preserveCount) {
-        alert(`There are currently only ${allActivityLogs.length} activity logs recorded. No pruning needed.`);
-        return;
-      }
-
-      const confirmMsg = `This will delete detailed open/close timestamps from older logs, preserving only the latest ${preserveCount} activity logs.\n\nNote: Total time spent, total view counts, and analytics charts WILL NOT be affected.\n\nProceed?`;
-      if (!confirm(confirmMsg)) return;
-
-      try {
-        const logsToKeep = allActivityLogs.slice(0, preserveCount);
-        const keepTimestamps = new Set(logsToKeep.map(l => l.timestamp));
-
-        const querySnapshot = await getDocs(collection(db, "pageviews"));
-        const batch = writeBatch(db);
-        let prunedDocCount = 0;
-
-        querySnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          let needsUpdate = false;
-          const updates = {};
-
-          let openTs = null;
-          if (data.openedAt?.toDate) openTs = data.openedAt.toDate().getTime();
-          else if (data.timestamp?.toDate) openTs = data.timestamp.toDate().getTime();
-          else if (data.openedAt) openTs = new Date(data.openedAt).getTime();
-
-          let closeTs = null;
-          if (data.closedAt?.toDate) closeTs = data.closedAt.toDate().getTime();
-          else if (data.closedAt) closeTs = new Date(data.closedAt).getTime();
-
-          if (openTs && !keepTimestamps.has(openTs)) {
-            updates.openedAt = deleteField();
-            updates.timestamp = deleteField();
-            needsUpdate = true;
-          }
-
-          if (closeTs && !keepTimestamps.has(closeTs)) {
-            updates.closedAt = deleteField();
-            needsUpdate = true;
-          }
-
-          if (needsUpdate) {
-            batch.update(docSnap.ref, updates);
-            prunedDocCount++;
-          }
-        });
-
-        if (prunedDocCount > 0) {
-          await batch.commit();
-          alert(`Successfully pruned detailed logs across ${prunedDocCount} documents! Preserved the latest ${preserveCount} logs.`);
-        } else {
-          alert("No logs needed pruning.");
-        }
-      } catch (err) {
-        console.error("Pruning error:", err);
-        alert("Failed to prune logs: " + err.message);
-      }
-    });
-
-    document.getElementById('reset-data-btn').addEventListener('click', async () => {
-      if (!currentUser) return;
-      if (!confirm("Are you sure you want to delete and reset all pageview analytics data? This cannot be undone.")) return;
-
-      try {
-        const querySnapshot = await getDocs(collection(db, "pageviews"));
-        if (querySnapshot.empty) {
-          alert("No analytics data found to reset.");
-          return;
-        }
-
-        const batch = writeBatch(db);
-        querySnapshot.forEach((docSnap) => batch.delete(docSnap.ref));
-        await batch.commit();
-        alert("All pageview analytics data has been successfully reset!");
-      } catch (err) {
-        alert("Failed to reset analytics data: " + err.message);
-      }
-    });
-
-    const ADMIN_EMAILS = ["kurtislam100@gmail.com", "xtshh524@gmail.com"];
+    const ADMIN_EMAILS = ["kurtislam100@gmail.com", "xtshh524@gmail.com", "s171179@gtcollege.edu.hk"];
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -1125,6 +1164,7 @@
         
         loadAnalyticsData();
         loadAdminFeedbacks();
+        loadSupportersData();
       } else {
         currentUser = null;
         document.getElementById('login-view').classList.remove('hidden');
@@ -1147,8 +1187,8 @@
         let totalViews = 0;
         let totalTimeSeconds = 0;
 
-        const validRoutes = ['/admin', '/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks', '/supportus'];
-        const metricRoutes = ['/', '/aboutus', '/activities', '/welfare', '/schedule', '/feedbacks', '/supportus'];
+        const validRoutes = ['/admin', '/', '/aboutus', '/activities', '/welfare', '/schedule', '/financial', '/feedbacks', '/supportus'];
+        const metricRoutes = ['/', '/aboutus', '/activities', '/welfare', '/schedule', '/financial', '/feedbacks', '/supportus'];
 
         const pageMetrics = {};
         metricRoutes.forEach(route => {
@@ -1185,10 +1225,16 @@
           else if (data.timestamp) openDate = new Date(data.timestamp);
 
           let closeDate = null;
-          if (data.closedAt?.toDate) closeDate = data.closedAt.toDate();
-          else if (data.closedAt) closeDate = new Date(data.closedAt);
+          if (data.closedAt?.toDate) {
+            closeDate = data.closedAt.toDate();
+          } else if (data.closedAt) {
+            closeDate = new Date(data.closedAt);
+          }
 
           let dateStr = openDate ? getHKTDateString(openDate) : data.dateStr;
+          if (!dateStr && openDate) {
+            dateStr = getHKTDateString(openDate);
+          }
 
           const userLabel = data.userEmail || data.userName || null;
 
@@ -1201,7 +1247,7 @@
               pageMetrics[path].totalTime += duration;
             }
 
-            if (dateStr && dailyCountsByRoute['all'].hasOwnProperty(dateStr)) {
+            if (dailyCountsByRoute['all'].hasOwnProperty(dateStr)) {
               dailyCountsByRoute['all'][dateStr]++;
               if (dailyCountsByRoute[path]) {
                 dailyCountsByRoute[path][dateStr]++;
@@ -1345,8 +1391,12 @@
           
           rows += `
             <tr>
-              <td><span class="page-pill" style="background-color: ${pColor};">${escapeHtml(log.path)}</span></td>
-              <td><span class="event-tag ${isOpened ? 'opened' : 'closed'}">${log.event.toUpperCase()}</span></td>
+              <td>
+                <span class="page-pill" style="background-color: ${pColor};">${escapeHtml(log.path)}</span>
+              </td>
+              <td>
+                <span class="event-tag ${isOpened ? 'opened' : 'closed'}">${log.event.toUpperCase()}</span>
+              </td>
               <td>${userText}</td>
               <td style="font-family: monospace;">${formatHKTTime(log.date)}</td>
               <td><strong style="color: var(--aurora-cyan);">${getRelativeTimeAgo(log.date)}</strong></td>
@@ -1367,45 +1417,61 @@
       const avgTimeData = labels.map(l => pageMetrics[l].views > 0 ? Math.round(pageMetrics[l].totalTime / pageMetrics[l].views) : 0);
       const chartColors = labels.map(route => routeColors[route] || '#ffffff');
 
-      if (pageViewsChartInstance) pageViewsChartInstance.destroy();
-      const ctxViews = document.getElementById('viewsByPageChart').getContext('2d');
-      pageViewsChartInstance = new Chart(ctxViews, {
-        type: 'doughnut',
-        data: {
-          labels: labels,
-          datasets: [{ data: viewsData, backgroundColor: chartColors }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: '#dff6f2' } } }
-        }
-      });
-
-      if (timeSpentChartInstance) timeSpentChartInstance.destroy();
-      const ctxTime = document.getElementById('timeSpentChart').getContext('2d');
-      timeSpentChartInstance = new Chart(ctxTime, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Avg Time (s)',
-            data: avgTimeData,
-            backgroundColor: chartColors,
-            borderColor: chartColors,
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { ticks: { color: '#dff6f2' } },
-            y: { ticks: { color: '#dff6f2' }, grid: { color: 'rgba(127, 233, 240, 0.1)' } }
+      if (!pageViewsChartInstance) {
+        const ctxViews = document.getElementById('viewsByPageChart').getContext('2d');
+        pageViewsChartInstance = new Chart(ctxViews, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: viewsData,
+              backgroundColor: chartColors
+            }]
           },
-          plugins: { legend: { labels: { color: '#dff6f2' } } }
-        }
-      });
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#dff6f2' } } }
+          }
+        });
+      } else {
+        pageViewsChartInstance.data.labels = labels;
+        pageViewsChartInstance.data.datasets[0].data = viewsData;
+        pageViewsChartInstance.data.datasets[0].backgroundColor = chartColors;
+        pageViewsChartInstance.update();
+      }
+
+      if (!timeSpentChartInstance) {
+        const ctxTime = document.getElementById('timeSpentChart').getContext('2d');
+        timeSpentChartInstance = new Chart(ctxTime, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Avg Time (s)',
+              data: avgTimeData,
+              backgroundColor: chartColors,
+              borderColor: chartColors,
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { ticks: { color: '#dff6f2' } },
+              y: { ticks: { color: '#dff6f2' }, grid: { color: 'rgba(127, 233, 240, 0.1)' } }
+            },
+            plugins: { legend: { labels: { color: '#dff6f2' } } }
+          }
+        });
+      } else {
+        timeSpentChartInstance.data.labels = labels;
+        timeSpentChartInstance.data.datasets[0].data = avgTimeData;
+        timeSpentChartInstance.data.datasets[0].backgroundColor = chartColors;
+        timeSpentChartInstance.data.datasets[0].borderColor = chartColors;
+        timeSpentChartInstance.update();
+      }
 
       updateDailyViewsChart();
     }
@@ -1416,37 +1482,51 @@
       const dailyLabels = Object.keys(dataMap);
       const dailyData = Object.values(dataMap);
       const lineColor = routeColors[dest] || '#2fe6b8';
+      const fillColor = dest === 'all' ? 'rgba(46, 230, 184, 0.15)' : `${lineColor}22`;
+      const label = `Daily Visitor Views (${dest === 'all' ? 'All Pages' : dest})`;
 
-      if (dailyViewsChartInstance) dailyViewsChartInstance.destroy();
-      const ctxDaily = document.getElementById('dailyViewsChart').getContext('2d');
-
-      dailyViewsChartInstance = new Chart(ctxDaily, {
-        type: 'line',
-        data: {
-          labels: dailyLabels,
-          datasets: [{
-            label: `Daily Visitor Views (${dest === 'all' ? 'All Pages' : dest})`,
-            data: dailyData,
-            fill: true,
-            backgroundColor: dest === 'all' ? 'rgba(46, 230, 184, 0.15)' : `${lineColor}22`,
-            borderColor: lineColor,
-            tension: 0.3
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { ticks: { color: '#dff6f2' } },
-            y: { 
-              ticks: { color: '#dff6f2', precision: 0 }, 
-              grid: { color: 'rgba(127, 233, 240, 0.1)' },
-              beginAtZero: true 
-            }
+      if (!dailyViewsChartInstance) {
+        const ctxDaily = document.getElementById('dailyViewsChart').getContext('2d');
+        dailyViewsChartInstance = new Chart(ctxDaily, {
+          type: 'line',
+          data: {
+            labels: dailyLabels,
+            datasets: [{
+              label: label,
+              data: dailyData,
+              fill: true,
+              backgroundColor: fillColor,
+              borderColor: lineColor,
+              tension: 0.3,
+              pointHitRadius: 30
+            }]
           },
-          plugins: { legend: { labels: { color: '#dff6f2' } } }
-        }
-      });
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: { ticks: { color: '#dff6f2' } },
+              y: { 
+                ticks: { color: '#dff6f2', precision: 0 }, 
+                grid: { color: 'rgba(127, 233, 240, 0.1)' },
+                beginAtZero: true 
+              }
+            },
+            plugins: {
+              legend: { labels: { color: '#dff6f2' } },
+              tooltip: { mode: 'index', intersect: false }
+            }
+          }
+        });
+      } else {
+        dailyViewsChartInstance.data.labels = dailyLabels;
+        dailyViewsChartInstance.data.datasets[0].data = dailyData;
+        dailyViewsChartInstance.data.datasets[0].label = label;
+        dailyViewsChartInstance.data.datasets[0].borderColor = lineColor;
+        dailyViewsChartInstance.data.datasets[0].backgroundColor = fillColor;
+        dailyViewsChartInstance.update();
+      }
     }
 
     async function loadAdminFeedbacks() {
@@ -1467,197 +1547,373 @@
         });
 
         items.sort((a, b) => {
-          const tA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.timestamp || 0);
-          const tB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.timestamp || 0);
-          return tB - tA;
+          const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+          const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+          return timeB - timeA;
         });
 
         let html = '';
-        items.forEach(item => {
-          const status = item.status || 'pending';
-          const badgeClass = status === 'approved' ? 'approved' : status === 'spam' ? 'spam' : 'pending';
-          
-          let timeAgo = 'N/A';
-          if (item.createdAt?.toDate) timeAgo = getRelativeTimeAgo(item.createdAt.toDate());
-          else if (item.submittedAtHKT) timeAgo = item.submittedAtHKT;
+        items.forEach((item) => {
+          const id = item.id;
+          const submittedTime = item.submittedAtHKT || (item.createdAt?.toDate ? formatHKTTime(item.createdAt.toDate()) : "N/A");
 
-          const titleDisplay = item.title ? `<h4 style="color: #ffffff; font-size: 1.05rem; margin-bottom: 6px;">${escapeHtml(item.title)}</h4>` : '';
-          const bodyDisplay = escapeHtml(item.content || item.text || '(No text content)');
+          let approvalsList = Array.isArray(item.approvals) ? [...item.approvals] : [];
+          if (approvalsList.length === 0 && item.approvedBy) {
+            approvalsList.push({
+              name: item.approvedBy,
+              email: '',
+              timeHKT: item.approvedAtHKT || 'N/A',
+              timestamp: 0
+            });
+          }
+
+          approvalsList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+          const hasUserApproved = currentUser && approvalsList.some(app => 
+            (app.email && app.email === currentUser.email) ||
+            (app.name && app.name === (currentUser.displayName || currentUser.email))
+          );
+
+          let logsHtml = '';
+          if (approvalsList.length > 0) {
+            logsHtml = `
+              <div class="logs-container">
+                ${approvalsList.map(app => `
+                  <div class="log-banner">
+                    ✓ Approved by <strong>${escapeHtml(app.name)}</strong> on ${escapeHtml(app.timeHKT)}
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
 
           html += `
-            <div class="card" id="feedback-card-${item.id}">
+            <div class="card">
               <div class="card-header">
-                <span>ID: ${item.id} • ${timeAgo}</span>
-                <span class="badge ${badgeClass}">${status.toUpperCase()}</span>
+                <span>Doc ID: ${id} &nbsp;|&nbsp; Submitted: <strong>${submittedTime}</strong></span>
+                <span class="badge ${item.status}">${item.status.toUpperCase()}</span>
               </div>
+
+              ${logsHtml}
+
               <div class="field-group">
-                <span class="field-label">Feedback Content</span>
-                ${titleDisplay}
-                <p style="white-space: pre-wrap; font-size: 0.95rem;">${bodyDisplay}</p>
+                <span class="field-label">Edit User Title</span>
+                <input type="text" class="input-text" id="title-${id}" value="${escapeHtml(item.title)}">
               </div>
-              ${(item.author || item.userName || item.userEmail) ? `
+
               <div class="field-group">
-                <span class="field-label">Author</span>
-                <p style="font-size: 0.85rem; color: var(--aurora-cyan);">${escapeHtml(item.author || item.userName || item.userEmail)}</p>
-              </div>` : ''}
+                <span class="field-label">Edit User Description</span>
+                <textarea class="input-textarea" id="desc-${id}">${escapeHtml(item.description)}</textarea>
+              </div>
+
               <div class="actions">
-                <button class="btn btn-publish" onclick="window.updateFeedbackStatus('${item.id}', 'approved')">Approve</button>
-                <button class="btn btn-spam" onclick="window.updateFeedbackStatus('${item.id}', 'spam')">Mark Spam</button>
-                <button class="btn btn-delete" onclick="window.deleteFeedback('${item.id}')">Delete</button>
+                <button class="btn btn-spam" data-action="spam" data-id="${id}">Mark Spam</button>
+                <button class="btn btn-delete" data-action="delete" data-id="${id}">Delete</button>
+                <button class="btn btn-publish" data-action="publish" data-id="${id}" ${hasUserApproved ? 'disabled title="You have already approved this item"' : ''}>
+                  ${hasUserApproved ? 'Approved' : 'Approve'}
+                </button>
               </div>
             </div>
           `;
         });
 
         container.innerHTML = html;
+
+        container.querySelectorAll('button[data-action]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const action = e.target.getAttribute('data-action');
+            const id = e.target.getAttribute('data-id');
+            if (action === 'publish') publishItem(id);
+            if (action === 'spam') markSpam(id);
+            if (action === 'delete') deleteItem(id);
+          });
+        });
+
       } catch (err) {
-        container.innerHTML = `<p style="color:var(--aurora-red); text-align:center;">Error loading feedbacks: ${escapeHtml(err.message)}</p>`;
+        console.error("Error loading feedbacks:", err);
+        container.innerHTML = `<p style="text-align:center; color:var(--aurora-red); padding: 40px;">Failed to load feedbacks: ${err.message}</p>`;
       }
     }
 
-    window.updateFeedbackStatus = async (id, newStatus) => {
-      try {
-        await updateDoc(doc(db, "feedbacks", id), { status: newStatus });
-        loadAdminFeedbacks();
-      } catch(e) { alert("Error updating status: " + e.message); }
-    };
+    async function publishItem(id) {
+      if (!currentUser) return;
 
-    window.deleteFeedback = async (id) => {
-      if (!confirm("Delete this feedback?")) return;
+      const docRef = doc(db, "feedbacks", id);
+      const title = document.getElementById(`title-${id}`).value;
+      const description = document.getElementById(`desc-${id}`).value;
+      
+      const moderatorName = currentUser.displayName || currentUser.email;
+      const hktTime = getHKTTimeString();
+
+      try {
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const approvals = data.approvals || [];
+          const alreadyApproved = approvals.some(app => 
+            (app.email && app.email === currentUser.email) ||
+            (app.name && app.name === moderatorName)
+          ) || (data.approvedBy === moderatorName);
+
+          if (alreadyApproved) {
+            alert("You have already approved this feedback.");
+            return;
+          }
+        }
+
+        const newApprovalRecord = {
+          name: moderatorName,
+          email: currentUser.email,
+          timeHKT: hktTime,
+          timestamp: Date.now()
+        };
+
+        await updateDoc(docRef, {
+          title: title,
+          description: description,
+          status: 'approved',
+          approvals: arrayUnion(newApprovalRecord),
+          approvedBy: moderatorName,
+          approvedAtHKT: hktTime,
+          moderatedAt: serverTimestamp()
+        });
+
+        loadAdminFeedbacks();
+      } catch (err) {
+        alert("Failed to approve feedback: " + err.message);
+      }
+    }
+
+    async function markSpam(id) {
+      try {
+        await updateDoc(doc(db, "feedbacks", id), {
+          status: 'spam',
+          moderatedAt: serverTimestamp()
+        });
+        loadAdminFeedbacks();
+      } catch (err) {
+        alert("Failed to mark spam: " + err.message);
+      }
+    }
+
+    async function deleteItem(id) {
+      if (!confirm("Are you sure you want to delete this feedback document?")) return;
       try {
         await deleteDoc(doc(db, "feedbacks", id));
         loadAdminFeedbacks();
-      } catch(e) { alert("Error deleting feedback: " + e.message); }
-    };
-
-    // Clean expired cooldowns button handler
-    document.getElementById('clean-cooldowns-btn')?.addEventListener('click', () => {
-      loadSupportersData();
-    });
-
-    async function loadSupportersData() {
-      const tbody = document.getElementById('supporters-table-body');
-      const logsTbody = document.getElementById('support-logs-table-body');
-
-      if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>`;
-      if (logsTbody) logsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">Loading support click logs...</td></tr>`;
-
-      try {
-        // 1. Read Counter Document from counters/supportCounter
-        const counterDoc = await getDoc(doc(db, "counters", "supportCounter"));
-        const totalSupports = counterDoc.exists() ? (counterDoc.data().count || 0) : 0;
-        
-        const kpiTotal = document.getElementById('kpi-total-supports');
-        if (kpiTotal) kpiTotal.textContent = totalSupports.toLocaleString();
-
-        // 2. Read Supporters collection from /supporters
-        const querySnapshot = await getDocs(collection(db, "supporters"));
-        const now = Date.now();
-        const SUPPORT_COOLDOWN_MS = 60000; // 60s cooldown standard
-        const supportersList = [];
-
-        querySnapshot.forEach((docSnap) => {
-          supportersList.push({ id: docSnap.id, ...docSnap.data() });
-        });
-
-        supportersList.sort((a, b) => (b.lastClickAtMillis || 0) - (a.lastClickAtMillis || 0));
-
-        const activeCooldowns = supportersList.filter(s => {
-          const last = s.lastClickAtMillis || 0;
-          return (now - last) < SUPPORT_COOLDOWN_MS;
-        });
-
-        const kpiUnique = document.getElementById('kpi-unique-supporters');
-        if (kpiUnique) kpiUnique.textContent = activeCooldowns.length.toLocaleString();
-
-        const kpiLast = document.getElementById('kpi-last-support');
-        if (kpiLast) {
-          if (supportersList.length > 0 && supportersList[0].lastClickAtMillis) {
-            kpiLast.textContent = getRelativeTimeAgo(new Date(supportersList[0].lastClickAtMillis));
-          } else {
-            kpiLast.textContent = 'None yet';
-          }
-        }
-
-        // Render Supporters Table
-        if (tbody) {
-          if (supportersList.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporter records stored in Firestore.</td></tr>`;
-          } else {
-            let rows = '';
-            supportersList.forEach(item => {
-              const lastClickMs = item.lastClickAtMillis || 0;
-              const elapsed = now - lastClickMs;
-              const isCoolingDown = elapsed < SUPPORT_COOLDOWN_MS;
-              const remainingSec = Math.ceil((SUPPORT_COOLDOWN_MS - elapsed) / 1000);
-
-              const cooldownStr = isCoolingDown
-                ? `<span class="badge pending">⏳ ${remainingSec}s remaining</span>`
-                : `<span class="badge approved">Ready</span>`;
-              
-              const lastClickStr = lastClickMs ? formatHKTTime(new Date(lastClickMs)) : 'N/A';
-
-              rows += `
-                <tr>
-                  <td style="text-align:center;"><input type="checkbox" class="supporter-checkbox" value="${item.id}"></td>
-                  <td><code>${escapeHtml(maskDeviceId(item.deviceId || item.id))}</code></td>
-                  <td><code>${escapeHtml(maskIP(item.ip || '—'))}</code></td>
-                  <td>${escapeHtml(item.deviceModel || 'Unknown')} (${escapeHtml(item.platform || '')})</td>
-                  <td>${item.clicks || 1}</td>
-                  <td>${lastClickStr}</td>
-                  <td>${cooldownStr}</td>
-                  <td><span style="color: rgba(223,246,242,0.5);">${isCoolingDown ? 'Active Cooldown' : 'Supporter'}</span></td>
-                </tr>
-              `;
-            });
-            tbody.innerHTML = rows;
-          }
-        }
-
-        // 3. Read Support Activity Logs from /supportLogs
-        const logsSnapshot = await getDocs(collection(db, "supportLogs"));
-        const logsList = [];
-
-        logsSnapshot.forEach(docSnap => {
-          logsList.push({ id: docSnap.id, ...docSnap.data() });
-        });
-
-        logsList.sort((a, b) => {
-          const tA = a.timestampMillis || (a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0);
-          const tB = b.timestampMillis || (b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0);
-          return tB - tA;
-        });
-
-        if (logsTbody) {
-          if (logsList.length === 0) {
-            logsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">No support click logs found in Firestore.</td></tr>`;
-          } else {
-            let logRows = '';
-            logsList.forEach(log => {
-              const logTime = log.timestampMillis 
-                ? new Date(log.timestampMillis) 
-                : (log.timestamp?.toDate ? log.timestamp.toDate() : null);
-
-              logRows += `
-                <tr>
-                  <td style="font-family: monospace;">${formatHKTTime(logTime)}</td>
-                  <td><strong style="color: var(--aurora-cyan);">${getRelativeTimeAgo(logTime)}</strong></td>
-                  <td><code>${escapeHtml(maskDeviceId(log.deviceId))}</code></td>
-                  <td><code>${escapeHtml(maskIP(log.ip))}</code></td>
-                  <td>${escapeHtml(log.deviceModel || 'Unknown')}</td>
-                </tr>
-              `;
-            });
-            logsTbody.innerHTML = logRows;
-          }
-        }
-
       } catch (err) {
-        console.error("Error loading supporters:", err);
-        if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--aurora-red); padding: 30px;">Error loading supporters: ${escapeHtml(err.message)}</td></tr>`;
-        if (logsTbody) logsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--aurora-red); padding: 20px;">Error loading support logs: ${escapeHtml(err.message)}</td></tr>`;
+        alert("Failed to delete feedback: " + err.message);
       }
     }
+
+    function escapeHtml(str) { 
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
+    }
+
+    let supportersUnsubCounter = null;
+    let supportersUnsubList = null;
+    let latestSupporterDocs = [];
+
+    document.getElementById('supporters-sort-select').addEventListener('change', (e) => {
+      currentSortMode = e.target.value;
+      renderSupportersTable();
+    });
+
+    function loadSupportersData() {
+      if (supportersUnsubCounter) supportersUnsubCounter();
+      if (supportersUnsubList) supportersUnsubList();
+
+      supportersUnsubCounter = onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
+        const total = snap.exists() ? (snap.data().count || 0) : 0;
+        document.getElementById('kpi-total-supports').textContent = total.toLocaleString();
+      }, (err) => console.error("Error subscribing to support counter:", err));
+
+      supportersUnsubList = onSnapshot(collection(db, "supporters"), (querySnapshot) => {
+        latestSupporterDocs = [];
+        querySnapshot.forEach((docSnap) => {
+          latestSupporterDocs.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderSupportersTable();
+      }, (err) => console.error("Error subscribing to supporters:", err));
+    }
+
+    function tsToMillis(ts) {
+      return ts && ts.toMillis ? ts.toMillis() : 0;
+    }
+
+    function renderSupportersTable() {
+      const tbody = document.getElementById('supporters-table-body');
+      document.getElementById('kpi-unique-supporters').textContent = latestSupporterDocs.length.toLocaleString();
+
+      if (!latestSupporterDocs.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
+        document.getElementById('kpi-last-support').textContent = 'None yet';
+        const selectAll = document.getElementById('select-all-supporters');
+        if (selectAll) selectAll.checked = false;
+        return;
+      }
+
+      const sorted = [...latestSupporterDocs].sort((a, b) => {
+        const lastA = tsToMillis(a.lastClickAt);
+        const lastB = tsToMillis(b.lastClickAt);
+        const clicksA = a.clicks || 0;
+        const clicksB = b.clicks || 0;
+
+        const isCooldownA = lastA ? (SUPPORT_COOLDOWN_MS - (Date.now() - lastA)) > 0 : false;
+        const isCooldownB = lastB ? (SUPPORT_COOLDOWN_MS - (Date.now() - lastB)) > 0 : false;
+
+        if (currentSortMode === 'votes') {
+          return clicksB - clicksA || lastB - lastA;
+        } else if (currentSortMode === 'cooldown') {
+          if (isCooldownA !== isCooldownB) return isCooldownA ? -1 : 1;
+          return lastB - lastA;
+        } else {
+          return lastB - lastA;
+        }
+      });
+
+      const mostRecent = [...latestSupporterDocs].sort((a, b) => tsToMillis(b.lastClickAt) - tsToMillis(a.lastClickAt))[0];
+      const mostRecentMillis = mostRecent ? tsToMillis(mostRecent.lastClickAt) : 0;
+      document.getElementById('kpi-last-support').textContent = mostRecentMillis
+        ? getRelativeTimeAgo(new Date(mostRecentMillis))
+        : 'None yet';
+
+      let rows = '';
+      sorted.forEach((s) => {
+        const lastClickMillis = tsToMillis(s.lastClickAt);
+        const lastClickDate = lastClickMillis ? new Date(lastClickMillis) : null;
+        const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
+        const isCooldown = remainingMs > 0;
+        const cooldownLabel = isCooldown
+          ? `<span class="event-tag closed">On cooldown</span>`
+          : `<span class="event-tag opened">Ready</span>`;
+
+        rows += `
+          <tr class="clickable-row" data-id="${s.id}">
+            <td style="text-align: center;" onclick="event.stopPropagation();">
+              <input type="checkbox" class="supporter-checkbox" value="${s.id}" data-clicks="${s.clicks || 0}">
+            </td>
+            <td title="Click to view details">${escapeHtml(maskId(s.id))}</td>
+            <td>${s.clicks || 0}</td>
+            <td><strong style="color: var(--support-blue);">${lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A'}</strong></td>
+            <td>${cooldownLabel}</td>
+            <td onclick="event.stopPropagation();">
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="text" class="input-text supporter-note-input" data-id="${s.id}" value="${escapeHtml(s.note || '')}" placeholder="Who is this?" style="padding: 6px 8px; font-size: 0.8rem;">
+                <button class="btn btn-publish save-note-btn" data-id="${s.id}" style="padding: 6px 10px; font-size: 0.75rem;">Save</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rows;
+
+      tbody.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const docId = row.getAttribute('data-id');
+          const s = sorted.find(item => item.id === docId);
+          if (!s) return;
+
+          const lastClickMillis = tsToMillis(s.lastClickAt);
+          const lastClickDate = lastClickMillis ? new Date(lastClickMillis) : null;
+          const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
+          const isCooldown = remainingMs > 0;
+
+          showLogDetailsModal({
+            deviceId: s.id,
+            clicks: s.clicks || 0,
+            timeStr: lastClickDate ? formatHKTTime(lastClickDate) : 'N/A',
+            timeAgo: lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A',
+            cooldownHtml: isCooldown ? `<span class="event-tag closed">On cooldown</span>` : `<span class="event-tag opened">Ready</span>`,
+            note: s.note
+          });
+        });
+      });
+
+      tbody.querySelectorAll('.save-note-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.getAttribute('data-id');
+          const input = tbody.querySelector(`.supporter-note-input[data-id="${id}"]`);
+          const note = input ? input.value.trim() : '';
+          try {
+            await updateDoc(doc(db, "supporters", id), { note: note });
+            alert("Note saved successfully!");
+          } catch (err) {
+            alert("Failed to save note: " + err.message);
+          }
+        });
+      });
+    }
+
+    document.getElementById('select-all-supporters')?.addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.supporter-checkbox');
+      checkboxes.forEach(cb => cb.checked = e.target.checked);
+    });
+
+    document.getElementById('delete-selected-votes-btn')?.addEventListener('click', async () => {
+      if (!currentUser) return;
+      const checkedBoxes = Array.from(document.querySelectorAll('.supporter-checkbox:checked'));
+      if (checkedBoxes.length === 0) {
+        alert("Please select at least one supporter to delete.");
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to delete ${checkedBoxes.length} selected supporter record(s)? This will adjust the vote count accordingly.`)) return;
+
+      try {
+        let totalClicksToRemove = 0;
+        const batch = writeBatch(db);
+
+        checkedBoxes.forEach(cb => {
+          const clicks = parseInt(cb.getAttribute('data-clicks') || '0', 10);
+          totalClicksToRemove += clicks;
+          batch.delete(doc(db, "supporters", cb.value));
+        });
+
+        const counterRef = doc(db, "counters", "supportCounter");
+        const counterSnap = await getDoc(counterRef);
+        const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
+        const updatedCount = Math.max(0, currentCount - totalClicksToRemove);
+
+        batch.set(counterRef, { count: updatedCount }, { merge: true });
+
+        await batch.commit();
+        alert(`Successfully deleted ${checkedBoxes.length} supporter record(s) and adjusted total vote count by -${totalClicksToRemove}.`);
+        
+        const selectAll = document.getElementById('select-all-supporters');
+        if (selectAll) selectAll.checked = false;
+      } catch (err) {
+        alert("Failed to delete selected votes: " + err.message);
+      }
+    });
+
+    document.getElementById('reset-votes-btn').addEventListener('click', async () => {
+      if (!currentUser) return;
+      if (!confirm("Are you sure you want to delete all vote records and supporter entries? This cannot be undone.")) return;
+
+      const input = prompt("Reset complete. Enter the new starting number for the total vote counter:", "0");
+      if (input === null) return;
+
+      const newCount = parseInt(input, 10);
+      if (isNaN(newCount) || newCount < 0) {
+        alert("Please enter a valid, non-negative number.");
+        return;
+      }
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "supporters"));
+        const batch = writeBatch(db);
+
+        querySnapshot.forEach((docSnap) => batch.delete(docSnap.ref));
+        batch.set(doc(db, "counters", "supportCounter"), { count: newCount });
+
+        await batch.commit();
+        alert(`All supporter records have been reset, and the total vote counter now starts at ${newCount.toLocaleString()}.`);
+      } catch (err) {
+        alert("Failed to reset votes: " + err.message);
+      }
+    });
   </script>
 </body>
 </html>
