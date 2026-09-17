@@ -1,19 +1,29 @@
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"; 
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  getDoc,
-  setDoc, 
-  updateDoc, 
-  onSnapshot,
-  runTransaction,
-  serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"; 
-import { 
-  getAuth, 
-  onAuthStateChanged 
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+  getAuth,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+// ---------------------------------------------------------------------------
+// Aurora page-view analytics.
+//
+// This file has ONE job: record that someone opened this page, and how
+// long they were actually looking at it. It does not identify visitors
+// in any way (no fingerprinting, no device info, no IP).
+//
+// The separate, much more minimal identity check used to rate-limit the
+// "Support Us" counter (a salted hash of the visitor's public IP) lives
+// entirely in supportus.html now, since it's a concern specific to that
+// one page, not general site analytics.
+// ---------------------------------------------------------------------------
 
 const firebaseConfig = {
   apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
@@ -22,27 +32,25 @@ const firebaseConfig = {
   storageBucket: "gtcsu-aurora.firebasestorage.app",
   messagingSenderId: "961705164297",
   appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8"
-}; 
+};
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig); 
-const db = getFirestore(app); 
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
 const auth = getAuth(app);
 
 function getHKTDateString(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(date);
-} 
+}
 
-const startTime = Date.now(); 
-const path = window.location.pathname || '/'; 
-
-const pageviewRef = doc(collection(db, "pageviews")); 
+const path = window.location.pathname || '/';
+const pageviewRef = doc(collection(db, "pageviews"));
 
 const FIRESTORE_COMMIT_URL =
   `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}` +
-  `/databases/(default)/documents:commit?key=${firebaseConfig.apiKey}`; 
+  `/databases/(default)/documents:commit?key=${firebaseConfig.apiKey}`;
 
 const PAGEVIEW_DOC_PATH =
-  `projects/${firebaseConfig.projectId}/databases/(default)/documents/pageviews/${pageviewRef.id}`; 
+  `projects/${firebaseConfig.projectId}/databases/(default)/documents/pageviews/${pageviewRef.id}`;
 
 function toFirestoreValue(value) {
   if (value === null) return { nullValue: null };
@@ -51,8 +59,11 @@ function toFirestoreValue(value) {
     return Number.isInteger(value) ? { integerValue: value } : { doubleValue: value };
   }
   return { stringValue: String(value) };
-} 
+}
 
+// Fired from `pagehide`, where we can no longer rely on an async SDK call
+// completing. sendBeacon (with a manual REST fallback) guarantees the
+// write is queued before the page is torn down.
 function sendExitUpdate(fields) {
   const fieldPaths = Object.keys(fields);
   const fieldsPayload = {};
@@ -83,31 +94,70 @@ function sendExitUpdate(fields) {
       keepalive: true
     }).catch((err) => console.error("Analytics exit beacon fallback failed:", err));
   }
-} 
+}
+
+// ---------------------------------------------------------------------------
+// Engagement time tracking.
+//
+// A page only counts as "being viewed" while its tab is the visible tab
+// AND the browser window has focus. That means:
+//   - switching to another tab pauses the clock
+//   - switching to another application (alt-tab) pauses the clock, even
+//     though the tab itself is technically still "visible" according to
+//     the Page Visibility API
+//   - coming back to the tab resumes the clock
+// Previously only tab-visibility was tracked, so a tab left open (but
+// unfocused, e.g. behind another window) all day kept accumulating time,
+// which is almost certainly why some pages showed multi-thousand-second
+// "average" durations - a handful of forgotten open tabs were dragging
+// the average way up.
+// ---------------------------------------------------------------------------
+
+function isEngaged() {
+  return document.visibilityState === "visible" && document.hasFocus();
+}
 
 let accumulatedMs = 0;
-let visibleSince = document.visibilityState === "visible" ? Date.now() : null;
+let engagedSince = isEngaged() ? Date.now() : null;
 
-function flushVisibleTime() {
-  if (visibleSince !== null) {
-    accumulatedMs += Date.now() - visibleSince;
-    visibleSince = null;
+function flushEngagedTime() {
+  if (engagedSince !== null) {
+    accumulatedMs += Date.now() - engagedSince;
+    engagedSince = null;
   }
+}
+
+function refreshEngagementState() {
+  const engaged = isEngaged();
+  if (engaged && engagedSince === null) {
+    engagedSince = Date.now();
+  } else if (!engaged && engagedSince !== null) {
+    flushEngagedTime();
+  }
+}
+
+function currentDurationSeconds() {
+  const liveMs = accumulatedMs + (engagedSince !== null ? Date.now() - engagedSince : 0);
+  return Math.max(1, Math.round(liveMs / 1000));
+}
+
+function updateDuration() {
+  return updateDoc(pageviewRef, {
+    durationSeconds: currentDurationSeconds(),
+    lastActiveAt: serverTimestamp()
+  }).catch(err => console.error("Analytics duration update failed:", err));
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    flushVisibleTime();
-    updateDuration();
-  } else {
-    visibleSince = Date.now();
-  }
+  refreshEngagementState();
+  if (!isEngaged()) updateDuration();
 });
 
-function currentDurationSeconds() {
-  const liveMs = accumulatedMs + (visibleSince !== null ? Date.now() - visibleSince : 0);
-  return Math.max(1, Math.round(liveMs / 1000));
-}
+window.addEventListener("focus", refreshEngagementState);
+window.addEventListener("blur", () => {
+  refreshEngagementState();
+  updateDuration();
+});
 
 setDoc(pageviewRef, {
   path: path,
@@ -116,7 +166,7 @@ setDoc(pageviewRef, {
   timestamp: serverTimestamp(),
   openedAt: serverTimestamp(),
   lastActiveAt: serverTimestamp()
-}).catch(err => console.error("Analytics open logging failed:", err)); 
+}).catch(err => console.error("Analytics open logging failed:", err));
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -127,27 +177,10 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-function updateDuration() {
-  const durationSeconds = currentDurationSeconds(); 
-
-  return updateDoc(pageviewRef, {
-    durationSeconds: durationSeconds,
-    lastActiveAt: serverTimestamp()
-  }).catch(err => console.error("Analytics duration update failed:", err)); 
-}
-
-const HEARTBEAT_INTERVAL_MS = 3000; 
+const HEARTBEAT_INTERVAL_MS = 3000;
 setInterval(() => {
-  if (document.visibilityState === "visible") {
-    updateDuration();
-  }
-}, HEARTBEAT_INTERVAL_MS); 
-
-window.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    updateDuration();
-  }
-});
+  if (isEngaged()) updateDuration();
+}, HEARTBEAT_INTERVAL_MS);
 
 window.addEventListener("pagehide", () => {
   sendExitUpdate({
@@ -156,308 +189,3 @@ window.addEventListener("pagehide", () => {
     closedAt: new Date()
   });
 });
-
-// ---------------------------------------------------------------------------
-// Solution 1: Hardware Browser Fingerprinting Engine (No Sign-In Required)
-// ---------------------------------------------------------------------------
-
-export const SUPPORT_COOLDOWN_MS = 60000
-
-export async function generateFingerprint() {
-  const components = [];
-
-  // 1. Screen resolution, color depth & pixel density
-  components.push(`${screen.width}x${screen.height}x${screen.colorDepth}`);
-  components.push(`pixelRatio:${window.devicePixelRatio || 1}`);
-
-  // 2. Core hardware specs & locale parameters
-  components.push(`concurrency:${navigator.hardwareConcurrency || 'unknown'}`);
-  components.push(`deviceMemory:${navigator.deviceMemory || 'unknown'}`);
-  components.push(`maxTouchPoints:${navigator.maxTouchPoints || 0}`);
-  components.push(`platform:${navigator.platform || ''}`);
-  components.push(`language:${navigator.language || ''}`);
-  components.push(`timezone:${Intl.DateTimeFormat().resolvedOptions().timeZone || ''}`);
-
-  // 3. WebGL GPU Vendor & Renderer
-  try {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (gl) {
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-      if (debugInfo) {
-        components.push(`gpuVendor:${gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)}`);
-        components.push(`gpuRenderer:${gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)}`);
-      }
-      components.push(`glVersion:${gl.getParameter(gl.VERSION)}`);
-    }
-  } catch (e) {}
-
-  // 4. Canvas Rendering Fingerprint
-  try {
-    const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 50;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.textBaseline = "top";
-      ctx.font = "14px 'Arial', sans-serif";
-      ctx.fillStyle = "#f60";
-      ctx.fillRect(125, 1, 62, 20);
-      ctx.fillStyle = "#069";
-      ctx.fillText("AuroraFP,123", 2, 15);
-      ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-      ctx.fillText("AuroraFP,123", 4, 17);
-      components.push(`canvas:${canvas.toDataURL()}`);
-    }
-  } catch (e) {}
-
-  // 5. Audio Stack Fingerprint
-  try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) {
-      const audioCtx = new AudioContext();
-      components.push(`audioRate:${audioCtx.sampleRate}`);
-      components.push(`audioChannels:${audioCtx.destination.maxChannelCount}`);
-      if (audioCtx.state !== 'closed') {
-        audioCtx.close().catch(() => {});
-      }
-    }
-  } catch (e) {}
-
-  // 6. Installed Fonts Probing
-  try {
-    const fontList = ['Arial', 'Courier New', 'Georgia', 'Helvetica', 'Times New Roman', 'Trebuchet MS', 'Verdana', 'Segoe UI', 'Roboto'];
-    const availableFonts = [];
-    const container = document.body || document.documentElement;
-    if (container) {
-      const span = document.createElement('span');
-      span.style.position = 'absolute';
-      span.style.left = '-9999px';
-      span.style.fontSize = '72px';
-      span.innerHTML = 'mmmmmmmmmlli';
-      container.appendChild(span);
-
-      span.style.fontFamily = 'monospace';
-      const baseWidth = span.offsetWidth;
-
-      for (const font of fontList) {
-        span.style.fontFamily = `'${font}', monospace`;
-        if (span.offsetWidth !== baseWidth) {
-          availableFonts.push(font);
-        }
-      }
-      container.removeChild(span);
-      components.push(`fonts:${availableFonts.join(',')}`);
-    }
-  } catch (e) {}
-
-  // 7. Installed Plugins Count
-  try {
-    components.push(`plugins:${navigator.plugins ? navigator.plugins.length : 0}`);
-  } catch (e) {}
-
-  // Generate deterministic SHA-256 fingerprint hash string
-  const str = components.join('||');
-  if (crypto && crypto.subtle && crypto.subtle.digest) {
-    const msgBuffer = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return 'fp_' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 24);
-  } else {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
-    }
-    return 'fp_' + Math.abs(hash).toString(16);
-  }
-}
-
-export async function getOrCreateDeviceId() {
-  let deviceId = localStorage.getItem("aurora_device_id");
-  if (!deviceId) {
-    deviceId = await generateFingerprint();
-    localStorage.setItem("aurora_device_id", deviceId);
-  }
-  return deviceId;
-}
-
-export function maskDeviceId(id) {
-  const str = String(id);
-  return str.length > 12 ? str.slice(0, 12) + "..." : str;
-}
-
-export function maskIP(ip) {
-  const str = String(ip);
-  return str.length > 8 ? str.slice(0, 8) + "..." : str;
-}
-
-async function sha256Hex(str) {
-  const msgBuffer = new TextEncoder().encode(str);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-// ---------------------------------------------------------------------------
-// Solution 2: IP address lookup
-// ---------------------------------------------------------------------------
-
-export async function getPublicIP() {
-  try {
-    const res = await fetch("https://api.ipify.org?format=json");
-    if (!res.ok) throw new Error("IP lookup returned " + res.status);
-    const data = await res.json();
-    return data.ip || null;
-  } catch (err) {
-    console.error("Analytics: public IP lookup failed:", err);
-    return null;
-  }
-}
-
-export async function getIpHash(ip) {
-  if (!ip) return null;
-  const hash = await sha256Hex("aurora_ip_salt_v1:" + ip);
-  return "ip_" + hash.substring(0, 24);
-}
-
-// ---------------------------------------------------------------------------
-// Solution 3: Device model / platform label
-// ---------------------------------------------------------------------------
-
-export async function getDeviceInfo() {
-  let model = null;
-  let platformLabel = navigator.platform || "";
-
-  try {
-    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
-      const uaData = await navigator.userAgentData.getHighEntropyValues(["model", "platform", "platformVersion"]);
-      if (uaData.model) model = uaData.model;
-      if (uaData.platform) platformLabel = uaData.platform;
-    }
-  } catch (e) {}
-
-  if (!model) {
-    const ua = navigator.userAgent || "";
-    const androidMatch = ua.match(/Android[^;]*;\s*([^)]+?)(?:\s+Build|\))/);
-    if (androidMatch && androidMatch[1]) {
-      model = androidMatch[1].trim();
-    } else if (/iPhone/.test(ua)) {
-      model = "iPhone";
-    } else if (/iPad/.test(ua)) {
-      model = "iPad";
-    } else if (/Macintosh/.test(ua)) {
-      model = "Mac";
-    } else if (/Windows/.test(ua)) {
-      model = "Windows PC";
-    } else if (/Linux/.test(ua)) {
-      model = "Linux PC";
-    } else {
-      model = platformLabel || "Unknown";
-    }
-  }
-
-  return { model, platform: platformLabel };
-}
-
-export async function getSupportStatus(deviceId, ipHash) {
-  const supporterRef = doc(db, "supporters", deviceId);
-  const supporterSnap = await getDoc(supporterRef);
-
-  let remainingMs = 0;
-  let clicks = 0;
-
-  if (supporterSnap.exists()) {
-    const data = supporterSnap.data();
-    const last = data.lastClickAtMillis || 0;
-    remainingMs = Math.max(remainingMs, SUPPORT_COOLDOWN_MS - (Date.now() - last));
-    clicks = data.clicks || 0;
-  }
-
-  if (ipHash) {
-    const ipRef = doc(db, "ipCooldowns", ipHash);
-    const ipSnap = await getDoc(ipRef);
-    if (ipSnap.exists()) {
-      const ipLast = ipSnap.data().lastClickAtMillis || 0;
-      remainingMs = Math.max(remainingMs, SUPPORT_COOLDOWN_MS - (Date.now() - ipLast));
-    }
-  }
-
-  return { remainingMs: Math.max(0, remainingMs), clicks };
-}
-
-export function subscribeSupportCounter(callback) {
-  const counterRef = doc(db, "counters", "supportCounter");
-  return onSnapshot(counterRef, (snap) => {
-    callback(snap.exists() ? (snap.data().count || 0) : 0);
-  }, (err) => {
-    console.error("Support: counter subscription failed:", err);
-  });
-} 
-
-export async function registerSupportClick(deviceId, extra = {}) {
-  const { ipAddress = null, ipHash = null, deviceModel = null, platform = null } = extra;
-
-  const supporterRef = doc(db, "supporters", deviceId);
-  const counterRef = doc(db, "counters", "supportCounter");
-  const ipRef = ipHash ? doc(db, "ipCooldowns", ipHash) : null;
-  const supportLogRef = doc(collection(db, "supportLogs"));
-
-  return runTransaction(db, async (tx) => {
-    // All reads must happen before any writes in a Firestore transaction.
-    const supporterSnap = await tx.get(supporterRef);
-    const ipSnap = ipRef ? await tx.get(ipRef) : null;
-
-    const now = Date.now();
-    const prevClicks = supporterSnap.exists() ? (supporterSnap.data().clicks || 0) : 0;
-
-    let remainingMs = 0;
-    if (supporterSnap.exists()) {
-      const last = supporterSnap.data().lastClickAtMillis || 0;
-      remainingMs = Math.max(remainingMs, SUPPORT_COOLDOWN_MS - (now - last));
-    }
-    if (ipSnap && ipSnap.exists()) {
-      const ipLast = ipSnap.data().lastClickAtMillis || 0;
-      remainingMs = Math.max(remainingMs, SUPPORT_COOLDOWN_MS - (now - ipLast));
-    }
-
-    if (remainingMs > 0) {
-      return { success: false, remainingMs, clicks: prevClicks };
-    }
-
-    const counterSnap = await tx.get(counterRef);
-    const prevTotal = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
-    const newTotal = prevTotal + 1;
-    const newClicks = prevClicks + 1;
-
-    tx.set(counterRef, { count: newTotal }, { merge: true });
-    tx.set(supporterRef, {
-      deviceId: String(deviceId),
-      lastClickAtMillis: now,
-      clicks: newClicks,
-      dateStr: getHKTDateString(),
-      ...(ipAddress ? { ip: ipAddress } : {}),
-      ...(deviceModel ? { deviceModel } : {}),
-      ...(platform ? { platform } : {})
-    }, { merge: true });
-
-    if (ipRef) {
-      tx.set(ipRef, {
-        ip: ipAddress || "",
-        deviceId: String(deviceId),
-        lastClickAtMillis: now
-      }, { merge: true });
-    }
-
-    // Write individual support action log entry
-    tx.set(supportLogRef, {
-      deviceId: String(deviceId),
-      ip: ipAddress || "",
-      deviceModel: deviceModel || "",
-      timestamp: serverTimestamp(),
-      timestampMillis: now,
-      dateStr: getHKTDateString()
-    });
-
-    return { success: true, remainingMs: SUPPORT_COOLDOWN_MS, clicks: newClicks, totalSupporters: newTotal };
-  });
-}
