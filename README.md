@@ -37,18 +37,6 @@ This is a multi‑page, bilingual (English / Traditional Chinese) static website
 
 ---
 
-## 🛠️ Technology Stack
-
-- **Frontend:** Vanilla HTML5, CSS3, JavaScript (ES modules)
-- **Styling:** Custom CSS with CSS variables, backdrop‑filter, grid/flexbox
-- **Animations:** CSS keyframes, Intersection Observer for scroll reveals
-- **Backend / Database:** Firebase Firestore (for support counter and feedback storage)
-- **Analytics:** Custom `analytics.js` for device fingerprinting, IP hashing, and event tracking
-- **External Services:** Cloudinary (for image uploads – not used in all pages), OpenRouter (not used here, but present in some configurations)
-- **Fonts:** Google Fonts (Cinzel, Manrope, Cormorant Garamond)
-
----
-
 ## 🌐 Deployment
 
 The site is a static website and can be hosted on any static hosting service:
