@@ -1,6 +1,7 @@
 .firebase/
 .firebaserc
 node_modules/
+firebase-debug.log
 
 keys.txt
 .DS_Store

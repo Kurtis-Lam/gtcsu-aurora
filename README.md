@@ -186,11 +186,19 @@ Ensure that all asset paths are correct and that Firebase security rules allow t
 This project is for the internal use of G.T. (Ellen Yeung) College Student Union Candidate Cabinet No. 1 – Aurora.  
 All rights reserved. Unauthorised reproduction or distribution is prohibited.
 
+Licensed under MIT.
+
 ---
 
 ## 📬 Contact
 
-For any enquiries, please reach out via Instagram: [@gteyc_aurora2627](https://www.instagram.com/gteyc_aurora2627/)
+For any enquiries, please reach out via Aurora's Official Instagram: [@gteyc_aurora2627](https://www.instagram.com/gteyc_aurora2627/) or me at: `kurtislam100@gmail.com`
+
+---
+
+## 🙌 Acknowledgements
+
+Built with ❤️ by Kurtis.
 
 ---
 
