@@ -1,26 +1,52 @@
 import crypto from 'node:crypto';
 
-// Every API route is called from our own pages (same origin), so we send NO
-// CORS headers and additionally reject cross-origin browser calls. This stops
-// other websites from spending our OpenRouter / Cloudinary / Firestore quota.
-export function guard(req, res, method) {
-  res.setHeader('Cache-Control', 'no-store');
+const STATIC_ORIGINS = [
+  'https://gtcsu-aurora.web.app',
+  'https://gtcsu-aurora.firebaseapp.com'
+];
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
-  if (req.method !== method) {
-    res.setHeader('Allow', method);
+const extraOrigins = () =>
+  (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+
+function originAllowed(origin, host) {
+  return (
+    STATIC_ORIGINS.includes(origin) ||
+    extraOrigins().includes(origin) ||
+    LOCAL_ORIGIN.test(origin) ||
+    origin === `https://${host}`
+  );
+}
+
+export function guard(req, res, methods) {
+  const allowedMethods = Array.isArray(methods) ? methods : [methods];
+
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Vary', 'Origin');
+
+  const origin = req.headers.origin;
+  if (origin) {
+    if (!originAllowed(origin, req.headers.host)) {
+      res.status(403).json({ error: 'Forbidden origin' });
+      return false;
+    }
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return false;
+  }
+
+  if (!allowedMethods.includes(req.method)) {
+    res.setHeader('Allow', allowedMethods.join(', '));
     res.status(405).json({ error: 'Method Not Allowed' });
     return false;
   }
 
-  const origin = req.headers.origin;
-  if (origin) {
-    let originHost = '';
-    try { originHost = new URL(origin).host; } catch { /* malformed */ }
-    if (originHost !== req.headers.host) {
-      res.status(403).json({ error: 'Forbidden origin' });
-      return false;
-    }
-  }
   return true;
 }
 
@@ -33,12 +59,10 @@ export function clientIp(req) {
   return req.socket?.remoteAddress || 'unknown';
 }
 
-// Keyed hash so stored identifiers can't be brute-forced from the (small) IPv4
-// space. The secret lives only in Vercel: IP_HASH_SECRET.
-export function hashIp(ip) {
+export function hashIp(value) {
   const secret = process.env.IP_HASH_SECRET;
   if (!secret) throw new Error('IP_HASH_SECRET is not set');
-  return crypto.createHmac('sha256', secret).update(ip).digest('hex').slice(0, 24);
+  return crypto.createHmac('sha256', secret).update(String(value)).digest('hex').slice(0, 24);
 }
 
 export function bearerToken(req) {
