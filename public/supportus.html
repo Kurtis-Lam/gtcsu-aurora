@@ -614,23 +614,18 @@
     const API_URL = `${API_BASE}/api/support`;
 
     const extra = {
-      en: {
-        signin: 'Sign in to support 💙',
-        hint: 'Sign in with your school account (@gtcollege.edu.hk) to vote. One account can support once every 10 minutes.',
-        checking: 'Checking your status...'
-      },
-      zh: {
-        signin: '登入以支持 💙',
-        hint: '請使用學校帳戶（@gtcollege.edu.hk）登入後投票。每個帳戶每 10 分鐘可支持一次。',
-        checking: '正在檢查你的狀態...'
-      }
+      en: { checking: 'Checking your status...' },
+      zh: { checking: '正在檢查你的狀態...' }
     };
 
     async function callSupport(method) {
-      const token = await AuroraAuth.getIdToken();
-      if (!token) return { status: 401, data: { ok: false, code: 'AUTH_REQUIRED' } };
+      let token = null;
+      try { token = await AuroraAuth.getIdToken(); } catch(e) {}
+      
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(API_URL, { method, headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(API_URL, { method, headers });
       const contentType = res.headers.get('content-type') || '';
       let data = {};
 
@@ -643,13 +638,6 @@
       return { status: res.status, data };
     }
 
-    function showSignIn() {
-      clearInterval(countdownTimer);
-      btn.disabled = false;
-      btn.textContent = extra[lang()].signin;
-      statusEl.textContent = extra[lang()].hint;
-    }
-
     async function checkStatus() {
       clearInterval(countdownTimer);
       btn.disabled = true;
@@ -657,11 +645,11 @@
       statusEl.textContent = '';
       try {
         const { status, data } = await callSupport('GET');
-        if (status === 401 || status === 403) return showSignIn();
         if (status === 200 && data.ok) {
           if (data.remainingMs > 0) startCountdown(data.remainingMs); else setReady();
         } else {
-          throw new Error(data.error || `Status ${status}`);
+          // Default to ready if status isn't clear
+          setReady();
         }
       } catch (err) {
         console.error('Support status check failed:', err);
@@ -676,19 +664,17 @@
     });
     updateBottomBar();
 
-    // One vote per signed-in school account: everything depends on auth state.
-    AuroraAuth.onChange((user) => { if (user) checkStatus(); else showSignIn(); });
+    // Check status unconditionally - works for both anonymous and logged in.
+    AuroraAuth.onChange((user) => { checkStatus(); });
 
     btn.addEventListener('click', async () => {
       if (btn.disabled) return;
-      if (!AuroraAuth.getUser()) { AuroraAuth.signIn(); return; }
-
+      
       btn.disabled = true;
       btn.textContent = '...';
 
       try {
         const { status, data } = await callSupport('POST');
-        if (status === 401 || status === 403) return showSignIn();
         if (status === 200 && data.ok) {
           bumpLocalClickCount();
           updateBottomBar();
