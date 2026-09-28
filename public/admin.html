@@ -874,7 +874,7 @@
         <div class="kpi-card">
           <span class="kpi-title">Unique Supporters</span>
           <span class="kpi-value support-value" id="kpi-unique-supporters">0</span>
-          <span class="kpi-subtitle">Distinct registered voter devices</span>
+          <span class="kpi-subtitle">Distinct signed-in school accounts</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-title">Most Recent Support</span>
@@ -886,7 +886,7 @@
       <div class="supporters-table-wrap">
         <div class="supporters-header">
           <div style="display: flex; align-items: center; gap: 16px;">
-            <h3 class="chart-title">Registered Voter Devices</h3>
+            <h3 class="chart-title">Registered Voters (school accounts)</h3>
             <div style="display: flex; align-items: center; gap: 8px;">
               <label for="supporters-sort-select" style="font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600;">Sort By:</label>
               <select id="supporters-sort-select" class="select-input">
@@ -905,7 +905,7 @@
           <thead>
             <tr>
               <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-supporters"></th>
-              <th>Supporter (Hashed IP)</th>
+              <th>Supporter (Hashed Account)</th>
               <th>Votes Cast</th>
               <th>Last Vote</th>
               <th>Cooldown Status</th>
@@ -1005,6 +1005,7 @@
       getDocs,
       addDoc,
       writeBatch,
+      setDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import {
@@ -1013,6 +1014,7 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { db, auth, googleProvider } from './firebase-config.js';
+    import { API_BASE } from './api-config.js';
 
     const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000;
     let currentUser = null;
@@ -1154,7 +1156,7 @@
       const modalBody = document.getElementById('detail-modal-body');
       modalBody.innerHTML = `
         <div class="detail-field">
-          <label>Supporter ID (Salted Hash of Public IP)</label>
+          <label>Supporter ID (Keyed Hash of School Account)</label>
           <span style="color: var(--aurora-teal);">${escapeHtml(info.deviceId || 'N/A')}</span>
         </div>
         <div class="detail-field">
@@ -1722,6 +1724,15 @@
       });
     }
 
+    // Firestore batches are limited to 500 operations, so delete in chunks.
+    async function deleteInChunks(refs) {
+      for (let i = 0; i < refs.length; i += 400) {
+        const batch = writeBatch(db);
+        refs.slice(i, i + 400).forEach(r => batch.delete(r));
+        await batch.commit();
+      }
+    }
+
     document.getElementById('select-all-supporters')?.addEventListener('change', (e) => {
       document.querySelectorAll('.supporter-checkbox').forEach(cb => cb.checked = e.target.checked);
     });
@@ -1734,18 +1745,17 @@
 
       try {
         let totalClicksToRemove = 0;
-        const batch = writeBatch(db);
-        checkedBoxes.forEach(cb => {
+        const refs = checkedBoxes.map(cb => {
           totalClicksToRemove += parseInt(cb.getAttribute('data-clicks') || '0', 10);
-          batch.delete(doc(db, "supporters", cb.value));
+          return doc(db, "supporters", cb.value);
         });
+        await deleteInChunks(refs);
 
         const counterRef = doc(db, "counters", "supportCounter");
         const counterSnap = await getDoc(counterRef);
         const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
-        batch.set(counterRef, { count: Math.max(0, currentCount - totalClicksToRemove) }, { merge: true });
+        await setDoc(counterRef, { count: Math.max(0, currentCount - totalClicksToRemove) }, { merge: true });
 
-        await batch.commit();
         alert("Selected records deleted.");
       } catch (err) { alert("Failed to delete votes: " + err.message); }
     });
@@ -1760,10 +1770,8 @@
 
       try {
         const querySnapshot = await getDocs(collection(db, "supporters"));
-        const batch = writeBatch(db);
-        querySnapshot.forEach((docSnap) => batch.delete(docSnap.ref));
-        batch.set(doc(db, "counters", "supportCounter"), { count: newCount });
-        await batch.commit();
+        await deleteInChunks(querySnapshot.docs.map(d => d.ref));
+        await setDoc(doc(db, "counters", "supportCounter"), { count: newCount });
         alert("All votes reset successfully.");
       } catch (err) { alert("Failed to reset votes: " + err.message); }
     });
@@ -1790,7 +1798,7 @@
     // Authenticated call to one of our /api routes (the server re-checks admin via the rules).
     async function apiPost(path, payload) {
       const token = await auth.currentUser.getIdToken();
-      const res = await fetch(path, {
+      const res = await fetch(API_BASE + path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload || {})
