@@ -1,37 +1,41 @@
-// api/sign-upload.js
+// POST /api/sign-upload  (admins only)
+// Returns a signed Cloudinary upload payload. Uploads are stored with
+// type=authenticated, so they can only be displayed through signed URLs that
+// /api/photo-urls hands out to signed-in school accounts.
 import { v2 as cloudinary } from 'cloudinary';
+import { guard, bearerToken } from './_lib/http.js';
+import { isAdminByRules } from './_lib/auth.js';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (!guard(req, res, 'POST')) return;
 
   try {
-    const timestamp = Math.round(new Date().getTime() / 1000);
-    const folder = 'user_uploads';
+    if (!(await isAdminByRules(bearerToken(req)))) {
+      return res.status(403).json({ error: 'Admins only.' });
+    }
 
-    // Generate SHA-1 signature on the server using your API Secret
-    const signature = cloudinary.utils.api_sign_request(
-      { timestamp, folder },
-      process.env.CLOUDINARY_API_SECRET
-    );
+    const params = {
+      timestamp: Math.round(Date.now() / 1000),
+      folder: 'aurora/gallery',
+      type: 'authenticated',
+      allowed_formats: 'jpg,jpeg,png,webp,gif'
+    };
+    const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);
 
     return res.status(200).json({
+      ...params,
       signature,
-      timestamp,
       cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-      apiKey: process.env.CLOUDINARY_API_KEY,
-      folder
+      apiKey: process.env.CLOUDINARY_API_KEY
     });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error('sign-upload error:', err);
+    return res.status(500).json({ error: 'Could not sign upload.' });
   }
 }
