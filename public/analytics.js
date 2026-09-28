@@ -15,10 +15,7 @@ import { db, auth, firebaseConfig } from './firebase-config.js';
 // long they were actually looking at it. It does not identify visitors
 // in any way (no fingerprinting, no device info, no IP).
 //
-// The separate, much more minimal identity check used to rate-limit the
-// "Support Us" counter (a salted hash of the visitor's public IP) lives
-// entirely in supportus.html now, since it's a concern specific to that
-// one page, not general site analytics.
+// Support-vote rate limiting is handled server-side by /api/support.
 // ---------------------------------------------------------------------------
 
 function getHKTDateString(date = new Date()) {
@@ -36,7 +33,7 @@ const PAGEVIEW_DOC_PATH =
   `projects/${firebaseConfig.projectId}/databases/(default)/documents/pageviews/${pageviewRef.id}`;
 
 function toFirestoreValue(value) {
-  if (value === null) return { nullValue: null };
+  if (value === null) return { nullValue: "NULL_VALUE" };
   if (value instanceof Date) return { timestampValue: value.toISOString() };
   if (typeof value === "number") {
     return Number.isInteger(value) ? { integerValue: value } : { doubleValue: value };
@@ -160,7 +157,8 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-const HEARTBEAT_INTERVAL_MS = 3000;
+// 15s keeps duration accurate enough while staying well inside Firestore's free write quota.
+const HEARTBEAT_INTERVAL_MS = 15000;
 setInterval(() => {
   if (isEngaged()) updateDuration();
 }, HEARTBEAT_INTERVAL_MS);

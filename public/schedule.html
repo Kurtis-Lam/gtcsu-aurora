@@ -472,31 +472,6 @@
       }, 350);
     });
 
-    // Mobile Navigation Drawer Controls
-    const hamburgerBtn = document.getElementById('hamburger-btn');
-    const navLinks = document.getElementById('nav-links');
-    const navOverlay = document.getElementById('nav-overlay');
-
-    function toggleMobileMenu() {
-      if (!hamburgerBtn || !navLinks || !navOverlay) return;
-      const isOpen = hamburgerBtn.classList.toggle('open');
-      navLinks.classList.toggle('active', isOpen);
-      navOverlay.classList.toggle('active', isOpen);
-    }
-
-    function closeMobileMenu() {
-      if (!hamburgerBtn || !navLinks || !navOverlay) return;
-      hamburgerBtn.classList.remove('open');
-      navLinks.classList.remove('active');
-      navOverlay.classList.remove('active');
-    }
-
-    hamburgerBtn?.addEventListener('click', toggleMobileMenu);
-    navOverlay?.addEventListener('click', closeMobileMenu);
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn.addEventListener('click', closeMobileMenu);
-    });
-
     document.addEventListener('DOMContentLoaded', () => {
       const video = document.getElementById('bg-video');
       let pageRevealed = false;

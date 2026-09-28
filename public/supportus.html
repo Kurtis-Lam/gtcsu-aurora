@@ -550,205 +550,123 @@
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
 
   <script type="module">
-    import {
-      collection, doc, getDoc, setDoc, updateDoc, onSnapshot, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { db } from './firebase-config.js';
 
-    // Must match the `duration.value(10, 'm')` in firestore.rules — this
-    // copy only drives the on-page countdown display, the rule is what
-    // actually enforces it.
-    const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+    const COOLDOWN_MS = 10 * 60 * 1000;
 
     const btn = document.getElementById('support-btn');
     const statusEl = document.getElementById('support-status');
     const countEl = document.getElementById('support-count');
     const barClicksEl = document.getElementById('bar-clicks');
 
-    let myIpHash = null;
     let countdownTimer = null;
 
     const btnLabels = {
-      en: { ready: 'Support Us 💙', sent: 'Thank you! 💙', checking: 'Checking your status...', offline: 'Unavailable' },
-      zh: { ready: '支持我們 💙', sent: '謝謝支持！💙', checking: '正在核實狀態...', offline: '暫時無法使用' }
+      en: { ready: 'Support Us 💙', offline: 'Unavailable' },
+      zh: { ready: '支持我們 💙', offline: '暫時無法使用' }
     };
-
-    // ---------------------------------------------------------------
-    // Minimal identity: salted hash of the public IP only.
-    // ---------------------------------------------------------------
-    async function getPublicIP() {
-      try {
-        const res = await fetch("https://api.ipify.org?format=json");
-        if (!res.ok) throw new Error("IP lookup returned " + res.status);
-        const data = await res.json();
-        return data.ip || null;
-      } catch (err) {
-        console.error("Support: public IP lookup failed:", err);
-        return null;
+    const msgs = {
+      en: {
+        already: "You've already supported recently.", thanks: 'Thank you for your support! 💙',
+        error: 'Something went wrong - please try again.', offline: 'Could not reach the server - please try again later.'
+      },
+      zh: {
+        already: '你最近已經支持過了。', thanks: '感謝你的支持！💙',
+        error: '發生錯誤，請再試一次。', offline: '無法連線至伺服器，請稍後再試。'
       }
-    }
+    };
+    const lang = () => (localStorage.getItem('aurora_lang') || 'en') === 'zh' ? 'zh' : 'en';
 
-    async function sha256Hex(str) {
-      const msgBuffer = new TextEncoder().encode(str);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-    }
-
-    async function computeIpHash() {
-      const ip = await getPublicIP();
-      if (!ip) return null;
-      const hash = await sha256Hex("aurora_ip_salt_v1:" + ip);
-      return "ip_" + hash.substring(0, 24);
-    }
-
-    // Purely cosmetic local tally of how many times *this browser* has
-    // successfully voted — not used for any security decision.
-    function getLocalClickCount() {
-      return parseInt(localStorage.getItem('aurora_local_support_clicks') || '0', 10);
-    }
-    function bumpLocalClickCount() {
-      const next = getLocalClickCount() + 1;
-      localStorage.setItem('aurora_local_support_clicks', String(next));
-      return next;
-    }
-    function updateBottomBar() {
-      if (barClicksEl) {
-        barClicksEl.textContent = getLocalClickCount();
-      }
-    }
-    function currentLangCode() {
-      return (localStorage.getItem('aurora_lang') || 'en') === 'zh' ? 'zh' : 'en';
-    }
+    const LOCAL_KEY = 'aurora_local_support_clicks';
+    const getLocalClickCount = () => parseInt(localStorage.getItem(LOCAL_KEY) || '0', 10);
+    function bumpLocalClickCount() { localStorage.setItem(LOCAL_KEY, String(getLocalClickCount() + 1)); }
+    function updateBottomBar() { if (barClicksEl) barClicksEl.textContent = getLocalClickCount(); }
 
     function formatMMSS(ms) {
       const totalSec = Math.max(0, Math.ceil(ms / 1000));
-      const m = Math.floor(totalSec / 60);
-      const s = totalSec % 60;
-      return `${m}:${s.toString().padStart(2, '0')}`;
+      return `${Math.floor(totalSec / 60)}:${(totalSec % 60).toString().padStart(2, '0')}`;
+    }
+
+    function setReady() {
+      clearInterval(countdownTimer);
+      btn.disabled = false;
+      btn.textContent = btnLabels[lang()].ready;
+      statusEl.textContent = '';
     }
 
     function startCountdown(remainingMs) {
       clearInterval(countdownTimer);
-      let remaining = remainingMs;
+      const endsAt = Date.now() + remainingMs;
       btn.disabled = true;
 
       const tick = () => {
-        if (remaining <= 0) {
-          clearInterval(countdownTimer);
-          btn.disabled = false;
-          btn.textContent = btnLabels[currentLangCode()].ready;
-          statusEl.textContent = '';
-          return;
-        }
-        btn.textContent = formatMMSS(remaining);
-        remaining -= 1000;
+        const left = endsAt - Date.now();
+        if (left <= 0) return setReady();
+        btn.textContent = formatMMSS(left);
       };
-
       tick();
       countdownTimer = setInterval(tick, 1000);
     }
 
-    // How much cooldown is left, based on the supporter doc's
-    // server-set `lastClickAt` timestamp (not any client-supplied value).
-    function remainingCooldownMs(data) {
-      if (!data || !data.lastClickAt) return 0;
-      const lastClickMs = data.lastClickAt.toMillis ? data.lastClickAt.toMillis() : 0;
-      return Math.max(0, (lastClickMs + COOLDOWN_MS) - Date.now());
-    }
+    const API_URL = 'https://gtcsu-aurora.vercel.app/api/support';
 
-    async function checkAndApplyCooldown() {
-      if (!myIpHash) return;
+    async function callSupport(method) {
+      const res = await fetch(API_URL, { method });
+      const contentType = res.headers.get('content-type') || '';
+      let data = {};
 
-      const snap = await getDoc(doc(db, "supporters", myIpHash));
-      const remaining = snap.exists() ? remainingCooldownMs(snap.data()) : 0;
-
-      if (remaining > 0) {
-        startCountdown(remaining);
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
       } else {
-        btn.disabled = false;
-        btn.textContent = btnLabels[currentLangCode()].ready;
-        statusEl.textContent = '';
+        const text = await res.text().catch(() => '');
+        console.warn('Received non-JSON response from API:', text);
       }
+      return { status: res.status, data };
     }
 
     async function init() {
       onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
-        if (snap.exists()) {
-          countEl.textContent = (snap.data().count || 0).toLocaleString();
-        }
+        if (snap.exists()) countEl.textContent = (snap.data().count || 0).toLocaleString();
       });
-
       updateBottomBar();
 
-      myIpHash = await computeIpHash();
-
-      if (!myIpHash) {
-        btn.textContent = btnLabels[currentLangCode()].offline;
-        statusEl.textContent = currentLangCode() === 'zh'
-          ? '無法核實你的網絡，請稍後再試。'
-          : 'Could not verify your network - please try again later.';
-        return;
+      try {
+        const { status, data } = await callSupport('GET');
+        if (status === 200 && data.ok) {
+          if (data.remainingMs > 0) startCountdown(data.remainingMs); else setReady();
+        } else {
+          throw new Error(data.error || `Status ${status}`);
+        }
+      } catch (err) {
+        console.error('Support status check failed:', err);
+        btn.textContent = btnLabels[lang()].offline;
+        statusEl.textContent = msgs[lang()].offline;
       }
-
-      await checkAndApplyCooldown();
     }
 
     btn.addEventListener('click', async () => {
-      if (btn.disabled || !myIpHash) return;
+      if (btn.disabled) return;
       btn.disabled = true;
       btn.textContent = '...';
 
       try {
-        const supporterRef = doc(db, "supporters", myIpHash);
-        const snap = await getDoc(supporterRef);
-
-        if (snap.exists()) {
-          const data = snap.data();
-          const remaining = remainingCooldownMs(data);
-
-          if (remaining > 0) {
-            statusEl.textContent = currentLangCode() === 'zh' ? '你最近已經支持過了。' : "You've already supported recently.";
-            startCountdown(remaining);
-            return;
-          }
-
-          // Server-enforced: Firestore rejects this write unless the
-          // cooldown has genuinely elapsed, regardless of what the
-          // client believes.
-          await updateDoc(supporterRef, {
-            clicks: (data.clicks || 0) + 1,
-            lastClickAt: serverTimestamp()
-          });
+        const { status, data } = await callSupport('POST');
+        if (status === 200 && data.ok) {
+          bumpLocalClickCount();
+          updateBottomBar();
+          statusEl.textContent = msgs[lang()].thanks;
+          startCountdown(data.remainingMs || COOLDOWN_MS);
+        } else if (status === 429 || (data && !data.ok && data.remainingMs > 0)) {
+          statusEl.textContent = msgs[lang()].already;
+          startCountdown(data.remainingMs || COOLDOWN_MS);
         } else {
-          await setDoc(supporterRef, {
-            clicks: 1,
-            lastClickAt: serverTimestamp()
-          });
+          throw new Error(data.error || `Status ${status}`);
         }
-
-        const counterRef = doc(db, "counters", "supportCounter");
-        const counterSnap = await getDoc(counterRef);
-        if (counterSnap.exists()) {
-          await updateDoc(counterRef, { count: (counterSnap.data().count || 0) + 1 });
-        } else {
-          await setDoc(counterRef, { count: 1 });
-        }
-
-        bumpLocalClickCount();
-        updateBottomBar();
-
-        statusEl.textContent = currentLangCode() === 'zh' ? '感謝你的支持！💙' : 'Thank you for your support! 💙';
-        startCountdown(COOLDOWN_MS);
-
       } catch (err) {
-        // A permission-denied error here almost always means
-        // firestore.rules rejected the write (e.g. someone tried to
-        // skip the cooldown via the console) - that's the rules
-        // working as intended, not a bug.
         console.error('Support click failed:', err);
-        btn.disabled = false;
-        btn.textContent = btnLabels[currentLangCode()].ready;
-        statusEl.textContent = currentLangCode() === 'zh' ? '發生錯誤，請再試一次。' : 'Something went wrong - please try again.';
+        setReady();
+        statusEl.textContent = msgs[lang()].error;
       }
     });
 
@@ -793,30 +711,6 @@
           });
         });
       }, 350);
-    });
-
-    const hamburgerBtn = document.getElementById('hamburger-btn');
-    const navLinks = document.getElementById('nav-links');
-    const navOverlay = document.getElementById('nav-overlay');
-
-    function toggleMobileMenu() {
-      if (!hamburgerBtn || !navLinks || !navOverlay) return;
-      const isOpen = hamburgerBtn.classList.toggle('open');
-      navLinks.classList.toggle('active', isOpen);
-      navOverlay.classList.toggle('active', isOpen);
-    }
-
-    function closeMobileMenu() {
-      if (!hamburgerBtn || !navLinks || !navOverlay) return;
-      hamburgerBtn.classList.remove('open');
-      navLinks.classList.remove('active');
-      navOverlay.classList.remove('active');
-    }
-
-    hamburgerBtn?.addEventListener('click', toggleMobileMenu);
-    navOverlay?.addEventListener('click', closeMobileMenu);
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn.addEventListener('click', closeMobileMenu);
     });
 
     document.addEventListener('DOMContentLoaded', () => {

@@ -302,19 +302,11 @@
 
   <script type="module">
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { db, auth } from './firebase-config.js';
+    import { db } from './firebase-config.js';
+    import { AuroraAuth } from './load-components.js';
 
-    const firebaseAuth = auth || getAuth();
     const authContainer = document.getElementById('auth-container');
     const galleryContent = document.getElementById('gallery-content');
-    const googleSigninBtn = document.getElementById('google-signin-btn');
-
-    let allImages = [];
-    let allFolders = [];
-    let activeFolderId = 'all';
-    let selectedImageIds = new Set();
-
     const gridEl = document.getElementById('photos-grid');
     const filtersEl = document.getElementById('folder-filters');
     const countEl = document.getElementById('selected-count');
@@ -323,72 +315,87 @@
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
     const lightboxTitle = document.getElementById('lightbox-title');
-    const lightboxClose = document.getElementById('lightbox-close');
 
-    // 1. Authentication Check Listener
-    onAuthStateChanged(firebaseAuth, (user) => {
-      if (user && user.email && user.email.toLowerCase().endsWith('@gtcollege.edu.hk')) {
+    let allImages = [];
+    let allFolders = [];
+    let activeFolderId = 'all';
+    let galleryLoaded = false;
+    const selectedImageIds = new Set();
+
+    const escapeHtml = (str) => String(str ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+    // ---- Access: school accounts only (also enforced by Firestore rules + /api/photo-urls) ----
+    document.getElementById('google-signin-btn').addEventListener('click', () => AuroraAuth.signIn());
+
+    AuroraAuth.onChange((user) => {
+      if (user) {
         authContainer.style.display = 'none';
         galleryContent.style.display = 'block';
-        initGallery();
+        if (!galleryLoaded) initGallery();
       } else {
-        if (user) {
-          alert("Access restricted: Please sign in with your @gtcollege.edu.hk email account.");
-          signOut(firebaseAuth);
-        }
         galleryContent.style.display = 'none';
         authContainer.style.display = 'block';
+        // Drop everything that was loaded for the previous user.
+        galleryLoaded = false;
+        allImages = [];
+        allFolders = [];
+        selectedImageIds.clear();
+        lightbox.classList.remove('active');
       }
     });
 
-    // 2. Google Sign-In Handler
-    googleSigninBtn.addEventListener('click', async () => {
-      try {
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ hd: 'gtcollege.edu.hk' });
-        
-        const result = await signInWithPopup(firebaseAuth, provider);
-        const user = result.user;
+    function showMessage(text, isError) {
+      gridEl.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:${isError ? '#ff6b6b' : 'rgba(223,246,242,0.5)'}; padding:40px;">${escapeHtml(text)}</p>`;
+    }
 
-        if (user && user.email && user.email.toLowerCase().endsWith('@gtcollege.edu.hk')) {
-          // Immediately refresh the page upon successful login
-          window.location.reload();
-        } else {
-          alert("Access restricted: You must use a @gtcollege.edu.hk email account.");
-          await signOut(firebaseAuth);
-          window.location.reload();
-        }
-      } catch (err) {
-        console.error("Sign in failed:", err);
-        if (err.code !== 'auth/popup-closed-by-user') {
-          alert("Sign-in failed: " + err.message);
-        }
+    // Gallery files are private on Cloudinary: ask the server for signed URLs.
+    async function fetchSignedUrls(publicIds) {
+      const token = await AuroraAuth.getIdToken();
+      const urls = {};
+      for (let i = 0; i < publicIds.length; i += 200) {
+        const res = await fetch('/api/photo-urls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ publicIds: publicIds.slice(i, i + 200) })
+        });
+        if (!res.ok) throw new Error(`Could not load photo links (${res.status})`);
+        Object.assign(urls, (await res.json()).urls);
       }
-    });
+      return urls;
+    }
 
-    // 3. Load Firestore Gallery Data
     async function initGallery() {
+      galleryLoaded = true;
+      showMessage('Loading photos gallery...', false);
       try {
         const [imagesSnap, foldersSnap] = await Promise.all([
           getDocs(collection(db, "galleryImages")),
           getDocs(collection(db, "galleryFolders"))
         ]);
 
-        allImages = imagesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const images = imagesSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(img => img.publicId);
+        const urls = await fetchSignedUrls(images.map(img => img.publicId));
+
+        allImages = images
+          .filter(img => urls[img.publicId])
+          .map(img => ({ ...img, urls: urls[img.publicId] }));
         allFolders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         renderFilters();
         renderGallery();
       } catch (err) {
         console.error("Failed to load gallery:", err);
-        gridEl.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#ff6b6b; padding:40px;">Failed to load photos: ${err.message}</p>`;
+        galleryLoaded = false;
+        showMessage('Failed to load photos. Please refresh and try again.', true);
       }
     }
 
     function renderFilters() {
       let html = `<button class="filter-btn ${activeFolderId === 'all' ? 'active' : ''}" data-folder-id="all">✨ All Photos</button>`;
       allFolders.forEach(folder => {
-        html += `<button class="filter-btn ${activeFolderId === folder.id ? 'active' : ''}" data-folder-id="${folder.id}">📁 ${escapeHtml(folder.name)}</button>`;
+        html += `<button class="filter-btn ${activeFolderId === folder.id ? 'active' : ''}" data-folder-id="${escapeHtml(folder.id)}">📁 ${escapeHtml(folder.name)}</button>`;
       });
       filtersEl.innerHTML = html;
 
@@ -408,38 +415,33 @@
         : allImages.filter(img => img.folderId === activeFolderId);
 
       if (filtered.length === 0) {
-        gridEl.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:rgba(223,246,242,0.5); padding:40px;">No photos available in this folder.</p>`;
+        showMessage('No photos available in this folder.', false);
         return;
       }
 
-      gridEl.innerHTML = filtered.map(img => {
-        const isChecked = selectedImageIds.has(img.id);
-        return `
-          <div class="photo-card" data-img-id="${img.id}">
-            <input type="checkbox" class="photo-select-checkbox" data-id="${img.id}" ${isChecked ? 'checked' : ''}>
-            <img src="${img.url}" alt="${escapeHtml(img.title || img.name || 'Photo')}" loading="lazy">
-            <div class="photo-overlay">
-              <span class="photo-title">${escapeHtml(img.title || img.name || 'Untitled')}</span>
-              <span class="photo-folder">${escapeHtml(img.folderPath || 'Gallery')}</span>
-            </div>
+      gridEl.innerHTML = filtered.map(img => `
+        <div class="photo-card" data-img-id="${escapeHtml(img.id)}">
+          <input type="checkbox" class="photo-select-checkbox" data-id="${escapeHtml(img.id)}" ${selectedImageIds.has(img.id) ? 'checked' : ''}>
+          <img src="${escapeHtml(img.urls.thumb)}" alt="${escapeHtml(img.title || img.name || 'Photo')}" loading="lazy">
+          <div class="photo-overlay">
+            <span class="photo-title">${escapeHtml(img.title || img.name || 'Untitled')}</span>
+            <span class="photo-folder">${escapeHtml(img.folderPath || 'Gallery')}</span>
           </div>
-        `;
-      }).join('');
+        </div>
+      `).join('');
 
       gridEl.querySelectorAll('.photo-select-checkbox').forEach(cb => {
         cb.addEventListener('click', (e) => {
           e.stopPropagation();
           const id = cb.getAttribute('data-id');
-          if (cb.checked) selectedImageIds.add(id);
-          else selectedImageIds.delete(id);
+          if (cb.checked) selectedImageIds.add(id); else selectedImageIds.delete(id);
           updateToolbar();
         });
       });
 
       gridEl.querySelectorAll('.photo-card').forEach(card => {
         card.addEventListener('click', () => {
-          const id = card.getAttribute('data-img-id');
-          const img = allImages.find(x => x.id === id);
+          const img = allImages.find(x => x.id === card.getAttribute('data-img-id'));
           if (img) openLightbox(img);
         });
       });
@@ -451,13 +453,15 @@
     }
 
     function openLightbox(img) {
-      lightboxImg.src = img.url;
+      lightboxImg.src = img.urls.view;
       lightboxTitle.textContent = img.title || img.name || '';
       lightbox.classList.add('active');
     }
 
-    lightboxClose.addEventListener('click', () => lightbox.classList.remove('active'));
-    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) lightbox.classList.remove('active'); });
+    const closeLightbox = () => lightbox.classList.remove('active');
+    document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
     downloadBtn.addEventListener('click', async () => {
       if (selectedImageIds.size === 0) return;
@@ -470,10 +474,10 @@
       try {
         for (let i = 0; i < selected.length; i++) {
           const img = selected[i];
-          const response = await fetch(img.url);
-          const blob = await response.blob();
-          const filename = img.name || `photo-${i + 1}.jpg`;
-          zip.file(filename, blob);
+          const response = await fetch(img.urls.original);
+          if (!response.ok) throw new Error(`Could not fetch ${img.name || 'photo'} (${response.status})`);
+          // Index prefix keeps identically named files from overwriting each other.
+          zip.file(`${String(i + 1).padStart(3, '0')}-${img.name || 'photo.jpg'}`, await response.blob());
         }
 
         const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -481,17 +485,14 @@
         a.href = URL.createObjectURL(zipBlob);
         a.download = 'aurora-photos.zip';
         a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
       } catch (err) {
         alert("Failed to download ZIP: " + err.message);
       } finally {
-        downloadBtn.disabled = false;
+        downloadBtn.disabled = selectedImageIds.size === 0;
         downloadBtn.textContent = '📥 Download Selected (ZIP)';
       }
     });
-
-    function escapeHtml(str) { 
-      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
-    }
   </script>
 </body>
 </html>
