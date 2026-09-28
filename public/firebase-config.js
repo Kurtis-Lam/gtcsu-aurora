@@ -1,3 +1,4 @@
+// firebase-config.js
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -10,11 +11,6 @@ export const firebaseConfig = {
   messagingSenderId: "961705164297",
   appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8",
   measurementId: "G-ZWE0Z6VTZK"
-};
-
-export const cloudinaryConfig = {
-  cloudName: "YOUR_CLOUD_NAME",        // <-- replace after step 2 of the guide
-  uploadPreset: "aurora_unsigned"      // <-- replace if you name your preset differently
 };
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
