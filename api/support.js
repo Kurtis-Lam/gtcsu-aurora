@@ -1,7 +1,12 @@
+// GET  /api/support -> { ok, remainingMs }   (cooldown left for this visitor)
+// POST /api/support -> records one anonymous support vote
+//
+// No sign-in needed. Visitors are rate limited by a keyed hash of their IP
+// (the raw IP is never stored). Note: people on the same network (e.g. school
+// Wi-Fi) share one IP and therefore share one 10-minute cooldown.
 import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
-import { guard, bearerToken, hashIp } from './_lib/http.js';
-import { verifySchoolUser } from './_lib/auth.js';
+import { guard, clientIp, hashIp } from './_lib/http.js';
 
 const COOLDOWN_MS = 10 * 60 * 1000;
 
@@ -16,18 +21,8 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   try {
-    const user = await verifySchoolUser(bearerToken(req));
-    if (!user) {
-      return res.status(401).json({
-        ok: false,
-        error: 'Sign in with your school account to support.',
-        code: 'AUTH_REQUIRED'
-      });
-    }
-
     const { db } = getServices();
-    // Keyed hash of the account id: admins see a stable pseudonym, not an email.
-    const supporterRef = db.collection('supporters').doc(`acct_${hashIp(user.uid)}`);
+    const supporterRef = db.collection('supporters').doc(`ip_${hashIp(clientIp(req))}`);
 
     if (req.method === 'GET') {
       const snap = await supporterRef.get();

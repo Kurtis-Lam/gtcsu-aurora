@@ -874,7 +874,7 @@
         <div class="kpi-card">
           <span class="kpi-title">Unique Supporters</span>
           <span class="kpi-value support-value" id="kpi-unique-supporters">0</span>
-          <span class="kpi-subtitle">Distinct signed-in school accounts</span>
+          <span class="kpi-subtitle">Distinct registered voter devices</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-title">Most Recent Support</span>
@@ -886,7 +886,7 @@
       <div class="supporters-table-wrap">
         <div class="supporters-header">
           <div style="display: flex; align-items: center; gap: 16px;">
-            <h3 class="chart-title">Registered Voters (school accounts)</h3>
+            <h3 class="chart-title">Registered Voter Devices</h3>
             <div style="display: flex; align-items: center; gap: 8px;">
               <label for="supporters-sort-select" style="font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600;">Sort By:</label>
               <select id="supporters-sort-select" class="select-input">
@@ -905,7 +905,7 @@
           <thead>
             <tr>
               <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-supporters"></th>
-              <th>Supporter (Hashed Account)</th>
+              <th>Supporter (Hashed IP)</th>
               <th>Votes Cast</th>
               <th>Last Vote</th>
               <th>Cooldown Status</th>
@@ -1156,7 +1156,7 @@
       const modalBody = document.getElementById('detail-modal-body');
       modalBody.innerHTML = `
         <div class="detail-field">
-          <label>Supporter ID (Keyed Hash of School Account)</label>
+          <label>Supporter ID (Keyed Hash of Public IP)</label>
           <span style="color: var(--aurora-teal);">${escapeHtml(info.deviceId || 'N/A')}</span>
         </div>
         <div class="detail-field">

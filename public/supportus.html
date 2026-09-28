@@ -552,7 +552,6 @@
   <script type="module">
     import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { db } from './firebase-config.js';
-    import { AuroraAuth } from './load-components.js';
     import { API_BASE } from './api-config.js';
 
     const COOLDOWN_MS = 10 * 60 * 1000;
@@ -613,19 +612,8 @@
 
     const API_URL = `${API_BASE}/api/support`;
 
-    const extra = {
-      en: { checking: 'Checking your status...' },
-      zh: { checking: '正在檢查你的狀態...' }
-    };
-
     async function callSupport(method) {
-      let token = null;
-      try { token = await AuroraAuth.getIdToken(); } catch(e) {}
-      
-      const headers = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(API_URL, { method, headers });
+      const res = await fetch(API_URL, { method });
       const contentType = res.headers.get('content-type') || '';
       let data = {};
 
@@ -638,18 +626,18 @@
       return { status: res.status, data };
     }
 
-    async function checkStatus() {
-      clearInterval(countdownTimer);
-      btn.disabled = true;
-      btn.textContent = extra[lang()].checking;
-      statusEl.textContent = '';
+    async function init() {
+      onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
+        if (snap.exists()) countEl.textContent = (snap.data().count || 0).toLocaleString();
+      });
+      updateBottomBar();
+
       try {
         const { status, data } = await callSupport('GET');
         if (status === 200 && data.ok) {
           if (data.remainingMs > 0) startCountdown(data.remainingMs); else setReady();
         } else {
-          // Default to ready if status isn't clear
-          setReady();
+          throw new Error(data.error || `Status ${status}`);
         }
       } catch (err) {
         console.error('Support status check failed:', err);
@@ -658,18 +646,8 @@
       }
     }
 
-    // Live total (public read of counters/supportCounter is allowed by the rules).
-    onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
-      if (snap.exists()) countEl.textContent = (snap.data().count || 0).toLocaleString();
-    });
-    updateBottomBar();
-
-    // Check status unconditionally - works for both anonymous and logged in.
-    AuroraAuth.onChange((user) => { checkStatus(); });
-
     btn.addEventListener('click', async () => {
       if (btn.disabled) return;
-      
       btn.disabled = true;
       btn.textContent = '...';
 
@@ -692,6 +670,8 @@
         statusEl.textContent = msgs[lang()].error;
       }
     });
+
+    init();
   </script>
 
   <script>
