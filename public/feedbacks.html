@@ -495,12 +495,25 @@
       }, 350);
     });
 
-    // ---- Form validation (server re-validates) ----
-    const countWords = (str) => (str.trim() ? str.trim().split(/\s+/).length : 0);
+    // ---- Form validation (filters out single-character noise & repetitive spam) ----
+    function countValidWords(str) {
+      if (!str.trim()) return 0;
+      const words = str.trim().split(/\s+/).filter(Boolean);
+      // Only count words that have 2 or more characters (or common 1-char English words)
+      const valid = words.filter(w => w.length >= 2 || /^[aI]$/i.test(w));
+      
+      // Reject repetitive character noise (e.g. "kk k k k k")
+      const unique = new Set(words.map(w => w.toLowerCase()));
+      if (words.length >= 3 && unique.size <= Math.ceil(words.length * 0.35)) {
+        return 0;
+      }
+      
+      return valid.length;
+    }
 
     function validateForm() {
-      const titleWords = countWords(titleInput.value);
-      const descWords = countWords(descInput.value);
+      const titleWords = countValidWords(titleInput.value);
+      const descWords = countValidWords(descInput.value);
       titleCounter.textContent = `${titleWords} / 3 words`;
       titleCounter.classList.toggle('valid', titleWords >= 3);
       descCounter.textContent = `${descWords} / 20 words`;
@@ -512,8 +525,7 @@
 
     // ---- Modal + progress bar ----
     const openModal = (id) => $(id)?.classList.add('active');
-    const closeModal = (id) => $(id)?.classList.remove('active');
-    $('status-action-btn').addEventListener('click', () => closeModal('modal-status'));
+    const closeModal = (id) => $(id)?.classList.remove('active');$('status-action-btn').addEventListener('click', () => closeModal('modal-status'));
 
     function setStatus(title, msg, showOk) {
       $('status-title').textContent = title;
@@ -541,11 +553,9 @@
 
     function completeProgressBar() {
       clearInterval(progressTimer);
-      $('status-progress-bar').style.width = '100%';
-      $('status-time-remaining').textContent = t().done;
+      $('status-progress-bar').style.width = '100\%';$('status-time-remaining').textContent = t().done;
       setTimeout(() => {
-        $('status-progress-container').style.display = 'none';
-        $('status-time-remaining').style.display = 'none';
+        $('status-progress-container').style.display = 'none';$('status-time-remaining').style.display = 'none';
       }, 500);
     }
 
@@ -582,6 +592,23 @@
         });
         const result = await response.json().catch(() => ({}));
         completeProgressBar();
+
+        // Print response details to Developer Console
+        console.log('[Feedback API Response]', {
+          status: response.status,
+          ok: response.ok,
+          payload: result
+        });
+
+        if (result.isSpam) {
+          console.warn('[AI Moderation Verdict] Submission flagged as SPAM/Irrelevant.', 'Reason:', result.reason);
+        } else if (result.ok && result.moderationChecked === false) {
+          console.warn('[AI Moderation Verdict] Saved, but moderation was SKIPPED.', result.moderationError || '(set DEBUG_FEEDBACK=1 on Vercel to see why)');
+        } else if (result.ok) {
+          console.log('[AI Moderation Verdict] Submission passed moderation successfully.');
+        } else {
+          console.error('[Feedback Submission Error]', result);
+        }
 
         if (response.ok && result.isSpam) {
           setStatus(t().spamTitle, t().spamMsg(result.reason), true);
