@@ -272,7 +272,6 @@
     width: 100%;
   }
 
-  /* Slightly larger canvas for the circular (doughnut) chart */
   .chart-canvas-container.donut-container {
     height: 300px;
   }
@@ -292,7 +291,6 @@
     color: #ffffff;
   }
 
-  /* Destination Filter Buttons Bar */
   .destination-filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -338,7 +336,6 @@
     color: #ffffff;
   }
 
-  /* Log Preview List inside chart card */
   .log-preview-card {
     cursor: pointer;
     transition: border-color 0.2s ease;
@@ -852,8 +849,7 @@
               <button class="dest-btn" data-range="90">90 Days</button>
               <button class="dest-btn" data-range="365">1 Year</button>
             </div>
-            <div id="destination-filter-container" class="destination-filter-bar">
-            </div>
+            <div id="destination-filter-container" class="destination-filter-bar"></div>
           </div>
           <div class="chart-canvas-container">
             <canvas id="dailyViewsChart"></canvas>
@@ -867,7 +863,7 @@
       <main id="admin-container" class="admin-grid"></main>
     </div>
 
-    <!-- Supporters View (supportus.html "Support Us" button, Rate-limited) -->
+    <!-- Supporters View -->
     <div id="supporters-section" class="hidden">
       <div class="kpi-grid">
         <div class="kpi-card">
@@ -891,7 +887,6 @@
         <div class="supporters-header">
           <div style="display: flex; align-items: center; gap: 16px;">
             <h3 class="chart-title">Registered Voter Devices</h3>
-            <!-- Top Sorting Dropdown -->
             <div style="display: flex; align-items: center; gap: 8px;">
               <label for="supporters-sort-select" style="font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600;">Sort By:</label>
               <select id="supporters-sort-select" class="select-input">
@@ -924,14 +919,13 @@
       </div>
     </div>
 
-    <!-- Upload Photos View (Cloudinary-backed gallery manager) -->
+    <!-- Upload Photos View -->
     <div id="photos-section" class="hidden">
       <div id="cloudinary-config-warning" class="hidden" style="background:rgba(255,107,107,0.12); border:1px solid rgba(255,107,107,0.4); border-radius:12px; padding:16px 20px; margin-bottom:20px; color:#ffb3b3; font-size:0.9rem;">
-        ⚠️ Cloudinary isn't configured yet. Open <code>firebase-config.js</code> and set <code>cloudinaryConfig.cloudName</code> and <code>cloudinaryConfig.uploadPreset</code> — see the setup guide you were given.
+        ⚠️ Cloudinary environment variables missing. Please set <code>CLOUDINARY_CLOUD_NAME</code> and <code>CLOUDINARY_UPLOAD_PRESET</code> in your Vercel Environment Variables.
       </div>
 
       <div class="photos-manager-grid">
-        <!-- Folder tree -->
         <div class="chart-card" style="min-width:0;">
           <div class="chart-header">
             <h3 class="chart-title">📁 Folders</h3>
@@ -942,7 +936,6 @@
           </div>
         </div>
 
-        <!-- Upload + grid -->
         <div class="chart-card" style="min-width:0;">
           <div class="chart-header">
             <h3 class="chart-title" id="current-folder-title">📂 All Photos</h3>
@@ -981,8 +974,7 @@
               <th>Time Ago</th>
             </tr>
           </thead>
-          <tbody id="logs-table-body">
-          </tbody>
+          <tbody id="logs-table-body"></tbody>
         </table>
       </div>
       <div class="pagination-container">
@@ -995,15 +987,14 @@
     </div>
   </div>
 
-  <!-- Device / Support Log Detail Modal -->
+  <!-- Device Detail Modal -->
   <div id="detail-modal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 550px;">
       <div class="modal-header">
         <h2 class="modal-title" id="detail-modal-title">📱 Full Log & Device Details</h2>
         <button id="close-detail-modal-btn" class="modal-close-btn">&times;</button>
       </div>
-      <div class="modal-body" id="detail-modal-body" style="display: flex; flex-direction: column; gap: 12px;">
-      </div>
+      <div class="modal-body" id="detail-modal-body" style="display: flex; flex-direction: column; gap: 12px;"></div>
     </div>
   </div>
 
@@ -1017,8 +1008,6 @@
       getDoc,
       getDocs,
       addDoc,
-      query,
-      where,
       writeBatch,
       arrayUnion,
       serverTimestamp
@@ -1028,19 +1017,36 @@
       signOut,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { db, auth, googleProvider, cloudinaryConfig } from './firebase-config.js';
+    import { db, auth, googleProvider, cloudinaryConfig as localCloudinaryConfig } from './firebase-config.js';
+
+    // Global Cloudinary state, initialized dynamically from Vercel env vars
+    let activeCloudinaryConfig = {
+      cloudName: localCloudinaryConfig?.cloudName || '',
+      uploadPreset: localCloudinaryConfig?.uploadPreset || ''
+    };
+
+    // Dynamically fetch Vercel environment variables from Vercel API endpoint
+    async function loadVercelEnvConfig() {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.cloudName) activeCloudinaryConfig.cloudName = data.cloudName;
+          if (data.uploadPreset) activeCloudinaryConfig.uploadPreset = data.uploadPreset;
+        }
+      } catch (err) {
+        console.warn("Could not fetch /api/config, falling back to firebase-config.js:", err);
+      }
+      cloudinaryReady();
+    }
+    loadVercelEnvConfig();
 
     const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000;
-
     let currentUser = null;
     let pageViewsChartInstance = null;
     let timeSpentChartInstance = null;
     let dailyViewsChartInstance = null;
 
-    // Base colors for the pages we know about; anything else we discover in
-    // Firestore (a new page someone adds later) gets a color auto-assigned
-    // from FALLBACK_PALETTE so it still shows up correctly without any code
-    // changes here — this is what makes destination-detection "automatic".
     const routeColors = {
       'all': '#2fe6b8',
       '/admin': '#ffffff',
@@ -1052,12 +1058,13 @@
       '/schedule': '#0914e6',
       '/financial': '#00b4d8',
       '/feedbacks': '#2ecc71',
-      '/supportus': '#009635'
+      '/supportus': '#009635',
+      '/photos': '#00b4d8'
     };
     const FALLBACK_PALETTE = ['#f77f00', '#06d6a0', '#ef476f', '#118ab2', '#ffd166', '#8338ec', '#3a86ff', '#fb5607'];
+    
     function colorForRoute(route) {
       if (routeColors[route]) return routeColors[route];
-      // Deterministic hash so the same unknown route always gets the same color
       let hash = 0;
       for (let i = 0; i < route.length; i++) hash = (hash * 31 + route.charCodeAt(i)) >>> 0;
       const color = FALLBACK_PALETTE[hash % FALLBACK_PALETTE.length];
@@ -1067,8 +1074,7 @@
 
     let dailyCountsByRoute = {};
     let activeDestinationFilter = 'all';
-    let activeDateRangeDays = 7; // 7 | 30 | 90 | 365, controlled by the range selector
-
+    let activeDateRangeDays = 7;
     let allActivityLogs = [];
     let currentPage = 1;
     const LOGS_PER_PAGE = 20;
@@ -1082,13 +1088,8 @@
       if (!date || isNaN(date.getTime())) return "N/A";
       return date.toLocaleString("en-GB", {
         timeZone: "Asia/Hong_Kong",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
       }) + " (HKT)";
     }
 
@@ -1100,16 +1101,12 @@
       if (!date || isNaN(date.getTime())) return "N/A";
       const now = new Date();
       const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
-
       if (diffSec < 0) return "just now";
       if (diffSec < 60) return `${diffSec}s ago`;
-      
       const diffMin = Math.floor(diffSec / 60);
       if (diffMin < 60) return `${diffMin}m ago`;
-
       const diffHour = Math.floor(diffMin / 60);
       if (diffHour < 24) return `${diffHour}h ago`;
-
       const diffDay = Math.floor(diffHour / 24);
       return `${diffDay}d ago`;
     }
@@ -1171,26 +1168,13 @@
       renderLogsModal();
     });
 
-    closeModalBtn.addEventListener('click', () => {
-      logsModal.classList.add('hidden');
-    });
-
-    logsModal.addEventListener('click', (e) => {
-      if (e.target === logsModal) {
-        logsModal.classList.add('hidden');
-      }
-    });
+    closeModalBtn.addEventListener('click', () => logsModal.classList.add('hidden'));
+    logsModal.addEventListener('click', (e) => { if (e.target === logsModal) logsModal.classList.add('hidden'); });
 
     const detailModal = document.getElementById('detail-modal');
     const closeDetailModalBtn = document.getElementById('close-detail-modal-btn');
-
-    closeDetailModalBtn.addEventListener('click', () => {
-      detailModal.classList.add('hidden');
-    });
-
-    detailModal.addEventListener('click', (e) => {
-      if (e.target === detailModal) detailModal.classList.add('hidden');
-    });
+    closeDetailModalBtn.addEventListener('click', () => detailModal.classList.add('hidden'));
+    detailModal.addEventListener('click', (e) => { if (e.target === detailModal) detailModal.classList.add('hidden'); });
 
     function showLogDetailsModal(info) {
       const modalBody = document.getElementById('detail-modal-body');
@@ -1220,19 +1204,10 @@
       detailModal.classList.remove('hidden');
     }
 
-    prevPageBtn.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        renderLogsModal();
-      }
-    });
-
+    prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderLogsModal(); } });
     nextPageBtn.addEventListener('click', () => {
       const maxPages = Math.ceil(allActivityLogs.length / LOGS_PER_PAGE) || 1;
-      if (currentPage < maxPages) {
-        currentPage++;
-        renderLogsModal();
-      }
+      if (currentPage < maxPages) { currentPage++; renderLogsModal(); }
     });
 
     const ADMIN_EMAILS = ["kurtislam100@gmail.com", "xtshh524@gmail.com", "namwingso@gmail.com"];
@@ -1267,15 +1242,11 @@
     });
 
     document.getElementById('google-login-btn').addEventListener('click', async () => {
-      try {
-        await signInWithPopup(auth, googleProvider);
-      } catch (err) {
-        alert("Google Sign-In failed: " + err.message);
-      }
+      try { await signInWithPopup(auth, googleProvider); } catch (err) { alert("Google Sign-In failed: " + err.message); }
     });
 
     document.getElementById('signout-btn').addEventListener('click', () => signOut(auth));
-    
+
     const MAX_RANGE_DAYS = 365;
 
     function loadAnalyticsData() {
@@ -1283,8 +1254,6 @@
         let totalViews = 0;
         let totalTimeSeconds = 0;
 
-        // --- 1. Auto-detect every distinct destination that has ever been
-        //        logged, instead of a hardcoded list. New pages just show up.
         const discoveredRoutes = new Set();
         querySnapshot.forEach(docSnap => {
           let path = (docSnap.data().path || '/').toLowerCase().replace(/\.html$/, '');
@@ -1293,16 +1262,11 @@
         });
         const validRoutes = Array.from(discoveredRoutes);
         const metricRoutes = validRoutes.filter(r => r !== '/admin');
-        metricRoutes.forEach(colorForRoute); // pre-assign colors
+        metricRoutes.forEach(colorForRoute);
 
         const pageMetrics = {};
-        metricRoutes.forEach(route => {
-          pageMetrics[route] = { views: 0, totalTime: 0 };
-        });
+        metricRoutes.forEach(route => { pageMetrics[route] = { views: 0, totalTime: 0 }; });
 
-        // --- 2. Build a full year of daily buckets up-front so the range
-        //        selector (7/30/90/365 days) can just slice this, with no
-        //        need to re-query Firestore when the person changes range.
         dailyCountsByRoute = { 'all': {} };
         metricRoutes.forEach(route => dailyCountsByRoute[route] = {});
 
@@ -1318,76 +1282,41 @@
 
         querySnapshot.forEach(docSnap => {
           const data = docSnap.data();
-          
           let path = (data.path || '/').toLowerCase().replace(/\.html$/, '');
           if (path === '/index' || path === '') path = '/';
-
           if (!validRoutes.includes(path)) return;
 
           const duration = Number(data.durationSeconds) || 0;
-
-          let openDate = null;
-          if (data.openedAt?.toDate) openDate = data.openedAt.toDate();
-          else if (data.timestamp?.toDate) openDate = data.timestamp.toDate();
-          else if (data.openedAt) openDate = new Date(data.openedAt);
-          else if (data.timestamp) openDate = new Date(data.timestamp);
-
-          let closeDate = null;
-          if (data.closedAt?.toDate) {
-            closeDate = data.closedAt.toDate();
-          } else if (data.closedAt) {
-            closeDate = new Date(data.closedAt);
-          }
-
+          let openDate = data.openedAt?.toDate ? data.openedAt.toDate() : (data.timestamp?.toDate ? data.timestamp.toDate() : (data.openedAt ? new Date(data.openedAt) : null));
+          let closeDate = data.closedAt?.toDate ? data.closedAt.toDate() : (data.closedAt ? new Date(data.closedAt) : null);
           let dateStr = openDate ? getHKTDateString(openDate) : data.dateStr;
-          if (!dateStr && openDate) {
-            dateStr = getHKTDateString(openDate);
-          }
 
           const userLabel = data.userEmail || data.userName || null;
 
           if (path !== '/admin') {
             totalViews++;
             totalTimeSeconds += duration;
-
             if (pageMetrics[path]) {
               pageMetrics[path].views++;
               pageMetrics[path].totalTime += duration;
             }
-
             if (dailyCountsByRoute['all'].hasOwnProperty(dateStr)) {
               dailyCountsByRoute['all'][dateStr]++;
-              if (dailyCountsByRoute[path]) {
-                dailyCountsByRoute[path][dateStr]++;
-              }
+              if (dailyCountsByRoute[path]) dailyCountsByRoute[path][dateStr]++;
             }
           }
 
           if (openDate && !isNaN(openDate.getTime())) {
-            allActivityLogs.push({
-              path: path,
-              event: 'Opened',
-              date: openDate,
-              timestamp: openDate.getTime(),
-              user: userLabel
-            });
+            allActivityLogs.push({ path, event: 'Opened', date: openDate, timestamp: openDate.getTime(), user: userLabel });
           }
-
           if (closeDate && !isNaN(closeDate.getTime())) {
-            allActivityLogs.push({
-              path: path,
-              event: 'Closed',
-              date: closeDate,
-              timestamp: closeDate.getTime(),
-              user: userLabel
-            });
+            allActivityLogs.push({ path, event: 'Closed', date: closeDate, timestamp: closeDate.getTime(), user: userLabel });
           }
         });
 
         allActivityLogs.sort((a, b) => b.timestamp - a.timestamp);
 
         document.getElementById('kpi-total-views').textContent = totalViews.toLocaleString();
-        
         const hours = Math.floor(totalTimeSeconds / 3600);
         const mins = Math.floor((totalTimeSeconds % 3600) / 60);
         document.getElementById('kpi-total-time').textContent = `${hours}h ${mins}m`;
@@ -1398,10 +1327,7 @@
         let topPage = 'None';
         let maxViews = 0;
         Object.keys(pageMetrics).forEach(p => {
-          if (pageMetrics[p].views > maxViews) {
-            maxViews = pageMetrics[p].views;
-            topPage = p;
-          }
+          if (pageMetrics[p].views > maxViews) { maxViews = pageMetrics[p].views; topPage = p; }
         });
         document.getElementById('kpi-top-page').textContent = maxViews > 0 ? topPage : 'None';
 
@@ -1409,11 +1335,9 @@
         renderCharts(pageMetrics);
         renderLogPreview();
 
-      }, (err) => {
-        console.error("Error subscribing to real-time pageviews:", err);
-      });
+      }, (err) => console.error("Error subscribing to pageviews:", err));
     }
-    
+
     document.querySelectorAll('#range-filter-container .dest-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         activeDateRangeDays = parseInt(e.currentTarget.getAttribute('data-range'), 10);
@@ -1426,20 +1350,17 @@
     function renderDestinationFilterButtons(validRoutes) {
       const container = document.getElementById('destination-filter-container');
       const routes = ['all', ...validRoutes];
-
       let html = '';
       routes.forEach(route => {
         const isActive = route === activeDestinationFilter ? 'active' : '';
         const label = route === 'all' ? 'All Destinations' : route;
         html += `<button class="dest-btn ${isActive}" data-dest="${route}">${label}</button>`;
       });
-
       container.innerHTML = html;
 
       container.querySelectorAll('.dest-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const dest = e.target.getAttribute('data-dest');
-          activeDestinationFilter = dest;
+          activeDestinationFilter = e.target.getAttribute('data-dest');
           container.querySelectorAll('.dest-btn').forEach(b => b.classList.remove('active'));
           e.target.classList.add('active');
           updateDailyViewsChart();
@@ -1453,16 +1374,13 @@
         container.innerHTML = `<p style="text-align:center; color:rgba(223,246,242,0.5); padding: 20px;">No page activity recorded yet.</p>`;
         return;
       }
-
       const previewLogs = allActivityLogs.slice(0, 5);
       let html = '';
-
       previewLogs.forEach(log => {
         const pColor = colorForRoute(log.path);
         const isOpened = log.event === 'Opened';
         const relativeAgo = getRelativeTimeAgo(log.date);
         const userInfo = log.user ? `<span class="log-user-tag" title="${escapeHtml(log.user)}">👤 ${escapeHtml(log.user)}</span>` : '';
-
         html += `
           <div class="log-item" style="border-left-color: ${pColor};">
             <div class="log-item-left">
@@ -1477,23 +1395,20 @@
           </div>
         `;
       });
-
       container.innerHTML = html;
     }
 
     function renderLogsModal() {
       const tbody = document.getElementById('logs-table-body');
       const pageInfo = document.getElementById('pagination-info');
-      
       const totalLogs = allActivityLogs.length;
       const totalPages = Math.ceil(totalLogs / LOGS_PER_PAGE) || 1;
-      
+
       if (currentPage > totalPages) currentPage = totalPages;
       if (currentPage < 1) currentPage = 1;
 
       const startIndex = (currentPage - 1) * LOGS_PER_PAGE;
-      const endIndex = Math.min(startIndex + LOGS_PER_PAGE, totalLogs);
-      const pageLogs = allActivityLogs.slice(startIndex, endIndex);
+      const pageLogs = allActivityLogs.slice(startIndex, startIndex + LOGS_PER_PAGE);
 
       if (!pageLogs.length) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No logs available</td></tr>`;
@@ -1505,15 +1420,10 @@
           const userText = log.user 
             ? `<span style="color: var(--aurora-cyan); font-weight: 600;">👤 ${escapeHtml(log.user)}</span>` 
             : `<span style="color: rgba(223,246,242,0.4);">Visitor (Anonymous)</span>`;
-          
           rows += `
             <tr>
-              <td>
-                <span class="page-pill" style="background-color: ${pColor};">${escapeHtml(log.path)}</span>
-              </td>
-              <td>
-                <span class="event-tag ${isOpened ? 'opened' : 'closed'}">${log.event.toUpperCase()}</span>
-              </td>
+              <td><span class="page-pill" style="background-color: ${pColor};">${escapeHtml(log.path)}</span></td>
+              <td><span class="event-tag ${isOpened ? 'opened' : 'closed'}">${log.event.toUpperCase()}</span></td>
               <td>${userText}</td>
               <td style="font-family: monospace;">${formatHKTTime(log.date)}</td>
               <td><strong style="color: var(--aurora-cyan);">${getRelativeTimeAgo(log.date)}</strong></td>
@@ -1522,7 +1432,6 @@
         });
         tbody.innerHTML = rows;
       }
-
       pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${totalLogs} logs total)`;
       prevPageBtn.disabled = currentPage <= 1;
       nextPageBtn.disabled = currentPage >= totalPages;
@@ -1538,18 +1447,8 @@
         const ctxViews = document.getElementById('viewsByPageChart').getContext('2d');
         pageViewsChartInstance = new Chart(ctxViews, {
           type: 'doughnut',
-          data: {
-            labels: labels,
-            datasets: [{
-              data: viewsData,
-              backgroundColor: chartColors
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#dff6f2' } } }
-          }
+          data: { labels: labels, datasets: [{ data: viewsData, backgroundColor: chartColors }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#dff6f2' } } } }
         });
       } else {
         pageViewsChartInstance.data.labels = labels;
@@ -1564,21 +1463,11 @@
           type: 'bar',
           data: {
             labels: labels,
-            datasets: [{
-              label: 'Avg Time (s)',
-              data: avgTimeData,
-              backgroundColor: chartColors,
-              borderColor: chartColors,
-              borderWidth: 1
-            }]
+            datasets: [{ label: 'Avg Time (s)', data: avgTimeData, backgroundColor: chartColors, borderColor: chartColors, borderWidth: 1 }]
           },
           options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: { ticks: { color: '#dff6f2' } },
-              y: { ticks: { color: '#dff6f2' }, grid: { color: 'rgba(127, 233, 240, 0.1)' } }
-            },
+            responsive: true, maintainAspectRatio: false,
+            scales: { x: { ticks: { color: '#dff6f2' } }, y: { ticks: { color: '#dff6f2' }, grid: { color: 'rgba(127, 233, 240, 0.1)' } } },
             plugins: { legend: { labels: { color: '#dff6f2' } } }
           }
         });
@@ -1610,7 +1499,6 @@
       const titleEl = document.getElementById('daily-chart-title');
       if (titleEl) titleEl.textContent = `Daily Visitor Views (${RANGE_LABELS[activeDateRangeDays] || 'Last 7 Days'} - HKT)`;
 
-      // For longer ranges, thin out x-axis labels so the chart stays legible
       const pointRadius = activeDateRangeDays > 90 ? 0 : (activeDateRangeDays > 30 ? 1 : 3);
 
       if (!dailyViewsChartInstance) {
@@ -1619,33 +1507,16 @@
           type: 'line',
           data: {
             labels: dailyLabels,
-            datasets: [{
-              label: label,
-              data: dailyData,
-              fill: true,
-              backgroundColor: fillColor,
-              borderColor: lineColor,
-              tension: 0.3,
-              pointRadius: pointRadius,
-              pointHitRadius: 30
-            }]
+            datasets: [{ label, data: dailyData, fill: true, backgroundColor: fillColor, borderColor: lineColor, tension: 0.3, pointRadius, pointHitRadius: 30 }]
           },
           options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             scales: {
               x: { ticks: { color: '#dff6f2', maxTicksLimit: 12, autoSkip: true } },
-              y: { 
-                ticks: { color: '#dff6f2', precision: 0 }, 
-                grid: { color: 'rgba(127, 233, 240, 0.1)' },
-                beginAtZero: true 
-              }
+              y: { ticks: { color: '#dff6f2', precision: 0 }, grid: { color: 'rgba(127, 233, 240, 0.1)' }, beginAtZero: true }
             },
-            plugins: {
-              legend: { labels: { color: '#dff6f2' } },
-              tooltip: { mode: 'index', intersect: false }
-            }
+            plugins: { legend: { labels: { color: '#dff6f2' } }, tooltip: { mode: 'index', intersect: false } }
           }
         });
       } else {
@@ -1665,16 +1536,13 @@
 
       try {
         const querySnapshot = await getDocs(collection(db, "feedbacks"));
-        
         if (querySnapshot.empty) {
           container.innerHTML = `<p style="text-align:center; color:rgba(223,246,242,0.5); padding: 40px;">No incoming feedbacks found.</p>`;
           return;
         }
 
         const items = [];
-        querySnapshot.forEach((docSnap) => {
-          items.push({ id: docSnap.id, ...docSnap.data() });
-        });
+        querySnapshot.forEach((docSnap) => items.push({ id: docSnap.id, ...docSnap.data() }));
 
         items.sort((a, b) => {
           const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
@@ -1692,14 +1560,8 @@
 
           let approvalsList = Array.isArray(item.approvals) ? [...item.approvals] : [];
           if (approvalsList.length === 0 && item.approvedBy) {
-            approvalsList.push({
-              name: item.approvedBy,
-              email: '',
-              timeHKT: item.approvedAtHKT || 'N/A',
-              timestamp: 0
-            });
+            approvalsList.push({ name: item.approvedBy, email: '', timeHKT: item.approvedAtHKT || 'N/A', timestamp: 0 });
           }
-
           approvalsList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
           const hasUserApproved = currentUser && approvalsList.some(app => 
@@ -1707,18 +1569,10 @@
             (app.name && app.name === (currentUser.displayName || currentUser.email))
           );
 
-          let logsHtml = '';
-          if (approvalsList.length > 0) {
-            logsHtml = `
-              <div class="logs-container">
-                ${approvalsList.map(app => `
-                  <div class="log-banner">
-                    ✓ Approved by <strong>${escapeHtml(app.name)}</strong> on ${escapeHtml(app.timeHKT)}
-                  </div>
-                `).join('')}
-              </div>
-            `;
-          }
+          let logsHtml = approvalsList.length > 0 ? `
+            <div class="logs-container">
+              ${approvalsList.map(app => `<div class="log-banner">✓ Approved by <strong>${escapeHtml(app.name)}</strong> on${escapeHtml(app.timeHKT)}</div>`).join('')}
+            </div>` : '';
 
           html += `
             <div class="card">
@@ -1726,19 +1580,15 @@
                 <span>Doc ID: ${id} &nbsp;|&nbsp; Submitted: <strong>${submittedTime}</strong> &nbsp;|&nbsp; From: ${identityHtml}</span>
                 <span class="badge ${item.status}">${item.status.toUpperCase()}</span>
               </div>
-
               ${logsHtml}
-
               <div class="field-group">
                 <span class="field-label">Edit User Title</span>
                 <input type="text" class="input-text" id="title-${id}" value="${escapeHtml(item.title)}">
               </div>
-
               <div class="field-group">
                 <span class="field-label">Edit User Description</span>
                 <textarea class="input-textarea" id="desc-${id}">${escapeHtml(item.description)}</textarea>
               </div>
-
               <div class="actions">
                 <button class="btn btn-spam" data-action="spam" data-id="${id}">Mark Spam</button>
                 <button class="btn btn-delete" data-action="delete" data-id="${id}">Delete</button>
@@ -1751,7 +1601,6 @@
         });
 
         container.innerHTML = html;
-
         container.querySelectorAll('button[data-action]').forEach(btn => {
           btn.addEventListener('click', (e) => {
             const action = e.target.getAttribute('data-action');
@@ -1761,20 +1610,16 @@
             if (action === 'delete') deleteItem(id);
           });
         });
-
       } catch (err) {
-        console.error("Error loading feedbacks:", err);
         container.innerHTML = `<p style="text-align:center; color:var(--aurora-red); padding: 40px;">Failed to load feedbacks: ${err.message}</p>`;
       }
     }
 
     async function publishItem(id) {
       if (!currentUser) return;
-
       const docRef = doc(db, "feedbacks", id);
       const title = document.getElementById(`title-${id}`).value;
       const description = document.getElementById(`desc-${id}`).value;
-      
       const moderatorName = currentUser.displayName || currentUser.email;
       const hktTime = getHKTTimeString();
 
@@ -1788,45 +1633,27 @@
             (app.name && app.name === moderatorName)
           ) || (data.approvedBy === moderatorName);
 
-          if (alreadyApproved) {
-            alert("You have already approved this feedback.");
-            return;
-          }
+          if (alreadyApproved) { alert("You have already approved this feedback."); return; }
         }
 
-        const newApprovalRecord = {
-          name: moderatorName,
-          email: currentUser.email,
-          timeHKT: hktTime,
-          timestamp: Date.now()
-        };
+        const newApprovalRecord = { name: moderatorName, email: currentUser.email, timeHKT: hktTime, timestamp: Date.now() };
 
         await updateDoc(docRef, {
-          title: title,
-          description: description,
-          status: 'approved',
+          title, description, status: 'approved',
           approvals: arrayUnion(newApprovalRecord),
-          approvedBy: moderatorName,
-          approvedAtHKT: hktTime,
+          approvedBy: moderatorName, approvedAtHKT: hktTime,
           moderatedAt: serverTimestamp()
         });
 
         loadAdminFeedbacks();
-      } catch (err) {
-        alert("Failed to approve feedback: " + err.message);
-      }
+      } catch (err) { alert("Failed to approve feedback: " + err.message); }
     }
 
     async function markSpam(id) {
       try {
-        await updateDoc(doc(db, "feedbacks", id), {
-          status: 'spam',
-          moderatedAt: serverTimestamp()
-        });
+        await updateDoc(doc(db, "feedbacks", id), { status: 'spam', moderatedAt: serverTimestamp() });
         loadAdminFeedbacks();
-      } catch (err) {
-        alert("Failed to mark spam: " + err.message);
-      }
+      } catch (err) { alert("Failed to mark spam: " + err.message); }
     }
 
     async function deleteItem(id) {
@@ -1834,9 +1661,7 @@
       try {
         await deleteDoc(doc(db, "feedbacks", id));
         loadAdminFeedbacks();
-      } catch (err) {
-        alert("Failed to delete feedback: " + err.message);
-      }
+      } catch (err) { alert("Failed to delete feedback: " + err.message); }
     }
 
     function escapeHtml(str) { 
@@ -1859,20 +1684,16 @@
       supportersUnsubCounter = onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
         const total = snap.exists() ? (snap.data().count || 0) : 0;
         document.getElementById('kpi-total-supports').textContent = total.toLocaleString();
-      }, (err) => console.error("Error subscribing to support counter:", err));
+      });
 
       supportersUnsubList = onSnapshot(collection(db, "supporters"), (querySnapshot) => {
         latestSupporterDocs = [];
-        querySnapshot.forEach((docSnap) => {
-          latestSupporterDocs.push({ id: docSnap.id, ...docSnap.data() });
-        });
+        querySnapshot.forEach((docSnap) => latestSupporterDocs.push({ id: docSnap.id, ...docSnap.data() }));
         renderSupportersTable();
-      }, (err) => console.error("Error subscribing to supporters:", err));
+      });
     }
 
-    function tsToMillis(ts) {
-      return ts && ts.toMillis ? ts.toMillis() : 0;
-    }
+    function tsToMillis(ts) { return ts && ts.toMillis ? ts.toMillis() : 0; }
 
     function renderSupportersTable() {
       const tbody = document.getElementById('supporters-table-body');
@@ -1881,35 +1702,26 @@
       if (!latestSupporterDocs.length) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
         document.getElementById('kpi-last-support').textContent = 'None yet';
-        const selectAll = document.getElementById('select-all-supporters');
-        if (selectAll) selectAll.checked = false;
         return;
       }
 
       const sorted = [...latestSupporterDocs].sort((a, b) => {
         const lastA = tsToMillis(a.lastClickAt);
         const lastB = tsToMillis(b.lastClickAt);
-        const clicksA = a.clicks || 0;
-        const clicksB = b.clicks || 0;
-
         const isCooldownA = lastA ? (SUPPORT_COOLDOWN_MS - (Date.now() - lastA)) > 0 : false;
         const isCooldownB = lastB ? (SUPPORT_COOLDOWN_MS - (Date.now() - lastB)) > 0 : false;
 
-        if (currentSortMode === 'votes') {
-          return clicksB - clicksA || lastB - lastA;
-        } else if (currentSortMode === 'cooldown') {
+        if (currentSortMode === 'votes') return (b.clicks || 0) - (a.clicks || 0) || lastB - lastA;
+        if (currentSortMode === 'cooldown') {
           if (isCooldownA !== isCooldownB) return isCooldownA ? -1 : 1;
           return lastB - lastA;
-        } else {
-          return lastB - lastA;
         }
+        return lastB - lastA;
       });
 
       const mostRecent = [...latestSupporterDocs].sort((a, b) => tsToMillis(b.lastClickAt) - tsToMillis(a.lastClickAt))[0];
       const mostRecentMillis = mostRecent ? tsToMillis(mostRecent.lastClickAt) : 0;
-      document.getElementById('kpi-last-support').textContent = mostRecentMillis
-        ? getRelativeTimeAgo(new Date(mostRecentMillis))
-        : 'None yet';
+      document.getElementById('kpi-last-support').textContent = mostRecentMillis ? getRelativeTimeAgo(new Date(mostRecentMillis)) : 'None yet';
 
       let rows = '';
       sorted.forEach((s) => {
@@ -1917,9 +1729,7 @@
         const lastClickDate = lastClickMillis ? new Date(lastClickMillis) : null;
         const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
         const isCooldown = remainingMs > 0;
-        const cooldownLabel = isCooldown
-          ? `<span class="event-tag closed">On cooldown</span>`
-          : `<span class="event-tag opened">Ready</span>`;
+        const cooldownLabel = isCooldown ? `<span class="event-tag closed">On cooldown</span>` : `<span class="event-tag opened">Ready</span>`;
 
         rows += `
           <tr class="clickable-row" data-id="${s.id}">
@@ -1947,18 +1757,16 @@
           const docId = row.getAttribute('data-id');
           const s = sorted.find(item => item.id === docId);
           if (!s) return;
-
           const lastClickMillis = tsToMillis(s.lastClickAt);
           const lastClickDate = lastClickMillis ? new Date(lastClickMillis) : null;
           const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
-          const isCooldown = remainingMs > 0;
 
           showLogDetailsModal({
             deviceId: s.id,
             clicks: s.clicks || 0,
             timeStr: lastClickDate ? formatHKTTime(lastClickDate) : 'N/A',
             timeAgo: lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A',
-            cooldownHtml: isCooldown ? `<span class="event-tag closed">On cooldown</span>` : `<span class="event-tag opened">Ready</span>`,
+            cooldownHtml: remainingMs > 0 ? `<span class="event-tag closed">On cooldown</span>` : `<span class="event-tag opened">Ready</span>`,
             note: s.note
           });
         });
@@ -1970,96 +1778,65 @@
           const input = tbody.querySelector(`.supporter-note-input[data-id="${id}"]`);
           const note = input ? input.value.trim() : '';
           try {
-            await updateDoc(doc(db, "supporters", id), { note: note });
+            await updateDoc(doc(db, "supporters", id), { note });
             alert("Note saved successfully!");
-          } catch (err) {
-            alert("Failed to save note: " + err.message);
-          }
+          } catch (err) { alert("Failed to save note: " + err.message); }
         });
       });
     }
 
     document.getElementById('select-all-supporters')?.addEventListener('change', (e) => {
-      const checkboxes = document.querySelectorAll('.supporter-checkbox');
-      checkboxes.forEach(cb => cb.checked = e.target.checked);
+      document.querySelectorAll('.supporter-checkbox').forEach(cb => cb.checked = e.target.checked);
     });
 
     document.getElementById('delete-selected-votes-btn')?.addEventListener('click', async () => {
       if (!currentUser) return;
       const checkedBoxes = Array.from(document.querySelectorAll('.supporter-checkbox:checked'));
-      if (checkedBoxes.length === 0) {
-        alert("Please select at least one supporter to delete.");
-        return;
-      }
-
-      if (!confirm(`Are you sure you want to delete ${checkedBoxes.length} selected supporter record(s)? This will adjust the vote count accordingly.`)) return;
+      if (checkedBoxes.length === 0) { alert("Please select at least one supporter to delete."); return; }
+      if (!confirm(`Are you sure you want to delete ${checkedBoxes.length} selected record(s)?`)) return;
 
       try {
         let totalClicksToRemove = 0;
         const batch = writeBatch(db);
-
         checkedBoxes.forEach(cb => {
-          const clicks = parseInt(cb.getAttribute('data-clicks') || '0', 10);
-          totalClicksToRemove += clicks;
+          totalClicksToRemove += parseInt(cb.getAttribute('data-clicks') || '0', 10);
           batch.delete(doc(db, "supporters", cb.value));
         });
 
         const counterRef = doc(db, "counters", "supportCounter");
         const counterSnap = await getDoc(counterRef);
         const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
-        const updatedCount = Math.max(0, currentCount - totalClicksToRemove);
-
-        batch.set(counterRef, { count: updatedCount }, { merge: true });
+        batch.set(counterRef, { count: Math.max(0, currentCount - totalClicksToRemove) }, { merge: true });
 
         await batch.commit();
-        alert(`Successfully deleted ${checkedBoxes.length} supporter record(s) and adjusted total vote count by -${totalClicksToRemove}.`);
-        
-        const selectAll = document.getElementById('select-all-supporters');
-        if (selectAll) selectAll.checked = false;
-      } catch (err) {
-        alert("Failed to delete selected votes: " + err.message);
-      }
+        alert("Selected records deleted.");
+      } catch (err) { alert("Failed to delete votes: " + err.message); }
     });
 
     document.getElementById('reset-votes-btn').addEventListener('click', async () => {
       if (!currentUser) return;
-      if (!confirm("Are you sure you want to delete all vote records and supporter entries? This cannot be undone.")) return;
-
-      const input = prompt("Reset complete. Enter the new starting number for the total vote counter:", "0");
+      if (!confirm("Are you sure you want to delete all vote records and reset counters?")) return;
+      const input = prompt("Enter starting count:", "0");
       if (input === null) return;
-
       const newCount = parseInt(input, 10);
-      if (isNaN(newCount) || newCount < 0) {
-        alert("Please enter a valid, non-negative number.");
-        return;
-      }
+      if (isNaN(newCount) || newCount < 0) return;
 
       try {
         const querySnapshot = await getDocs(collection(db, "supporters"));
         const batch = writeBatch(db);
-
         querySnapshot.forEach((docSnap) => batch.delete(docSnap.ref));
         batch.set(doc(db, "counters", "supportCounter"), { count: newCount });
-
         await batch.commit();
-        alert(`All supporter records have been reset, and the total vote counter now starts at ${newCount.toLocaleString()}.`);
-      } catch (err) {
-        alert("Failed to reset votes: " + err.message);
-      }
+        alert("All votes reset successfully.");
+      } catch (err) { alert("Failed to reset votes: " + err.message); }
     });
 
     /* =========================================================================
-       UPLOAD PHOTOS TAB — Cloudinary (unsigned upload) + Firestore metadata
-       Firestore holds two collections:
-         galleryFolders: { name, parentId, path, createdAt }
-         galleryImages:  { folderId, folderPath, url, publicId, name, title, createdAt }
-       Cloudinary just stores/serves the actual image bytes — no Firebase
-       Storage billing needed. See the setup guide for how to get your
-       cloud name + create the unsigned upload preset.
+       UPLOAD PHOTOS TAB — Cloudinary (using Vercel Env Vars) + Firestore
        ========================================================================= */
-    let allFolders = [];      // [{id, name, parentId, path}]
-    let allImages = [];       // [{id, folderId, folderPath, url, name, title}]
-    let selectedFolderId = null; // null = "All Photos" (root view)
+    let allFolders = [];
+    let allImages = [];
+    let selectedFolderId = null;
 
     const folderTreeEl = document.getElementById('folder-tree');
     const photosGridAdminEl = document.getElementById('photos-grid-admin');
@@ -2072,7 +1849,7 @@
     const cloudinaryWarningEl = document.getElementById('cloudinary-config-warning');
 
     function cloudinaryReady() {
-      const ok = cloudinaryConfig.cloudName && cloudinaryConfig.cloudName !== 'YOUR_CLOUD_NAME';
+      const ok = Boolean(activeCloudinaryConfig.cloudName && activeCloudinaryConfig.uploadPreset);
       cloudinaryWarningEl.classList.toggle('hidden', ok);
       return ok;
     }
@@ -2109,7 +1886,7 @@
           return `
             <div class="folder-node ${isActive ? 'active' : ''}" data-folder-id="${folder.id}" style="padding-left:${12 + depth * 16}px;">
               📁 ${escapeHtml(folder.name)}
-              <button class="folder-delete-btn" data-folder-id="${folder.id}" title="Delete folder (images inside are NOT deleted)">✕</button>
+              <button class="folder-delete-btn" data-folder-id="${folder.id}" title="Delete folder">✕</button>
             </div>
             ${kids}
           `;
@@ -2131,9 +1908,8 @@
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const fid = btn.getAttribute('data-folder-id');
-          const hasChildren = childrenOf(fid).length > 0;
-          if (hasChildren) { alert('Delete or move subfolders out of this folder first.'); return; }
-          if (!confirm('Delete this folder? (Photos inside stay in the database but lose their folder label — delete them separately if needed.)')) return;
+          if (childrenOf(fid).length > 0) { alert('Delete subfolders first.'); return; }
+          if (!confirm('Delete folder?')) return;
           await deleteDoc(doc(db, "galleryFolders", fid));
           if (selectedFolderId === fid) selectedFolderId = null;
           await loadPhotosTabData();
@@ -2173,33 +1949,35 @@
         : allImages.filter(img => img.folderId === selectedFolderId);
 
       if (imgs.length === 0) {
-        photosGridAdminEl.innerHTML = '<p style="color:rgba(223,246,242,0.5); padding:20px;">No photos in this folder yet — upload some above.</p>';
+        photosGridAdminEl.innerHTML = '<p style="color:rgba(223,246,242,0.5); padding:20px;">No photos in this folder yet.</p>';
         return;
       }
 
       photosGridAdminEl.innerHTML = imgs.map(img => `
         <div class="photo-admin-card">
           <img src="${img.url}" alt="${escapeHtml(img.title || img.name || '')}" loading="lazy">
-          <button class="photo-admin-delete" data-img-id="${img.id}" title="Remove from gallery">✕</button>
+          <button class="photo-admin-delete" data-img-id="${img.id}" title="Remove photo">✕</button>
         </div>
       `).join('');
 
       photosGridAdminEl.querySelectorAll('.photo-admin-delete').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm('Remove this photo from the site? (It stays stored in Cloudinary — delete it there too from the Media Library if you want it fully gone.)')) return;
+          if (!confirm('Remove photo from gallery?')) return;
           await deleteDoc(doc(db, "galleryImages", btn.getAttribute('data-img-id')));
           await loadPhotosTabData();
         });
       });
     }
 
-    // ---- Cloudinary unsigned upload ----
     async function uploadToCloudinary(file, progressRow) {
-      const url = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`;
+      if (!activeCloudinaryConfig.cloudName || !activeCloudinaryConfig.uploadPreset) {
+        throw new Error('Cloudinary env vars missing on Vercel.');
+      }
+      const url = `https://api.cloudinary.com/v1_1/${activeCloudinaryConfig.cloudName}/image/upload`;
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', cloudinaryConfig.uploadPreset);
-      formData.append('folder', 'aurora'); // keeps your Cloudinary Media Library tidy
+      formData.append('upload_preset', activeCloudinaryConfig.uploadPreset);
+      formData.append('folder', 'aurora');
 
       const xhr = new XMLHttpRequest();
       return new Promise((resolve, reject) => {
@@ -2211,11 +1989,8 @@
           }
         };
         xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText));
-          } else {
-            reject(new Error(`Cloudinary upload failed (${xhr.status}): ${xhr.responseText}`));
-          }
+          if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+          else reject(new Error(`Cloudinary upload failed (${xhr.status}): ${xhr.responseText}`));
         };
         xhr.onerror = () => reject(new Error('Network error during upload.'));
         xhr.send(formData);
@@ -2224,7 +1999,7 @@
 
     async function handleFiles(fileList) {
       if (!cloudinaryReady()) {
-        alert('Set up Cloudinary first — see the config warning above and the setup guide.');
+        alert('Set up CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET in Vercel env vars first.');
         return;
       }
       const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
