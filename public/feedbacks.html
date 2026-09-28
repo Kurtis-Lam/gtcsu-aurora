@@ -404,7 +404,7 @@
           <p id="fb-identity-preview" style="font-size:0.8rem; color:rgba(223,246,242,0.6); margin-top:4px;"></p>
         </div>
         <div class="form-group" id="fb-signin-row">
-          <p class="i18n" style="font-size:0.8rem; color:rgba(223,246,242,0.6); margin-bottom:8px;" data-en="You are submitting anonymously. Optionally sign in with your school account (@gtcollege.edu.hk) to attach your name." data-zh="你正以匿名方式提交。你亦可使用學校帳戶（@gtcollege.edu.hk）登入以附上姓名。">You are submitting anonymously. Optionally sign in with your school account (@gtcollege.edu.hk) to attach your name.</p>
+          <p class="i18n" style="font-size:0.8rem; color:rgba(223,246,242,0.6); margin-bottom:8px;" data-en="You are submitting anonymously. Optionally sign in with your school account to attach your name." data-zh="你正以匿名方式提交。你亦可使用學校帳戶登入以附上姓名。">You are submitting anonymously. Optionally sign in with your school account to attach your name.</p>
         </div>
         <button id="fb-submit-btn" class="submit-btn i18n" data-en="Submit Feedback" data-zh="提交反饋" disabled>Submit Feedback</button>
       </div>
@@ -609,7 +609,7 @@
       fbIdentityPreview.textContent = fbAnonToggle.checked ? t().anon : t().named(name);
     }
     fbAnonToggle.addEventListener('change', refreshIdentityUI);
-    $('fb-signin-btn').addEventListener('click', () => AuroraAuth.signIn());
+    $('fb-signin-btn')?.addEventListener('click', () => AuroraAuth.signIn());
     AuroraAuth.onChange((user) => { signedInUser = user; refreshIdentityUI(); });
 
     // ---- Submit: the server checks for spam and stores the feedback ----
