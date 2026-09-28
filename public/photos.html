@@ -647,7 +647,7 @@
   <script type="module">
     import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { db, auth } from './firebase-config.js';
+    import { db, auth, isAllowedEmail } from './firebase-config.js';
     
     // Configure Google Auth Provider with Domain Restriction Hints
     const provider = new GoogleAuthProvider();
@@ -715,7 +715,7 @@
         const user = result.user;
         
         // Strict Domain Check
-        if (!user.email || !user.email.toLowerCase().endsWith('@gtcollege.edu.hk')) {
+        if (!isAllowedEmail(user.email)) {
           await signOut(auth);
           showError("Access denied. You must sign in using an official @gtcollege.edu.hk email account.");
         }
@@ -727,7 +727,7 @@
     logoutBtn.addEventListener('click', () => signOut(auth));
 
     onAuthStateChanged(auth, async (user) => {
-      if (user && user.email && user.email.toLowerCase().endsWith('@gtcollege.edu.hk')) {
+      if (user && isAllowedEmail(user.email)) {
         authSection.style.display = 'none';
         gallerySection.style.display = 'block';
 
@@ -737,9 +737,6 @@
 
         await autoDetectPhotos();
       } else {
-        if (user) {
-          await signOut(auth);
-        }
         gallerySection.style.display = 'none';
         authSection.style.display = 'block';
       }
