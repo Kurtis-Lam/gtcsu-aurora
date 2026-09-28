@@ -1,17 +1,3 @@
-// ---------------------------------------------------------------------------
-// Aurora — shared component + auth loader.
-// Loaded as <script type="module" src="load-components.js"> on every page
-// except admin.html.
-//
-// Responsibilities:
-//   1. Inject panel.html into #panel-container (nav, hamburger, sign-in UI)
-//   2. Inject background.html into #background-container (video bg), and
-//      manage playback so it doesn't waste CPU/battery when the tab isn't
-//      visible (perf optimization).
-//   3. Wire up the site-wide Google sign-in control, and expose a tiny
-//      window.AuroraAuth API so individual pages (feedbacks.html,
-//      photos.html) can react to auth state without each re-implementing it.
-// ---------------------------------------------------------------------------
 import { auth, googleProvider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
