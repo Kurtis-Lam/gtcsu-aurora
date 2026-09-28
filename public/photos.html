@@ -304,6 +304,7 @@
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { db } from './firebase-config.js';
     import { AuroraAuth } from './load-components.js';
+    import { API_BASE } from './api-config.js';
 
     const authContainer = document.getElementById('auth-container');
     const galleryContent = document.getElementById('gallery-content');
@@ -355,7 +356,7 @@
       const token = await AuroraAuth.getIdToken();
       const urls = {};
       for (let i = 0; i < publicIds.length; i += 200) {
-        const res = await fetch('/api/photo-urls', {
+        const res = await fetch(`${API_BASE}/api/photo-urls`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ publicIds: publicIds.slice(i, i + 200) })
