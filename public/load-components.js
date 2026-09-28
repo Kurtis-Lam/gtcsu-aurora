@@ -1,5 +1,5 @@
-import { auth, googleProvider } from './firebase-config.js';
-import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { auth, isAllowedEmail, ALLOWED_DOMAIN } from './firebase-config.js';
+import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const panelFetchPromise = fetch('panel.html')
   .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
@@ -13,7 +13,17 @@ const backgroundFetchPromise = fetch('background.html')
 let currentUser = null;
 const authListeners = [];
 
+// Separate provider for the public site so the school-domain hint doesn't
+// affect the admin page's sign-in.
+const siteProvider = new GoogleAuthProvider();
+siteProvider.setCustomParameters({ hd: ALLOWED_DOMAIN, prompt: 'select_account' });
+
 onAuthStateChanged(auth, (user) => {
+  // Non-school accounts (e.g. an admin logged in on admin.html with a
+  // personal email in the same browser) are treated as "not signed in" on
+  // the public site. We deliberately do NOT sign them out here, so the
+  // admin session isn't destroyed.
+  if (user && !isAllowedEmail(user.email)) user = null;
   currentUser = user;
   authListeners.forEach(cb => { try { cb(user); } catch (e) { console.error(e); } });
   updateNavAuthUI(user);
@@ -22,7 +32,19 @@ onAuthStateChanged(auth, (user) => {
 window.AuroraAuth = {
   getUser: () => currentUser,
   onChange: (cb) => { authListeners.push(cb); if (currentUser !== undefined) cb(currentUser); },
-  signIn: () => signInWithPopup(auth, googleProvider).catch(err => console.error('Sign-in failed:', err)),
+  signIn: async () => {
+    try {
+      const result = await signInWithPopup(auth, siteProvider);
+      if (!isAllowedEmail(result.user.email)) {
+        await signOut(auth);
+        alert(`Please sign in with your school account (@${ALLOWED_DOMAIN}).`);
+      }
+    } catch (err) {
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        console.error('Sign-in failed:', err);
+      }
+    }
+  },
   signOut: () => signOut(auth)
 };
 
