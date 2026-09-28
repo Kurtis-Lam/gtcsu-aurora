@@ -1,8 +1,3 @@
-// POST /api/feedback
-// Student submits feedback -> rate limit -> (optional) identity check ->
-// AI spam check -> saved to Firestore where ONLY admins can read it.
-// The browser can no longer write to `feedbacks` directly (see firestore.rules),
-// so the spam check and identity can't be bypassed or forged.
 import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
 import { guard, body, bearerToken, clientIp, hashIp } from './_lib/http.js';
