@@ -374,12 +374,7 @@
   <!-- Replaced inline header/nav components with panel container -->
   <div id="panel-container"></div>
 
-  <div class="sky">
-    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
-      <source src="assets/background.mp4" type="video/mp4">
-    </video>
-    <div class="sky-overlay"></div>
-  </div>
+  <div id="background-container"></div>
 
   <main class="page-container">
     <div class="header-section">
@@ -404,6 +399,13 @@
           </label>
           <textarea id="fb-desc" class="form-textarea" placeholder="Provide detailed feedback..."></textarea>
         </div>
+        <div class="form-group" id="fb-identity-row" style="display:none;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="fb-anon-toggle" checked style="width:auto;">
+            <span class="i18n" data-en="Submit anonymously (uncheck to attach your name)" data-zh="匿名提交（取消勾選以附上您的姓名）">Submit anonymously (uncheck to attach your name)</span>
+          </label>
+          <p id="fb-identity-preview" style="font-size:0.8rem; color:rgba(223,246,242,0.6); margin-top:4px;"></p>
+        </div>
         <button id="fb-submit-btn" class="submit-btn i18n" data-en="Submit Feedback" data-zh="提交反饋" disabled>Submit Feedback</button>
       </div>
 
@@ -421,7 +423,7 @@
           </div>
           <div class="faq-item">
             <div class="faq-item-title i18n" data-en="Q: Is my submission completely anonymous?" data-zh="問：我的提交是完全匿名的嗎？">Q: Is my submission completely anonymous?</div>
-            <div class="faq-item-desc i18n" data-en="Yes, all submissions are processed anonymously without recording any personal identification or account details." data-zh="是的，所有提交均為匿名處理，系統不會記錄任何個人身份或帳戶資訊。">Yes, all submissions are processed anonymously without recording any personal identification or account details.</div>
+            <div class="faq-item-desc i18n" data-en="By default, yes — feedback is submitted anonymously with no personal information recorded. If you're signed in, you'll see an option to attach your name instead; leave it checked to stay anonymous." data-zh="預設情況下是匿名的，不會記錄任何個人資訊。如果您已登入，您會看到附上姓名的選項；保持勾選即可維持匿名。">By default, yes — feedback is submitted anonymously with no personal information recorded. If you're signed in, you'll see an option to attach your name instead; leave it checked to stay anonymous.</div>
           </div>
           <div class="faq-item">
             <div class="faq-item-title i18n" data-en="Q: How will the Student Union handle my feedback?" data-zh="問：學生會將如何處理我的意見？">Q: How will the Student Union handle my feedback?</div>
@@ -456,33 +458,14 @@
 
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora" data-zh="優才（楊殷有娣）書院  -  2026–27 1號候選內閣 Aurora">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1 Aurora</footer>
 
-  <script src="load-components.js" onerror="console.warn('load-components.js failed to load.')"></script>
+  <script type="module" src="load-components.js" onerror="console.warn('load-components.js failed to load.')"></script>
   <script type="module">
-    import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getFirestore, 
       collection, 
       addDoc, 
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
-      authDomain: "gtcsu-aurora.firebaseapp.com",
-      projectId: "gtcsu-aurora",
-      storageBucket: "gtcsu-aurora.firebasestorage.app",
-      messagingSenderId: "961705164297",
-      appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8",
-      measurementId: "G-ZWE0Z6VTZK"
-    };
-
-    let db = null;
-    try {
-      const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-      db = getFirestore(app);
-    } catch (err) {
-      console.warn("Firestore setup failed or offline:", err);
-    }
+    import { db, auth } from './firebase-config.js';
 
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let isSwitching = false;
@@ -636,16 +619,58 @@
       }, 500);
     }
 
+    // Identity / anonymous-submission handling. Signing in happens via the
+    // shared nav button (panel.html) — this just reacts to that state.
+    const fbIdentityRow = document.getElementById('fb-identity-row');
+    const fbAnonToggle = document.getElementById('fb-anon-toggle');
+    const fbIdentityPreview = document.getElementById('fb-identity-preview');
+    let signedInUser = null;
+
+    function refreshIdentityUI() {
+      if (!fbIdentityRow) return;
+      if (signedInUser) {
+        fbIdentityRow.style.display = 'block';
+        const name = signedInUser.displayName || signedInUser.email;
+        fbIdentityPreview.textContent = fbAnonToggle.checked
+          ? (currentLang === 'zh' ? '此意見將以匿名方式提交。' : 'This feedback will be submitted anonymously.')
+          : (currentLang === 'zh' ? `此意見將顯示為來自：${name}` : `This feedback will show as coming from: ${name}`);
+      } else {
+        fbIdentityRow.style.display = 'none';
+      }
+    }
+
+    fbAnonToggle?.addEventListener('change', refreshIdentityUI);
+
+    // window.AuroraAuth is set up by load-components.js — wait for it since
+    // that script loads as a module and may resolve after this one.
+    function hookAuroraAuth() {
+      if (window.AuroraAuth) {
+        window.AuroraAuth.onChange((user) => { signedInUser = user; refreshIdentityUI(); });
+      } else {
+        setTimeout(hookAuroraAuth, 150);
+      }
+    }
+    hookAuroraAuth();
+
     async function saveFeedback(title, description) {
       try {
         if (!db) throw new Error("Database offline or uninitialized.");
-        await addDoc(collection(db, "feedbacks"), {
+
+        const submitAnonymously = !signedInUser || fbAnonToggle.checked;
+        const payload = {
           title: title,
           description: description,
           status: 'pending',
           submittedAtHKT: getHKTTimeString(),
-          createdAt: serverTimestamp()
-        });
+          createdAt: serverTimestamp(),
+          isAnonymous: submitAnonymously
+        };
+        if (!submitAnonymously && signedInUser) {
+          payload.userEmail = signedInUser.email || '';
+          payload.userName = signedInUser.displayName || signedInUser.email || '';
+        }
+
+        await addDoc(collection(db, "feedbacks"), payload);
 
         document.getElementById('status-title').textContent = currentLang === 'zh' ? '提交成功' : 'Feedback Submitted';
         document.getElementById('status-msg').textContent = currentLang === 'zh'
