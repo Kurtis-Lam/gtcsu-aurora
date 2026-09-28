@@ -7,7 +7,7 @@
 <link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Chart.js CDN for Analytics Graphs -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <!-- Load page tracking script -->
 <script type="module" src="analytics.js"></script>
 
@@ -752,7 +752,7 @@
   <!-- Login Section -->
   <div id="login-view" class="auth-card">
     <h1 style="font-size: 1.5rem; margin-bottom: 12px;">Admin Portal</h1>
-    <p style="font-size: 0.85rem; color: rgba(223, 246, 242, 0.7);">Please sign in with your Google Account to access site analytics and feedback moderation.</p>
+    <p style="font-size: 0.85rem; color: rgba(223, 246, 242, 0.7);">Please sign in with your Google Account to access site analytics, feedback and photo management.</p>
     <button id="google-login-btn" class="google-btn">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.41-1.57-5.13-3.72L.97 13.04C2.45 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.87 10.8c-.18-.53-.28-1.1-.28-1.8s.1-1.27.28-1.8L.97 4.96C.35 6.18 0 7.55 0 9s.35 2.82.97 4.04l2.9-2.24z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.45 2.02.97 4.96l2.9 2.24C4.59 5.05 6.62 3.58 9 3.58z"/></svg>
       Sign in with Google
@@ -770,14 +770,14 @@
           <span id="user-email" class="user-email"></span>
         </div>
         <button id="signout-btn" class="nav-btn">Sign Out</button>
-        <a href="feedbacks.html" class="nav-btn">← View Site</a>
+        <a href="index.html" class="nav-btn">← View Site</a>
       </div>
     </header>
 
     <!-- Navigation Tabs -->
     <div class="tab-bar">
       <button class="tab-btn active" id="tab-analytics-btn">📊 Site Analytics</button>
-      <button class="tab-btn" id="tab-feedback-btn">💬 Feedback Moderation</button>
+      <button class="tab-btn" id="tab-feedback-btn">💬 Feedback Inbox</button>
       <button class="tab-btn" id="tab-supporters-btn">💙 Supporters</button>
       <button class="tab-btn" id="tab-photos-btn">🖼 Upload Photos</button>
     </div>
@@ -858,7 +858,7 @@
       </div>
     </div>
 
-    <!-- Feedback Moderation View -->
+    <!-- Feedback Inbox (read-only; feedback is never published on the site) -->
     <div id="feedback-section" class="hidden">
       <main id="admin-container" class="admin-grid"></main>
     </div>
@@ -921,10 +921,6 @@
 
     <!-- Upload Photos View -->
     <div id="photos-section" class="hidden">
-      <div id="cloudinary-config-warning" class="hidden" style="background:rgba(255,107,107,0.12); border:1px solid rgba(255,107,107,0.4); border-radius:12px; padding:16px 20px; margin-bottom:20px; color:#ffb3b3; font-size:0.9rem;">
-        ⚠️ Cloudinary environment variables missing. Please set <code>CLOUDINARY_CLOUD_NAME</code> and <code>CLOUDINARY_UPLOAD_PRESET</code> in your Vercel Environment Variables.
-      </div>
-
       <div class="photos-manager-grid">
         <div class="chart-card" style="min-width:0;">
           <div class="chart-header">
@@ -1009,7 +1005,6 @@
       getDocs,
       addDoc,
       writeBatch,
-      arrayUnion,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import {
@@ -1017,32 +1012,11 @@
       signOut,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { db, auth, googleProvider, cloudinaryConfig as localCloudinaryConfig } from './firebase-config.js';
-
-    // Global Cloudinary state, initialized dynamically from Vercel env vars
-    let activeCloudinaryConfig = {
-      cloudName: localCloudinaryConfig?.cloudName || '',
-      uploadPreset: localCloudinaryConfig?.uploadPreset || ''
-    };
-
-    // Dynamically fetch Vercel environment variables from Vercel API endpoint
-    async function loadVercelEnvConfig() {
-      try {
-        const res = await fetch('/api/config');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.cloudName) activeCloudinaryConfig.cloudName = data.cloudName;
-          if (data.uploadPreset) activeCloudinaryConfig.uploadPreset = data.uploadPreset;
-        }
-      } catch (err) {
-        console.warn("Could not fetch /api/config, falling back to firebase-config.js:", err);
-      }
-      cloudinaryReady();
-    }
-    loadVercelEnvConfig();
+    import { db, auth, googleProvider } from './firebase-config.js';
 
     const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000;
     let currentUser = null;
+    let analyticsUnsub = null;
     let pageViewsChartInstance = null;
     let timeSpentChartInstance = null;
     let dailyViewsChartInstance = null;
@@ -1210,39 +1184,74 @@
       if (currentPage < maxPages) { currentPage++; renderLogsModal(); }
     });
 
-    const ADMIN_EMAILS = ["kurtislam100@gmail.com", "xtshh524@gmail.com", "namwingso@gmail.com"];
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        if (!ADMIN_EMAILS.includes(user.email)) {
-          currentUser = null;
-          alert("This Google account is not authorized to access the admin portal.");
-          signOut(auth);
-          document.getElementById('login-view').classList.remove('hidden');
-          document.getElementById('admin-view').classList.add('hidden');
-          return;
-        }
-
-        currentUser = user;
-        document.getElementById('login-view').classList.add('hidden');
-        document.getElementById('admin-view').classList.remove('hidden');
-        
-        document.getElementById('user-name').textContent = user.displayName || 'Admin User';
-        document.getElementById('user-email').textContent = user.email;
-        document.getElementById('user-avatar').src = user.photoURL || 'assets/aurora-logo.png';
-        
-        loadAnalyticsData();
-        loadAdminFeedbacks();
-        loadSupportersData();
-      } else {
-        currentUser = null;
-        document.getElementById('login-view').classList.remove('hidden');
-        document.getElementById('admin-view').classList.add('hidden');
+    // Who is an admin is defined ONLY in firestore.rules (isAdmin()). We ask
+    // the rules by reading a doc that only admins may read. The real protection
+    // is server-side: even if someone bypasses this page, Firestore and the
+    // /api routes still refuse them.
+    async function isAdminUser() {
+      try {
+        await getDoc(doc(db, 'adminCheck', 'ping'));
+        return true;
+      } catch (err) {
+        if (err.code === 'permission-denied') return false;
+        throw err;
       }
+    }
+
+    function showLogin() {
+      currentUser = null;
+      document.getElementById('login-view').classList.remove('hidden');
+      document.getElementById('admin-view').classList.add('hidden');
+    }
+
+    function stopListeners() {
+      if (analyticsUnsub) { analyticsUnsub(); analyticsUnsub = null; }
+      if (supportersUnsubCounter) { supportersUnsubCounter(); supportersUnsubCounter = null; }
+      if (supportersUnsubList) { supportersUnsubList(); supportersUnsubList = null; }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      stopListeners();
+      if (!user) { showLogin(); return; }
+
+      let admin = false;
+      try {
+        admin = await isAdminUser();
+      } catch (err) {
+        console.error('Admin check failed:', err);
+        alert('Could not verify admin access. Please try again.');
+        showLogin();
+        return;
+      }
+      if (auth.currentUser?.uid !== user.uid) return; // account changed while checking
+
+      if (!admin) {
+        alert('This Google account is not authorized to access the admin portal.');
+        showLogin();
+        await signOut(auth);
+        return;
+      }
+
+      currentUser = user;
+      document.getElementById('login-view').classList.add('hidden');
+      document.getElementById('admin-view').classList.remove('hidden');
+
+      document.getElementById('user-name').textContent = user.displayName || 'Admin User';
+      document.getElementById('user-email').textContent = user.email;
+      document.getElementById('user-avatar').src = user.photoURL || 'assets/aurora-logo.png';
+
+      loadAnalyticsData();
+      loadAdminFeedbacks();
+      loadSupportersData();
     });
 
     document.getElementById('google-login-btn').addEventListener('click', async () => {
-      try { await signInWithPopup(auth, googleProvider); } catch (err) { alert("Google Sign-In failed: " + err.message); }
+      try { await signInWithPopup(auth, googleProvider); }
+      catch (err) {
+        if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+          alert('Google Sign-In failed: ' + err.message);
+        }
+      }
     });
 
     document.getElementById('signout-btn').addEventListener('click', () => signOut(auth));
@@ -1250,7 +1259,8 @@
     const MAX_RANGE_DAYS = 365;
 
     function loadAnalyticsData() {
-      onSnapshot(collection(db, "pageviews"), (querySnapshot) => {
+      if (analyticsUnsub) analyticsUnsub();
+      analyticsUnsub = onSnapshot(collection(db, "pageviews"), (querySnapshot) => {
         let totalViews = 0;
         let totalTimeSeconds = 0;
 
@@ -1354,7 +1364,7 @@
       routes.forEach(route => {
         const isActive = route === activeDestinationFilter ? 'active' : '';
         const label = route === 'all' ? 'All Destinations' : route;
-        html += `<button class="dest-btn ${isActive}" data-dest="${route}">${label}</button>`;
+        html += `<button class="dest-btn ${isActive}" data-dest="${escapeHtml(route)}">${escapeHtml(label)}</button>`;
       });
       container.innerHTML = html;
 
@@ -1537,135 +1547,62 @@
       try {
         const querySnapshot = await getDocs(collection(db, "feedbacks"));
         if (querySnapshot.empty) {
-          container.innerHTML = `<p style="text-align:center; color:rgba(223,246,242,0.5); padding: 40px;">No incoming feedbacks found.</p>`;
+          container.innerHTML = `<p style="text-align:center; color:rgba(223,246,242,0.5); padding: 40px;">No feedback yet.</p>`;
           return;
         }
 
-        const items = [];
-        querySnapshot.forEach((docSnap) => items.push({ id: docSnap.id, ...docSnap.data() }));
+        const items = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        items.sort((a, b) => tsToMillis(b.createdAt) - tsToMillis(a.createdAt));
 
-        items.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
-          const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
-          return timeB - timeA;
-        });
-
-        let html = '';
-        items.forEach((item) => {
-          const id = item.id;
-          const submittedTime = item.submittedAtHKT || (item.createdAt?.toDate ? formatHKTTime(item.createdAt.toDate()) : "N/A");
+        container.innerHTML = items.map((item) => {
+          const submitted = item.createdAt?.toDate ? formatHKTTime(item.createdAt.toDate()) : (item.submittedAtHKT || 'N/A');
           const identityHtml = item.isAnonymous === false && (item.userName || item.userEmail)
             ? `<span style="color:var(--aurora-cyan); font-weight:600;">👤 ${escapeHtml(item.userName || '')} ${item.userEmail ? `(${escapeHtml(item.userEmail)})` : ''}</span>`
             : `<span style="color:rgba(223,246,242,0.45);">Anonymous</span>`;
+          const unchecked = item.moderation === 'unchecked'
+            ? `<span class="badge pending" title="The AI spam check was unavailable when this was submitted">SPAM CHECK SKIPPED</span>`
+            : '';
 
-          let approvalsList = Array.isArray(item.approvals) ? [...item.approvals] : [];
-          if (approvalsList.length === 0 && item.approvedBy) {
-            approvalsList.push({ name: item.approvedBy, email: '', timeHKT: item.approvedAtHKT || 'N/A', timestamp: 0 });
-          }
-          approvalsList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-          const hasUserApproved = currentUser && approvalsList.some(app => 
-            (app.email && app.email === currentUser.email) ||
-            (app.name && app.name === (currentUser.displayName || currentUser.email))
-          );
-
-          let logsHtml = approvalsList.length > 0 ? `
-            <div class="logs-container">
-              ${approvalsList.map(app => `<div class="log-banner">✓ Approved by <strong>${escapeHtml(app.name)}</strong> on${escapeHtml(app.timeHKT)}</div>`).join('')}
-            </div>` : '';
-
-          html += `
+          return `
             <div class="card">
               <div class="card-header">
-                <span>Doc ID: ${id} &nbsp;|&nbsp; Submitted: <strong>${submittedTime}</strong> &nbsp;|&nbsp; From: ${identityHtml}</span>
-                <span class="badge ${item.status}">${item.status.toUpperCase()}</span>
-              </div>
-              ${logsHtml}
-              <div class="field-group">
-                <span class="field-label">Edit User Title</span>
-                <input type="text" class="input-text" id="title-${id}" value="${escapeHtml(item.title)}">
+                <span>Submitted: <strong>${escapeHtml(submitted)}</strong> &nbsp;|&nbsp; From: ${identityHtml}</span>
+                ${unchecked}
               </div>
               <div class="field-group">
-                <span class="field-label">Edit User Description</span>
-                <textarea class="input-textarea" id="desc-${id}">${escapeHtml(item.description)}</textarea>
+                <span class="field-label">Title</span>
+                <div style="font-weight:600; color:var(--aurora-cyan); white-space:pre-wrap; overflow-wrap:anywhere;">${escapeHtml(item.title)}</div>
+              </div>
+              <div class="field-group">
+                <span class="field-label">Description</span>
+                <div style="line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere;">${escapeHtml(item.description)}</div>
               </div>
               <div class="actions">
-                <button class="btn btn-spam" data-action="spam" data-id="${id}">Mark Spam</button>
-                <button class="btn btn-delete" data-action="delete" data-id="${id}">Delete</button>
-                <button class="btn btn-publish" data-action="publish" data-id="${id}" ${hasUserApproved ? 'disabled title="You have already approved this item"' : ''}>
-                  ${hasUserApproved ? 'Approved' : 'Approve'}
-                </button>
+                <button class="btn btn-delete" data-action="delete" data-id="${escapeHtml(item.id)}">Delete</button>
               </div>
-            </div>
-          `;
-        });
+            </div>`;
+        }).join('');
 
-        container.innerHTML = html;
-        container.querySelectorAll('button[data-action]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const action = e.target.getAttribute('data-action');
-            const id = e.target.getAttribute('data-id');
-            if (action === 'publish') publishItem(id);
-            if (action === 'spam') markSpam(id);
-            if (action === 'delete') deleteItem(id);
-          });
+        container.querySelectorAll('button[data-action="delete"]').forEach(btn => {
+          btn.addEventListener('click', () => deleteItem(btn.getAttribute('data-id')));
         });
       } catch (err) {
-        container.innerHTML = `<p style="text-align:center; color:var(--aurora-red); padding: 40px;">Failed to load feedbacks: ${err.message}</p>`;
+        container.innerHTML = `<p style="text-align:center; color:var(--aurora-red); padding: 40px;">Failed to load feedback: ${escapeHtml(err.message)}</p>`;
       }
     }
 
-    async function publishItem(id) {
-      if (!currentUser) return;
-      const docRef = doc(db, "feedbacks", id);
-      const title = document.getElementById(`title-${id}`).value;
-      const description = document.getElementById(`desc-${id}`).value;
-      const moderatorName = currentUser.displayName || currentUser.email;
-      const hktTime = getHKTTimeString();
-
-      try {
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const approvals = data.approvals || [];
-          const alreadyApproved = approvals.some(app => 
-            (app.email && app.email === currentUser.email) ||
-            (app.name && app.name === moderatorName)
-          ) || (data.approvedBy === moderatorName);
-
-          if (alreadyApproved) { alert("You have already approved this feedback."); return; }
-        }
-
-        const newApprovalRecord = { name: moderatorName, email: currentUser.email, timeHKT: hktTime, timestamp: Date.now() };
-
-        await updateDoc(docRef, {
-          title, description, status: 'approved',
-          approvals: arrayUnion(newApprovalRecord),
-          approvedBy: moderatorName, approvedAtHKT: hktTime,
-          moderatedAt: serverTimestamp()
-        });
-
-        loadAdminFeedbacks();
-      } catch (err) { alert("Failed to approve feedback: " + err.message); }
-    }
-
-    async function markSpam(id) {
-      try {
-        await updateDoc(doc(db, "feedbacks", id), { status: 'spam', moderatedAt: serverTimestamp() });
-        loadAdminFeedbacks();
-      } catch (err) { alert("Failed to mark spam: " + err.message); }
-    }
-
     async function deleteItem(id) {
-      if (!confirm("Are you sure you want to delete this feedback document?")) return;
+      if (!confirm("Delete this feedback permanently?")) return;
       try {
         await deleteDoc(doc(db, "feedbacks", id));
         loadAdminFeedbacks();
       } catch (err) { alert("Failed to delete feedback: " + err.message); }
     }
 
-    function escapeHtml(str) { 
-      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
     let supportersUnsubCounter = null;
@@ -1732,9 +1669,9 @@
         const cooldownLabel = isCooldown ? `<span class="event-tag closed">On cooldown</span>` : `<span class="event-tag opened">Ready</span>`;
 
         rows += `
-          <tr class="clickable-row" data-id="${s.id}">
+          <tr class="clickable-row" data-id="${escapeHtml(s.id)}">
             <td style="text-align: center;" onclick="event.stopPropagation();">
-              <input type="checkbox" class="supporter-checkbox" value="${s.id}" data-clicks="${s.clicks || 0}">
+              <input type="checkbox" class="supporter-checkbox" value="${escapeHtml(s.id)}" data-clicks="${s.clicks || 0}">
             </td>
             <td title="Click to view details">${escapeHtml(maskId(s.id))}</td>
             <td>${s.clicks || 0}</td>
@@ -1742,8 +1679,8 @@
             <td>${cooldownLabel}</td>
             <td onclick="event.stopPropagation();">
               <div style="display: flex; gap: 6px; align-items: center;">
-                <input type="text" class="input-text supporter-note-input" data-id="${s.id}" value="${escapeHtml(s.note || '')}" placeholder="Who is this?" style="padding: 6px 8px; font-size: 0.8rem;">
-                <button class="btn btn-publish save-note-btn" data-id="${s.id}" style="padding: 6px 10px; font-size: 0.75rem;">Save</button>
+                <input type="text" class="input-text supporter-note-input" data-id="${escapeHtml(s.id)}" value="${escapeHtml(s.note || '')}" placeholder="Who is this?" style="padding: 6px 8px; font-size: 0.8rem;">
+                <button class="btn btn-publish save-note-btn" data-id="${escapeHtml(s.id)}" style="padding: 6px 10px; font-size: 0.75rem;">Save</button>
               </div>
             </td>
           </tr>
@@ -1775,7 +1712,7 @@
       tbody.querySelectorAll('.save-note-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           const id = e.target.getAttribute('data-id');
-          const input = tbody.querySelector(`.supporter-note-input[data-id="${id}"]`);
+          const input = tbody.querySelector(`.supporter-note-input[data-id="${CSS.escape(id)}"]`);
           const note = input ? input.value.trim() : '';
           try {
             await updateDoc(doc(db, "supporters", id), { note });
@@ -1832,8 +1769,11 @@
     });
 
     /* =========================================================================
-       UPLOAD PHOTOS TAB — Cloudinary (using Vercel Env Vars) + Firestore
+       PHOTOS TAB — private Cloudinary uploads (signed by /api/sign-upload)
+       + Firestore metadata. Files are only viewable through signed URLs that
+       /api/photo-urls gives to signed-in school accounts and admins.
        ========================================================================= */
+    const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
     let allFolders = [];
     let allImages = [];
     let selectedFolderId = null;
@@ -1846,16 +1786,21 @@
     const dropzoneEl = document.getElementById('upload-dropzone');
     const fileInputEl = document.getElementById('upload-file-input');
     const uploadProgressListEl = document.getElementById('upload-progress-list');
-    const cloudinaryWarningEl = document.getElementById('cloudinary-config-warning');
 
-    function cloudinaryReady() {
-      const ok = Boolean(activeCloudinaryConfig.cloudName && activeCloudinaryConfig.uploadPreset);
-      cloudinaryWarningEl.classList.toggle('hidden', ok);
-      return ok;
+    // Authenticated call to one of our /api routes (the server re-checks admin via the rules).
+    async function apiPost(path, payload) {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload || {})
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      return data;
     }
 
     async function loadPhotosTabData() {
-      cloudinaryReady();
       folderTreeEl.innerHTML = '<p style="color:rgba(223,246,242,0.5); padding:10px;">Loading folders…</p>';
       try {
         const [foldersSnap, imagesSnap] = await Promise.all([
@@ -1864,8 +1809,15 @@
         ]);
         allFolders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         allImages = imagesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        const publicIds = allImages.map(img => img.publicId).filter(Boolean);
+        const urls = {};
+        for (let i = 0; i < publicIds.length; i += 200) {
+          Object.assign(urls, (await apiPost('/api/photo-urls', { publicIds: publicIds.slice(i, i + 200) })).urls);
+        }
+        allImages.forEach(img => { img.thumb = urls[img.publicId]?.thumb || null; });
       } catch (err) {
-        folderTreeEl.innerHTML = `<p style="color:var(--aurora-red); padding:10px;">Failed to load: ${err.message}</p>`;
+        folderTreeEl.innerHTML = `<p style="color:var(--aurora-red); padding:10px;">Failed to load: ${escapeHtml(err.message)}</p>`;
         return;
       }
       renderFolderTree();
@@ -1882,13 +1834,12 @@
       function renderLevel(parentId, depth) {
         return childrenOf(parentId).map(folder => {
           const isActive = selectedFolderId === folder.id;
-          const kids = renderLevel(folder.id, depth + 1);
           return `
-            <div class="folder-node ${isActive ? 'active' : ''}" data-folder-id="${folder.id}" style="padding-left:${12 + depth * 16}px;">
+            <div class="folder-node ${isActive ? 'active' : ''}" data-folder-id="${escapeHtml(folder.id)}" style="padding-left:${12 + depth * 16}px;">
               📁 ${escapeHtml(folder.name)}
-              <button class="folder-delete-btn" data-folder-id="${folder.id}" title="Delete folder">✕</button>
+              <button class="folder-delete-btn" data-folder-id="${escapeHtml(folder.id)}" title="Delete folder">✕</button>
             </div>
-            ${kids}
+            ${renderLevel(folder.id, depth + 1)}
           `;
         }).join('');
       }
@@ -1909,10 +1860,13 @@
           e.stopPropagation();
           const fid = btn.getAttribute('data-folder-id');
           if (childrenOf(fid).length > 0) { alert('Delete subfolders first.'); return; }
+          if (allImages.some(img => img.folderId === fid)) { alert('Remove the photos in this folder first.'); return; }
           if (!confirm('Delete folder?')) return;
-          await deleteDoc(doc(db, "galleryFolders", fid));
-          if (selectedFolderId === fid) selectedFolderId = null;
-          await loadPhotosTabData();
+          try {
+            await deleteDoc(doc(db, "galleryFolders", fid));
+            if (selectedFolderId === fid) selectedFolderId = null;
+            await loadPhotosTabData();
+          } catch (err) { alert('Failed to delete folder: ' + err.message); }
         });
       });
 
@@ -1921,23 +1875,20 @@
       currentFolderTitleEl.textContent = activeFolder ? `📂 ${activeFolder.path}` : '📂 All Photos';
     }
 
-    function folderPathFor(folderId) {
-      const f = allFolders.find(x => x.id === folderId);
-      return f ? f.path : null;
-    }
-
     async function createFolder(parentId) {
       const name = prompt(parentId ? 'New subfolder name:' : 'New top-level folder name:');
       if (!name || !name.trim()) return;
       const parent = allFolders.find(f => f.id === parentId);
       const path = parent ? `${parent.path}/${name.trim()}` : name.trim();
-      await addDoc(collection(db, "galleryFolders"), {
-        name: name.trim(),
-        parentId: parentId || null,
-        path,
-        createdAt: serverTimestamp()
-      });
-      await loadPhotosTabData();
+      try {
+        await addDoc(collection(db, "galleryFolders"), {
+          name: name.trim(),
+          parentId: parentId || null,
+          path,
+          createdAt: serverTimestamp()
+        });
+        await loadPhotosTabData();
+      } catch (err) { alert('Failed to create folder: ' + err.message); }
     }
 
     newRootFolderBtn.addEventListener('click', () => createFolder(null));
@@ -1955,58 +1906,58 @@
 
       photosGridAdminEl.innerHTML = imgs.map(img => `
         <div class="photo-admin-card">
-          <img src="${img.url}" alt="${escapeHtml(img.title || img.name || '')}" loading="lazy">
-          <button class="photo-admin-delete" data-img-id="${img.id}" title="Remove photo">✕</button>
+          ${img.thumb
+            ? `<img src="${escapeHtml(img.thumb)}" alt="${escapeHtml(img.title || img.name || '')}" loading="lazy">`
+            : `<div style="padding:10px; font-size:0.75rem; color:#ffb3b3; overflow-wrap:anywhere;" title="Old record without a private file. Remove it and re-upload.">⚠ ${escapeHtml(img.name || 'Old photo')}</div>`}
+          <button class="photo-admin-delete" data-img-id="${escapeHtml(img.id)}" title="Delete photo">✕</button>
         </div>
       `).join('');
 
       photosGridAdminEl.querySelectorAll('.photo-admin-delete').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm('Remove photo from gallery?')) return;
-          await deleteDoc(doc(db, "galleryImages", btn.getAttribute('data-img-id')));
-          await loadPhotosTabData();
+          const img = allImages.find(x => x.id === btn.getAttribute('data-img-id'));
+          if (!img || !confirm('Delete this photo permanently?')) return;
+          try {
+            if (img.publicId) await apiPost('/api/delete-photo', { publicId: img.publicId });
+            await deleteDoc(doc(db, "galleryImages", img.id));
+            await loadPhotosTabData();
+          } catch (err) { alert('Failed to delete photo: ' + err.message); }
         });
       });
     }
 
+    // Uploads go straight to Cloudinary with a one-time signature from our server.
     async function uploadToCloudinary(file, progressRow) {
-      if (!activeCloudinaryConfig.cloudName || !activeCloudinaryConfig.uploadPreset) {
-        throw new Error('Cloudinary env vars missing on Vercel.');
-      }
-      const url = `https://api.cloudinary.com/v1_1/${activeCloudinaryConfig.cloudName}/image/upload`;
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', activeCloudinaryConfig.uploadPreset);
-      formData.append('folder', 'aurora');
+      const s = await apiPost('/api/sign-upload');
+      const form = new FormData();
+      form.append('file', file);
+      form.append('api_key', s.apiKey);
+      ['timestamp', 'signature', 'folder', 'type', 'allowed_formats'].forEach(k => form.append(k, s[k]));
 
-      const xhr = new XMLHttpRequest();
       return new Promise((resolve, reject) => {
-        xhr.open('POST', url);
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${encodeURIComponent(s.cloudName)}/image/upload`);
         xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable && progressRow) {
-            const pct = Math.round((e.loaded / e.total) * 100);
-            progressRow.querySelector('.upload-progress-pct').textContent = `${pct}%`;
+          if (e.lengthComputable) {
+            progressRow.querySelector('.upload-progress-pct').textContent = `${Math.round((e.loaded / e.total) * 100)}%`;
           }
         };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
-          else reject(new Error(`Cloudinary upload failed (${xhr.status}): ${xhr.responseText}`));
+          else reject(new Error(`Cloudinary upload failed (${xhr.status})`));
         };
         xhr.onerror = () => reject(new Error('Network error during upload.'));
-        xhr.send(formData);
+        xhr.send(form);
       });
     }
 
     async function handleFiles(fileList) {
-      if (!cloudinaryReady()) {
-        alert('Set up CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET in Vercel env vars first.');
-        return;
-      }
       const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
       if (files.length === 0) return;
 
       const folderId = selectedFolderId;
-      const folderPath = folderId ? folderPathFor(folderId) : null;
+      const folder = allFolders.find(f => f.id === folderId);
+      const folderPath = folder ? folder.path : null;
 
       for (const file of files) {
         const row = document.createElement('div');
@@ -2015,11 +1966,11 @@
         uploadProgressListEl.appendChild(row);
 
         try {
+          if (file.size > MAX_UPLOAD_BYTES) throw new Error('File is larger than 10 MB.');
           const result = await uploadToCloudinary(file, row);
           await addDoc(collection(db, "galleryImages"), {
             folderId: folderId || null,
             folderPath: folderPath || "Uncategorized",
-            url: result.secure_url,
             publicId: result.public_id,
             name: file.name,
             title: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
@@ -2037,7 +1988,7 @@
       await loadPhotosTabData();
     }
 
-    fileInputEl.addEventListener('change', (e) => handleFiles(e.target.files));
+    fileInputEl.addEventListener('change', (e) => { handleFiles(e.target.files); e.target.value = ''; });
     dropzoneEl.addEventListener('dragover', (e) => { e.preventDefault(); dropzoneEl.classList.add('dragging'); });
     dropzoneEl.addEventListener('dragleave', () => dropzoneEl.classList.remove('dragging'));
     dropzoneEl.addEventListener('drop', (e) => {
