@@ -1,1 +1,1 @@
-export const API_BASE = 'https://gtcsu-aurora.vercel.app/';
+export const API_BASE = 'https://gtcsu-aurora.vercel.app';
