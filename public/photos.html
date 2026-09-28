@@ -13,7 +13,7 @@
 <link rel="preload" href="assets/aurora-logo.png" as="image">
 <link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
 
-<script src="load-components.js"></script>
+<script type="module" src="load-components.js"></script>
 
 <!-- JSZip for multi-select zip downloads -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -454,9 +454,98 @@
     font-size: 0.78rem; color: rgba(223, 246, 242, 0.4);
   }
 
+  /* ---------- Hamburger Button (was missing — this is what caused the
+     logo to be pushed off-center on desktop, since the invisible button
+     still occupied a flex slot in the navbar) ---------- */
+  .hamburger-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    padding: 0;
+    z-index: 102;
+  }
+  .hamburger-btn span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--ink);
+    border-radius: 2px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  }
+  .hamburger-btn.open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .hamburger-btn.open span:nth-child(2) { opacity: 0; }
+  .hamburger-btn.open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+  /* ---------- Mobile Navigation Overlay ---------- */
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 11, 18, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 98;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+  }
+  .nav-overlay.active { opacity: 1; visibility: visible; }
+
   @media (max-width: 768px) {
     .toolbar { flex-direction: column; align-items: stretch; }
     .selection-controls { justify-content: space-between; }
+
+    .hamburger-btn { display: flex; }
+
+    .navbar {
+      justify-content: flex-start;
+      gap: 16px;
+      padding: 0.8rem 1rem;
+    }
+
+    .nav-title { display: inline-block; }
+
+    .nav-links {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      height: 100dvh;
+      background: rgba(10, 26, 32, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(127, 233, 240, 0.25);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 80px 20px 24px;
+      gap: 0.8rem;
+      transform: translateX(-100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 99;
+      overflow-y: auto;
+    }
+
+    .nav-links.active { transform: translateX(0); }
+
+    .nav-btn {
+      width: 100%;
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+    }
+
+    .lang-toggle {
+      bottom: 16px;
+      right: 16px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+    }
   }
 </style>
 </head>
@@ -475,12 +564,7 @@
   <div id="panel-container"></div>
 
   <!-- Video Background -->
-  <div class="sky">
-    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
-      <source src="assets/background.mp4" type="video/mp4">
-    </video>
-    <div class="sky-overlay"></div>
-  </div>
+  <div id="background-container"></div>
 
   <main class="page-container">
     <div class="header-section">
@@ -561,22 +645,9 @@
 
   <!-- Firebase Modular SDK -->
   <script type="module">
-    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
-      authDomain: "gtcsu-aurora.firebaseapp.com",
-      projectId: "gtcsu-aurora",
-      storageBucket: "gtcsu-aurora.firebasestorage.app",
-      messagingSenderId: "961705164297",
-      appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8",
-      measurementId: "G-ZWE0Z6VTZK"
-    };
-
-    // Reuse existing Firebase app instance to avoid duplicate initialization error
-    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db, auth } from './firebase-config.js';
     
     // Configure Google Auth Provider with Domain Restriction Hints
     const provider = new GoogleAuthProvider();
@@ -602,76 +673,28 @@
     const selectedCountSpan = document.getElementById('selected-count');
 
     /* ==========================================================================
-       AUTOMATIC PHOTO & FOLDER DETECTION
-       Scans public/assets/photos and auto-generates gallery entries
+       PHOTO & FOLDER LOADING — Cloudinary + Firestore
+       Images are uploaded via the admin "Upload Photos" tab, which pushes
+       the file to Cloudinary (no Firebase Storage billing needed) and
+       writes a small metadata doc to the "galleryImages" Firestore
+       collection. This just reads that back and groups it by folder.
        ========================================================================== */
     async function autoDetectPhotos() {
       GALLERY_DATA = {};
-      const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif'];
-
       try {
-        const rootRes = await fetch('assets/photos/');
-        if (rootRes.ok) {
-          const html = await rootRes.text();
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, 'text/html');
-          const links = Array.from(doc.querySelectorAll('a'))
-            .map(a => a.getAttribute('href'))
-            .filter(Boolean);
-
-          const folderPromises = links.map(async (href) => {
-            const rawName = href.replace(/\/$/, '').split('/').pop();
-            if (!rawName || rawName === '..' || rawName === '.' || rawName.startsWith('?')) return;
-
-            const isDirectImage = validExtensions.some(ext => rawName.toLowerCase().endsWith(ext));
-            if (!isDirectImage) {
-              const folderName = decodeURIComponent(rawName);
-              try {
-                const subRes = await fetch(`assets/photos/${encodeURIComponent(folderName)}/`);
-                if (subRes.ok) {
-                  const subHtml = await subRes.text();
-                  const subDoc = parser.parseFromString(subHtml, 'text/html');
-                  const subLinks = Array.from(subDoc.querySelectorAll('a'))
-                    .map(a => a.getAttribute('href'))
-                    .filter(Boolean);
-
-                  const photos = [];
-                  subLinks.forEach(subHref => {
-                    const fileName = decodeURIComponent(subHref.split('/').pop());
-                    if (validExtensions.some(ext => fileName.toLowerCase().endsWith(ext))) {
-                      const cleanTitle = fileName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-                      photos.push({
-                        name: fileName,
-                        path: `assets/photos/${folderName}/${fileName}`,
-                        title: cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1)
-                      });
-                    }
-                  });
-
-                  if (photos.length > 0) {
-                    GALLERY_DATA[folderName] = photos;
-                  }
-                }
-              } catch (e) {
-                console.error("Folder scan failed for:", folderName, e);
-              }
-            }
+        const snap = await getDocs(collection(db, "galleryImages"));
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          const folderName = data.folderPath || "Uncategorized";
+          if (!GALLERY_DATA[folderName]) GALLERY_DATA[folderName] = [];
+          GALLERY_DATA[folderName].push({
+            name: data.name || docSnap.id,
+            path: data.url,
+            title: data.title || data.name || "Untitled"
           });
-
-          await Promise.all(folderPromises);
-        }
+        });
       } catch (err) {
-        console.warn("Server directory listing not supported or blocked:", err);
-      }
-
-      // Fallback: try loading optional manifest if directory scanning was restricted
-      if (Object.keys(GALLERY_DATA).length === 0) {
-        try {
-          const manifestRes = await fetch('assets/photos/manifest.json');
-          if (manifestRes.ok) {
-            GALLERY_DATA = await manifestRes.json();
-          }
-        } catch(e) {}
+        console.error("Failed to load gallery from Firestore:", err);
       }
 
       const folders = Object.keys(GALLERY_DATA);
@@ -680,7 +703,7 @@
         renderFolderTabs();
         renderPhotos();
       } else {
-        photoGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.6; padding: 40px 0;">No photos or folders found in public/assets/photos.</p>';
+        photoGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.6; padding: 40px 0;">No photos uploaded yet. Ask an admin to upload some in the Admin panel\'s "Upload Photos" tab.</p>';
       }
     }
 
