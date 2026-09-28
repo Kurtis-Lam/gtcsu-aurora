@@ -2,11 +2,12 @@
 .firebaserc
 node_modules/
 firebase-debug.log
-
-keys.txt
 .DS_Store
 
-public/assets/profiles
+keys.txt
+serviceAccounts.json
+
+public/assets/unused-profiles
 public/assets/aurora-legacy-logo.png
 public/assets/promo_vid.mp4
 public/assets/photos/
