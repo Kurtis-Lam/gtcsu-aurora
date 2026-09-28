@@ -874,7 +874,7 @@
         <div class="kpi-card">
           <span class="kpi-title">Unique Supporters</span>
           <span class="kpi-value support-value" id="kpi-unique-supporters">0</span>
-          <span class="kpi-subtitle">Distinct registered voter devices</span>
+          <span class="kpi-subtitle">Distinct registered voter devices (accounts are tracked separately)</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-title">Most Recent Support</span>
@@ -886,7 +886,7 @@
       <div class="supporters-table-wrap">
         <div class="supporters-header">
           <div style="display: flex; align-items: center; gap: 16px;">
-            <h3 class="chart-title">Registered Voter Devices</h3>
+            <h3 class="chart-title">Registered Supporters (Devices &amp; Accounts)</h3>
             <div style="display: flex; align-items: center; gap: 8px;">
               <label for="supporters-sort-select" style="font-size: 0.8rem; color: var(--aurora-cyan); font-weight: 600;">Sort By:</label>
               <select id="supporters-sort-select" class="select-input">
@@ -905,7 +905,7 @@
           <thead>
             <tr>
               <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-supporters"></th>
-              <th>Supporter (Hashed IP)</th>
+              <th>Supporter (Account / Device)</th>
               <th>Votes Cast</th>
               <th>Last Vote</th>
               <th>Cooldown Status</th>
@@ -1156,9 +1156,14 @@
       const modalBody = document.getElementById('detail-modal-body');
       modalBody.innerHTML = `
         <div class="detail-field">
-          <label>Supporter ID (Keyed Hash of Public IP)</label>
+          <label>${escapeHtml(info.idLabel || 'Supporter ID')}</label>
           <span style="color: var(--aurora-teal);">${escapeHtml(info.deviceId || 'N/A')}</span>
         </div>
+        ${info.email ? `
+        <div class="detail-field">
+          <label>${escapeHtml(info.emailLabel || 'Email')}</label>
+          <span style="color: var(--aurora-cyan); font-weight: 600;">${escapeHtml(info.email)}</span>
+        </div>` : ''}
         <div class="detail-field">
           <label>Total Votes Cast</label>
           <span style="color: var(--support-blue); font-weight: 700;">${info.clicks !== undefined ? info.clicks : 'N/A'}</span>
@@ -1634,9 +1639,32 @@
 
     function tsToMillis(ts) { return ts && ts.toMillis ? ts.toMillis() : 0; }
 
+    // supporters/{id}: user_<uid> = account cooldown record, device_<hash> = device
+    // cooldown record, ip_<hash> = legacy records from before the device switch.
+    function supporterKind(s) {
+      if (s.type === 'account' || String(s.id).startsWith('user_')) return 'account';
+      if (String(s.id).startsWith('ip_')) return 'legacy';
+      return 'device';
+    }
+    function supporterEmail(s) {
+      return supporterKind(s) === 'account' ? (s.email || null) : (s.lastEmail || null);
+    }
+    function supporterCellHtml(s) {
+      const kind = supporterKind(s);
+      const email = supporterEmail(s);
+      const tag = (t) => `<span style="font-size:0.7rem; color:rgba(223,246,242,0.5);">${t}</span>`;
+      if (kind === 'account') {
+        return `👤 <strong style="color: var(--aurora-cyan);">${escapeHtml(email || '(no email)')}</strong> ${tag('account')}`;
+      }
+      const icon = kind === 'legacy' ? '🌐' : '📱';
+      const label = kind === 'legacy' ? 'legacy IP' : 'device';
+      return `${icon} ${escapeHtml(maskId(s.id))} ${tag(label)}` +
+        (email ? `<div style="font-size:0.75rem; color: var(--aurora-cyan); margin-top:2px;">signed in as ${escapeHtml(email)}</div>` : '');
+    }
+
     function renderSupportersTable() {
       const tbody = document.getElementById('supporters-table-body');
-      document.getElementById('kpi-unique-supporters').textContent = latestSupporterDocs.length.toLocaleString();
+      document.getElementById('kpi-unique-supporters').textContent = latestSupporterDocs.filter(s => supporterKind(s) !== 'account').length.toLocaleString();
 
       if (!latestSupporterDocs.length) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
@@ -1673,9 +1701,9 @@
         rows += `
           <tr class="clickable-row" data-id="${escapeHtml(s.id)}">
             <td style="text-align: center;" onclick="event.stopPropagation();">
-              <input type="checkbox" class="supporter-checkbox" value="${escapeHtml(s.id)}" data-clicks="${s.clicks || 0}">
+              <input type="checkbox" class="supporter-checkbox" value="${escapeHtml(s.id)}" data-clicks="${supporterKind(s) === 'account' ? 0 : (s.clicks || 0)}">
             </td>
-            <td title="Click to view details">${escapeHtml(maskId(s.id))}</td>
+            <td title="Click to view details">${supporterCellHtml(s)}</td>
             <td>${s.clicks || 0}</td>
             <td><strong style="color: var(--support-blue);">${lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A'}</strong></td>
             <td>${cooldownLabel}</td>
@@ -1700,8 +1728,12 @@
           const lastClickDate = lastClickMillis ? new Date(lastClickMillis) : null;
           const remainingMs = lastClickDate ? SUPPORT_COOLDOWN_MS - (Date.now() - lastClickDate.getTime()) : 0;
 
+          const kind = supporterKind(s);
           showLogDetailsModal({
-            deviceId: s.id,
+            idLabel: kind === 'account' ? 'Account ID (Firebase UID)' : kind === 'legacy' ? 'Supporter ID (Legacy Keyed Hash of IP)' : 'Device ID (Keyed Hash)',
+            emailLabel: kind === 'account' ? 'Account Email' : 'Last Signed-in Email',
+            email: supporterEmail(s),
+            deviceId: kind === 'account' ? s.id.replace(/^user_/, '') : s.id,
             clicks: s.clicks || 0,
             timeStr: lastClickDate ? formatHKTTime(lastClickDate) : 'N/A',
             timeAgo: lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A',
