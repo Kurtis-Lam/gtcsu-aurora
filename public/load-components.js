@@ -1,61 +1,129 @@
-// Start fetching panel.html immediately upon script execution to remove round-trip network lag[cite: 4]
+// ---------------------------------------------------------------------------
+// Aurora — shared component + auth loader.
+// Loaded as <script type="module" src="load-components.js"> on every page
+// except admin.html.
+//
+// Responsibilities:
+//   1. Inject panel.html into #panel-container (nav, hamburger, sign-in UI)
+//   2. Inject background.html into #background-container (video bg), and
+//      manage playback so it doesn't waste CPU/battery when the tab isn't
+//      visible (perf optimization).
+//   3. Wire up the site-wide Google sign-in control, and expose a tiny
+//      window.AuroraAuth API so individual pages (feedbacks.html,
+//      photos.html) can react to auth state without each re-implementing it.
+// ---------------------------------------------------------------------------
+import { auth, googleProvider } from './firebase-config.js';
+import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
 const panelFetchPromise = fetch('panel.html')
-  .then(res => {
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    return res.text();
-  })
-  .catch(err => {
-    console.error('Error loading panel component:', err);
-    return null;
+  .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+  .catch(err => { console.error('Error loading panel component:', err); return null; });
+
+const backgroundFetchPromise = fetch('background.html')
+  .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+  .catch(err => { console.error('Error loading background component:', err); return null; });
+
+// ---- Site-wide auth state, shared with any page via window.AuroraAuth ----
+let currentUser = null;
+const authListeners = [];
+
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  authListeners.forEach(cb => { try { cb(user); } catch (e) { console.error(e); } });
+  updateNavAuthUI(user);
+});
+
+window.AuroraAuth = {
+  getUser: () => currentUser,
+  onChange: (cb) => { authListeners.push(cb); if (currentUser !== undefined) cb(currentUser); },
+  signIn: () => signInWithPopup(auth, googleProvider).catch(err => console.error('Sign-in failed:', err)),
+  signOut: () => signOut(auth)
+};
+
+function updateNavAuthUI(user) {
+  const signinBtn = document.getElementById('nav-signin-btn');
+  const userBox = document.getElementById('nav-user');
+  if (!signinBtn || !userBox) return;
+
+  if (user) {
+    signinBtn.classList.add('hidden');
+    userBox.classList.remove('hidden');
+    document.getElementById('nav-user-avatar').src = user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.displayName || user.email || '?')}`;
+    document.getElementById('nav-user-name').textContent = user.displayName || user.email || 'Signed in';
+  } else {
+    signinBtn.classList.remove('hidden');
+    userBox.classList.add('hidden');
+  }
+}
+
+// ---- Background video: pause while tab hidden to cut CPU/GPU load ----
+function wireBackgroundVideo() {
+  const video = document.getElementById('bg-video');
+  if (!video) return;
+
+  const tryPlay = () => { if (document.visibilityState === 'visible') video.play().catch(() => {}); };
+
+  tryPlay();
+  ['stalled', 'suspend', 'waiting', 'error'].forEach(evt => video.addEventListener(evt, tryPlay));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') tryPlay();
+    else video.pause();
   });
+}
 
 async function loadPanel() {
   const mountPoint = document.getElementById('panel-container');
-  if (!mountPoint) return;
+  const bgMountPoint = document.getElementById('background-container');
 
-  const html = await panelFetchPromise;
-  if (!html) return;
+  const [panelHtml, backgroundHtml] = await Promise.all([panelFetchPromise, backgroundFetchPromise]);
 
-  mountPoint.innerHTML = html;
+  if (mountPoint && panelHtml) {
+    mountPoint.innerHTML = panelHtml;
 
-  // Active route matching[cite: 4]
-  let currentPath = window.location.pathname.split('/').pop();
-  if (!currentPath || currentPath === '') currentPath = 'index.html';
+    // Active route matching
+    let currentPath = window.location.pathname.split('/').pop();
+    if (!currentPath || currentPath === '') currentPath = 'index.html';
 
-  const navLinks = mountPoint.querySelectorAll('.nav-links a');
-  navLinks.forEach(link => {
-    if (link.getAttribute('data-page') === currentPath) {
-      link.classList.add('active');
-    } else {
-      link.classList.remove('active');
+    const navLinks = mountPoint.querySelectorAll('.nav-links a[data-page]');
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('data-page') === currentPath);
+    });
+
+    // Re-apply current language preference
+    if (typeof setLanguage === 'function') {
+      setLanguage(localStorage.getItem('aurora_lang') || 'en');
     }
-  });
 
-  // Re-apply current language preferences[cite: 4]
-  if (typeof setLanguage === 'function') {
-    setLanguage(localStorage.getItem('aurora_lang') || 'en');
+    // Mobile hamburger drawer
+    const hamburger = mountPoint.querySelector('#hamburger-btn');
+    const drawer = mountPoint.querySelector('#nav-links');
+    const overlay = document.getElementById('nav-overlay');
+
+    function toggleMenu() {
+      const isOpen = drawer.classList.toggle('active');
+      if (hamburger) hamburger.classList.toggle('open', isOpen);
+      if (overlay) overlay.classList.toggle('active', isOpen);
+    }
+    function closeMenu() {
+      if (drawer) drawer.classList.remove('active');
+      if (hamburger) hamburger.classList.remove('open');
+      if (overlay) overlay.classList.remove('active');
+    }
+
+    if (hamburger) hamburger.addEventListener('click', toggleMenu);
+    if (overlay) overlay.addEventListener('click', closeMenu);
+    navLinks.forEach(link => link.addEventListener('click', closeMenu));
+
+    // Sign-in / sign-out buttons
+    document.getElementById('nav-signin-btn')?.addEventListener('click', () => window.AuroraAuth.signIn());
+    document.getElementById('nav-signout-btn')?.addEventListener('click', () => window.AuroraAuth.signOut());
+    updateNavAuthUI(currentUser);
   }
 
-  // Unified Mobile Hamburger Drawer Controls[cite: 4]
-  const hamburger = mountPoint.querySelector('#hamburger-btn');
-  const drawer = mountPoint.querySelector('#nav-links');
-  const overlay = mountPoint.querySelector('#nav-overlay');
-
-  function toggleMenu() {
-    const isOpen = drawer.classList.toggle('active');
-    if (hamburger) hamburger.classList.toggle('open', isOpen);
-    if (overlay) overlay.classList.toggle('active', isOpen);
+  if (bgMountPoint && backgroundHtml) {
+    bgMountPoint.innerHTML = backgroundHtml;
+    wireBackgroundVideo();
   }
-
-  function closeMenu() {
-    if (drawer) drawer.classList.remove('active');
-    if (hamburger) hamburger.classList.remove('open');
-    if (overlay) overlay.classList.remove('active');
-  }
-
-  if (hamburger) hamburger.addEventListener('click', toggleMenu);
-  if (overlay) overlay.addEventListener('click', closeMenu);
-  navLinks.forEach(link => link.addEventListener('click', closeMenu));
 
   window.dispatchEvent(new Event('componentsLoaded'));
 }
