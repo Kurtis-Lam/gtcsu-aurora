@@ -327,11 +327,47 @@
     .nav-btn { width: 100%; text-align: left; padding: 10px 16px; font-size: 0.95rem; }
     .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
   }
+  /* ---------- Language toggle + switch transition (same as activities.html) ---------- */
+  .navbar, .page-container, .lang-toggle {
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 0.35s ease-in, transform 0.35s ease-in; pointer-events: none;
+  }
+  body.is-loaded .navbar,
+  body.is-loaded .page-container,
+  body.is-loaded .lang-toggle {
+    opacity: 1; transform: translateY(0); pointer-events: auto;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  body.is-loaded .navbar { transition-delay: 0.15s; }
+  body.is-loaded .page-container { transition-delay: 0.35s; }
+  body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+
+  .lang-toggle {
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    display: flex; align-items: center; gap: 8px; padding: 10px 18px;
+    border-radius: 999px; border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    color: #eafffb; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+  body.is-loaded .lang-toggle:hover {
+    border-color: rgba(127, 233, 240, 0.8); background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3); transform: translateY(-2px);
+  }
+  @media (max-width: 768px) {
+    .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
+  }
 </style>
 </head>
 <body>
 
-  <!-- Replaced inline header/nav components with panel container -->
+  <!-- Floating Bottom-Right Language Toggle Button -->
+  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
+    <span class="lang-icon">🌐</span>
+    <span id="lang-text">繁體中文</span>
+  </button>
+
+  <!-- Dynamic Navigation Panel Mount Point -->
   <div id="panel-container"></div>
 
   <div id="background-container"></div>
@@ -351,14 +387,14 @@
             <span class="i18n" data-en="Title (at least 3 words)" data-zh="標題 (最少 3 個字詞)">Title (at least 3 words)</span>
             <span id="title-counter" class="word-counter">0 / 3 words</span>
           </label>
-          <input type="text" id="fb-title" class="form-input" placeholder="Enter feedback title...">
+          <input type="text" id="fb-title" class="form-input" placeholder="Enter feedback title..." data-ph-en="Enter feedback title..." data-ph-zh="請輸入意見標題...">
         </div>
         <div class="form-group">
           <label>
             <span class="i18n" data-en="Description (at least 20 words)" data-zh="詳細內容 (最少 20 個字詞)">Description (at least 20 words)</span>
             <span id="desc-counter" class="word-counter">0 / 20 words</span>
           </label>
-          <textarea id="fb-desc" class="form-textarea" placeholder="Provide detailed feedback..."></textarea>
+          <textarea id="fb-desc" class="form-textarea" placeholder="Provide detailed feedback..." data-ph-en="Provide detailed feedback..." data-ph-zh="請詳細描述你的意見..."></textarea>
         </div>
         <div class="form-group" id="fb-identity-row" style="display:none;">
           <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
@@ -412,7 +448,7 @@
         <div class="time-remaining" id="status-time-remaining">Estimated time left: 4s</div>
         <p id="status-msg" style="color: rgba(223, 246, 242, 0.9); font-size:0.9rem; margin-top: 10px;"></p>
       </div>
-      <button id="status-action-btn" class="submit-btn" style="display:none; width:auto; padding:8px 24px; margin:0 auto;">OK</button>
+      <button id="status-action-btn" class="submit-btn i18n" data-en="OK" data-zh="確定" style="display:none; width:auto; padding:8px 24px; margin:0 auto;">OK</button>
     </div>
   </div>
 
@@ -449,6 +485,7 @@
         errGeneric: 'Something went wrong. Please try again in a moment.',
         errRate: 'You have submitted several times recently. Please try again later.',
         errInvalid: 'Please check that your title and description meet the minimum word counts.',
+        words: 'words',
         anon: 'This feedback will be submitted anonymously.',
         named: (n) => `This feedback will show as coming from: ${n}`
       },
@@ -462,6 +499,7 @@
         errGeneric: '發生錯誤，請稍後再試。',
         errRate: '您最近提交次數過多，請稍後再試。',
         errInvalid: '請確認標題及內容已達最低字數要求。',
+        words: '個字詞',
         anon: '此意見將以匿名方式提交。',
         named: (n) => `此意見將顯示為來自：${n}`
       }
@@ -477,8 +515,12 @@
         const text = el.getAttribute(`data-${lang}`);
         if (text) el.innerHTML = text;
       });
+      document.querySelectorAll('[data-ph-en]').forEach(el => {
+        el.placeholder = el.getAttribute(`data-ph-${lang}`);
+      });
       const langText = $('lang-text');
       if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
+      validateForm();
       refreshIdentityUI();
     }
 
@@ -514,9 +556,9 @@
     function validateForm() {
       const titleWords = countValidWords(titleInput.value);
       const descWords = countValidWords(descInput.value);
-      titleCounter.textContent = `${titleWords} / 3 words`;
+      titleCounter.textContent = `${titleWords} / 3 ${t().words}`;
       titleCounter.classList.toggle('valid', titleWords >= 3);
-      descCounter.textContent = `${descWords} / 20 words`;
+      descCounter.textContent = `${descWords} / 20 ${t().words}`;
       descCounter.classList.toggle('valid', descWords >= 20);
       submitBtn.disabled = !(titleWords >= 3 && descWords >= 20);
     }
