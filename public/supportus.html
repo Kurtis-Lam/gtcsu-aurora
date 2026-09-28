@@ -551,7 +551,8 @@
 
   <script type="module">
     import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { db } from './firebase-config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { db, auth } from './firebase-config.js';
     import { API_BASE } from './api-config.js';
 
     const COOLDOWN_MS = 10 * 60 * 1000;
@@ -610,10 +611,36 @@
       countdownTimer = setInterval(tick, 1000);
     }
 
-    const API_URL = `${API_BASE}/api/support`;
+    // ---------- Device identity ----------
+    // A random id kept in localStorage AND a long-lived cookie, so clearing
+    // just one of them doesn't hand out a fresh cooldown. The server only
+    // stores a keyed hash of it.
+    const DEVICE_KEY = 'aurora_device_id';
+    function readCookie(name) {
+      const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+    function getDeviceId() {
+      const valid = (v) => typeof v === 'string' && /^[A-Za-z0-9_-]{16,64}$/.test(v);
+      let id = null;
+      try { id = localStorage.getItem(DEVICE_KEY); } catch {}
+      if (!valid(id)) id = readCookie(DEVICE_KEY);
+      if (!valid(id)) id = crypto.randomUUID();
+      try { localStorage.setItem(DEVICE_KEY, id); } catch {}
+      document.cookie = `${DEVICE_KEY}=${encodeURIComponent(id)}; max-age=${60 * 60 * 24 * 365 * 2}; path=/; SameSite=Lax`;
+      return id;
+    }
+    const deviceId = getDeviceId();
+
+    const API_URL = `${API_BASE}/api/support?device=${encodeURIComponent(deviceId)}`;
 
     async function callSupport(method) {
-      const res = await fetch(API_URL, { method });
+      // If signed in, send the ID token so the cooldown also applies to the account.
+      const headers = {};
+      if (auth.currentUser) {
+        try { headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`; } catch {}
+      }
+      const res = await fetch(API_URL, { method, headers });
       const contentType = res.headers.get('content-type') || '';
       let data = {};
 
@@ -626,12 +653,7 @@
       return { status: res.status, data };
     }
 
-    async function init() {
-      onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
-        if (snap.exists()) countEl.textContent = (snap.data().count || 0).toLocaleString();
-      });
-      updateBottomBar();
-
+    async function refreshStatus() {
       try {
         const { status, data } = await callSupport('GET');
         if (status === 200 && data.ok) {
@@ -644,6 +666,18 @@
         btn.textContent = btnLabels[lang()].offline;
         statusEl.textContent = msgs[lang()].offline;
       }
+    }
+
+    function init() {
+      onSnapshot(doc(db, "counters", "supportCounter"), (snap) => {
+        if (snap.exists()) countEl.textContent = (snap.data().count || 0).toLocaleString();
+      });
+      updateBottomBar();
+
+      // Fires once when Firebase has restored the session (user or null), and
+      // again on every sign-in / sign-out, so the cooldown shown always
+      // reflects the current account + this device.
+      onAuthStateChanged(auth, () => refreshStatus());
     }
 
     btn.addEventListener('click', async () => {
