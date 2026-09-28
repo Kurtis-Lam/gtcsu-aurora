@@ -13,19 +13,20 @@ const MIN_DESC_WORDS = 20;
 const MAX_TITLE_CHARS = 150;
 const MAX_DESC_CHARS = 3000;
 
-const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_MAX_USER = 5;   // per signed-in school account
+const RATE_LIMIT_MAX_IP = 30;    // anonymous: many students share one school IP
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 const countWords = (s) => (s.trim() ? s.trim().split(/\s+/).length : 0);
 
-async function takeRateLimitSlot(db, key) {
+async function takeRateLimitSlot(db, key, max) {
   const ref = db.collection('rateLimits').doc(key);
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const now = Date.now();
     let { windowStart = now, count = 0 } = snap.exists ? snap.data() : {};
     if (now - windowStart > RATE_LIMIT_WINDOW_MS) { windowStart = now; count = 0; }
-    if (count >= RATE_LIMIT_MAX) return false;
+    if (count >= max) return false;
     tx.set(ref, { windowStart, count: count + 1 });
     return true;
   });
@@ -104,7 +105,9 @@ export default async function handler(req, res) {
       }
     }
 
-    const allowed = await takeRateLimitSlot(db, `feedback_${hashIp(clientIp(req))}`);
+    const allowed = user
+      ? await takeRateLimitSlot(db, `feedback_u_${hashIp(user.uid)}`, RATE_LIMIT_MAX_USER)
+      : await takeRateLimitSlot(db, `feedback_ip_${hashIp(clientIp(req))}`, RATE_LIMIT_MAX_IP);
     if (!allowed) {
       return res.status(429).json({ error: 'Too many submissions. Please try again later.', code: 'RATE_LIMITED' });
     }
