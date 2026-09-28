@@ -40,7 +40,7 @@ async function moderate(title, description) {
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
-        model: 'openrouter/free',
+        model: 'qwen/qwen3.8-27b:free',
         response_format: { type: 'json_object' },
         messages: [
           {
