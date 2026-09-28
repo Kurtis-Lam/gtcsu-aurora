@@ -3,19 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aurora - Photos</title>
+<title>Aurora - Photo Gallery</title>
 <link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
 
+<!-- Page tracking -->
 <script type="module" src="analytics.js"></script>
 
-<!-- Asset & Component Preloading --> 
-<link rel="preload" href="panel.html" as="document">
+<!-- Preloads --> 
+<link rel="preload" href="panel.html" as="fetch" crossorigin>
 <link rel="preload" href="assets/aurora-logo.png" as="image">
-<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+<link rel="preload" href="https://res.cloudinary.com/dl2xijhcd/video/upload/f_auto,q_auto,w_1280/v1790563703/background.mp4" as="video" type="video/mp4" crossorigin>
 
 <script type="module" src="load-components.js"></script>
 
-<!-- JSZip for multi-select zip downloads -->
+<!-- JSZip & FileSaver for multi-select zip downloads -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,7 +24,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,500&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-  :root{
+  :root {
     --void: #050b12;
     --deep: #0a1a20;
     --ink: #dff6f2;
@@ -31,933 +32,466 @@
     --aurora-green: #6ee89a;
     --aurora-cyan: #7fe9f0;
     --aurora-violet: #8f8cf0;
-    --star: #ffffff;
-    --line: rgba(223, 246, 242, 0.18);
-    --glass-bg: rgba(10, 26, 32, 0.55);
+    --glass-bg: rgba(10, 26, 32, 0.65);
     --glass-border: rgba(127, 233, 240, 0.2);
-    --danger: #ff5252;
   }
 
-  *{ margin:0; padding:0; box-sizing:border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; }
 
-  html,body{
-    min-height:100%;
-    background:var(--void);
-    color:var(--ink);
-    font-family:'Manrope', sans-serif;
-    overflow-x:hidden;
+  html, body {
+    min-height: 100%;
+    background: var(--void);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    overflow-x: hidden;
   }
 
-  /* ---------- Preloader ---------- */
+  /* Preloader */
   #preloader {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
+    position: fixed; inset: 0; z-index: 9999;
     background: #000000;
     transition: opacity 0.8s ease, visibility 0.8s ease;
   }
+  body.is-loaded #preloader { opacity: 0; visibility: hidden; }
 
-  body.is-loaded #preloader {
-    opacity: 0;
-    visibility: hidden;
-  }
-
-  /* ---------- Initial Hidden UI States ---------- */
-  .navbar, 
-  .header-section,
-  .section-block,
-  footer,
-  .lang-toggle {
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.35s ease-in, transform 0.35s ease-in;
-    pointer-events: none;
-  }
-
-  body.is-loaded .navbar,
-  body.is-loaded .header-section,
-  body.is-loaded footer,
-  body.is-loaded .lang-toggle {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  body.is-loaded .navbar { transition-delay: 0.15s; }
-  body.is-loaded .header-section { transition-delay: 0.35s; }
-  body.is-loaded footer,
-  body.is-loaded .lang-toggle { transition-delay: 0.55s; }
-
-  .fade-in {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, transform;
-  }
-
-  .fade-in.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  /* ---------- Navigation Bar ---------- */
+  /* Top Navigation Panel */
   .navbar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
     padding: 1rem 4vw;
     background: rgba(6, 13, 22, 0.65);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid rgba(223, 246, 242, 0.12);
   }
-
   .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
   .nav-logo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(127, 233, 240, 0.4); box-shadow: 0 0 12px rgba(46, 230, 184, 0.25); }
   .nav-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 1.15rem; color: #eafffb; letter-spacing: 0.05em; }
   .nav-links { display: flex; align-items: center; gap: 1rem; }
-  .nav-btn { color: rgba(223, 246, 242, 0.85); text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 8px 16px; border-radius: 999px; border: 1px solid transparent; transition: all 0.3s ease; }
-  .nav-btn:hover, .nav-btn.active { color: #ffffff; border-color: rgba(127, 233, 240, 0.4); background: rgba(127, 233, 240, 0.1); box-shadow: 0 0 12px rgba(127, 233, 240, 0.2); }
-
-  /* ---------- Language Toggle ---------- */
-  .lang-toggle {
-    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 18px; border-radius: 999px;
-    border: 1px solid rgba(127, 233, 240, 0.35);
-    background: rgba(10, 26, 32, 0.65);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    color: #eafffb; font-size: 0.85rem; font-weight: 500; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    transition: all 0.35s ease;
+  .nav-btn {
+    color: rgba(223, 246, 242, 0.85); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+    padding: 8px 16px; border-radius: 999px; border: 1px solid transparent; transition: all 0.3s ease;
   }
-  .lang-toggle:hover { border-color: rgba(127, 233, 240, 0.8); background: rgba(18, 42, 50, 0.85); box-shadow: 0 0 16px rgba(46, 230, 184, 0.3); transform: translateY(-2px); }
-
-  /* ---------- Video Background ---------- */
-  .sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--void); }
-  .bg-video { position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); object-fit: cover; }
-  .sky-overlay { position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(5, 11, 18, 0.2) 0%, rgba(5, 11, 18, 0.6) 100%), linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.7) 100%); pointer-events: none; }
-
-  /* ---------- Layout ---------- */
-  .page-container { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 140px 4vw 80px; }
-  .header-section { text-align: center; margin-bottom: 50px; }
-  .page-subtitle { font-size: 0.85rem; letter-spacing: 0.2em; color: var(--aurora-cyan); text-transform: uppercase; margin-bottom: 12px; }
-  .page-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 5vw, 3.8rem); color: #ffffff; margin-bottom: 16px; text-shadow: 0 0 20px rgba(127, 233, 240, 0.3); }
-  .page-description { max-width: 680px; margin: 0 auto; font-size: 1.05rem; line-height: 1.8; color: rgba(223, 246, 242, 0.8); }
-
-  /* ---------- Glass Card & Auth UI ---------- */
-  .glass-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 16px;
-    padding: 32px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  .nav-btn:hover, .nav-btn.active {
+    color: #ffffff; border-color: rgba(127, 233, 240, 0.4); background: rgba(127, 233, 240, 0.1);
+    box-shadow: 0 0 12px rgba(127, 233, 240, 0.2);
   }
 
-  .auth-card {
-    max-width: 480px;
-    margin: 40px auto;
-    text-align: center;
-  }
-
-  .google-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    width: 100%;
-    padding: 14px 24px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--aurora-cyan);
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 20px;
-  }
-
-  .google-btn:hover {
-    background: rgba(127, 233, 240, 0.2);
-    box-shadow: 0 0 20px rgba(127, 233, 240, 0.3);
-    transform: translateY(-2px);
-  }
-
-  .google-btn svg { width: 20px; height: 20px; }
-
-  .error-message {
-    color: var(--danger);
-    background: rgba(255, 82, 82, 0.15);
-    border: 1px solid rgba(255, 82, 82, 0.4);
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    margin-top: 16px;
-    display: none;
-  }
-
-  /* ---------- User Profile Bar ---------- */
-  .profile-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    padding: 16px 24px;
-    margin-bottom: 30px;
-  }
-
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .user-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    border: 2px solid var(--aurora-teal);
-  }
-
-  .user-details {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-  }
-
-  .user-name { font-weight: 600; color: #fff; font-size: 0.95rem; }
-  .user-email { font-size: 0.8rem; color: rgba(223, 246, 242, 0.7); }
-
-  .btn-secondary {
-    background: rgba(223, 246, 242, 0.1);
-    border: 1px solid var(--glass-border);
-    color: var(--ink);
-    padding: 8px 16px;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-  }
-
-  .btn-secondary:hover {
-    background: rgba(255, 82, 82, 0.2);
-    border-color: var(--danger);
-    color: #fff;
-  }
-
-  .btn-primary {
-    background: rgba(46, 230, 184, 0.2);
-    border: 1px solid var(--aurora-teal);
-    color: #fff;
-    padding: 8px 18px;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background: var(--aurora-teal);
-    color: var(--void);
-    box-shadow: 0 0 16px rgba(46, 230, 184, 0.4);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* ---------- Gallery Toolbar & Controls ---------- */
-  .toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .folder-tabs {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .tab-btn {
-    background: rgba(10, 26, 32, 0.6);
-    border: 1px solid var(--glass-border);
-    color: rgba(223, 246, 242, 0.8);
-    padding: 8px 18px;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.3s ease;
-  }
-
-  .tab-btn.active, .tab-btn:hover {
-    border-color: var(--aurora-cyan);
-    color: #fff;
-    background: rgba(127, 233, 240, 0.15);
-  }
-
-  .selection-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  /* ---------- Photo Grid ---------- */
-  .photo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
-  }
-
-  .photo-card {
-    position: relative;
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    aspect-ratio: 4 / 3;
-    cursor: pointer;
-    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-  }
-
-  .photo-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--aurora-teal);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  }
-
-  .photo-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.5s ease;
-  }
-
-  .photo-card:hover .photo-img {
-    transform: scale(1.05);
-  }
-
-  .photo-checkbox-wrapper {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    z-index: 5;
-  }
-
-  .photo-checkbox {
-    width: 22px;
-    height: 22px;
-    accent-color: var(--aurora-teal);
-    cursor: pointer;
-  }
-
-  .photo-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(0deg, rgba(5, 11, 18, 0.8) 0%, transparent 60%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    display: flex;
-    align-items: flex-end;
-    padding: 14px;
-  }
-
-  .photo-card:hover .photo-overlay, .photo-card.selected .photo-overlay {
-    opacity: 1;
-  }
-
-  .photo-card.selected {
-    border: 2px solid var(--aurora-teal);
-    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3);
-  }
-
-  .photo-title {
-    font-size: 0.85rem;
-    color: #fff;
-    font-weight: 500;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-  }
-
-  /* ---------- Lightbox Modal ---------- */
-  .lightbox-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 2000;
-    background: rgba(5, 11, 18, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-
-  .lightbox-modal.active { display: flex; }
-
-  .lightbox-content {
-    position: relative;
-    max-width: 90vw;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .lightbox-img {
-    max-width: 100%;
-    max-height: 75vh;
-    border-radius: 8px;
-    object-fit: contain;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-    border: 1px solid var(--glass-border);
-  }
-
-  .lightbox-caption {
-    margin-top: 14px;
-    color: #fff;
-    font-size: 0.95rem;
-    text-align: center;
-  }
-
-  .lightbox-close {
-    position: absolute;
-    top: -40px;
-    right: 0;
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 2rem;
-    cursor: pointer;
-  }
-
-  footer {
-    position: relative; z-index: 1; text-align: center; padding: 0 6vw 40px;
-    font-size: 0.78rem; color: rgba(223, 246, 242, 0.4);
-  }
-
-  /* ---------- Hamburger Button (was missing — this is what caused the
-     logo to be pushed off-center on desktop, since the invisible button
-     still occupied a flex slot in the navbar) ---------- */
+  /* Hamburger Button */
   .hamburger-btn {
-    display: none;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 24px;
-    height: 18px;
-    padding: 0;
-    z-index: 102;
+    display: none; background: transparent; border: none; cursor: pointer;
+    flex-direction: column; justify-content: space-between; width: 24px; height: 18px; padding: 0; z-index: 102;
   }
   .hamburger-btn span {
-    display: block;
-    width: 100%;
-    height: 2px;
-    background-color: var(--ink);
-    border-radius: 2px;
+    display: block; width: 100%; height: 2px; background-color: var(--ink); border-radius: 2px;
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
   }
   .hamburger-btn.open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
   .hamburger-btn.open span:nth-child(2) { opacity: 0; }
   .hamburger-btn.open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
 
-  /* ---------- Mobile Navigation Overlay ---------- */
+  /* Mobile Nav Overlay */
   .nav-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5, 11, 18, 0.7);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    z-index: 98;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.35s ease, visibility 0.35s ease;
+    position: fixed; inset: 0; background: rgba(5, 11, 18, 0.7); backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px); z-index: 98; opacity: 0; visibility: hidden; transition: opacity 0.35s ease, visibility 0.35s ease;
   }
   .nav-overlay.active { opacity: 1; visibility: visible; }
 
+  /* Background Video */
+  .sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--void); }
+  .bg-video { position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; width: auto; height: auto; transform: translate(-50%, -50%); object-fit: cover; }
+  .sky-overlay { position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.75) 100%); pointer-events: none; }
+
+  /* Layout Container */
+  .page-container { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 140px 4vw 80px; }
+  .header-section { text-align: center; margin-bottom: 40px; }
+  .page-subtitle { font-size: 0.85rem; letter-spacing: 0.2em; color: var(--aurora-cyan); text-transform: uppercase; margin-bottom: 12px; }
+  .page-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 5vw, 3.8rem); color: #ffffff; margin-bottom: 16px; }
+  .page-desc { max-width: 600px; margin: 0 auto; font-size: 1rem; color: rgba(223, 246, 242, 0.75); line-height: 1.6; }
+
+  /* Google Sign-In Auth Card */
+  .auth-card {
+    max-width: 480px;
+    margin: 40px auto;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 40px 28px;
+    text-align: center;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .auth-icon { font-size: 2.8rem; margin-bottom: 16px; }
+  .auth-title { font-family: 'Cinzel', serif; font-size: 1.4rem; color: #ffffff; margin-bottom: 12px; }
+  .auth-desc { font-size: 0.95rem; color: rgba(223, 246, 242, 0.8); line-height: 1.6; margin-bottom: 28px; }
+  .auth-desc strong { color: var(--aurora-cyan); }
+  
+  .google-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    background: #ffffff; color: #202124; border: none;
+    padding: 12px 28px; border-radius: 999px; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .google-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 230, 184, 0.4);
+    background: #f8f9fa;
+  }
+  .google-icon { flex-shrink: 0; }
+
+  /* Category Filter Tabs */
+  .filter-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 30px;
+  }
+  .filter-btn {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    color: var(--ink); padding: 8px 18px; border-radius: 999px; font-size: 0.85rem;
+    font-weight: 500; cursor: pointer; transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: rgba(46, 230, 184, 0.2); border-color: var(--aurora-teal); color: #ffffff;
+    box-shadow: 0 0 12px rgba(46, 230, 184, 0.3);
+  }
+
+  /* Batch Download Toolbar */
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 12px; padding: 12px 20px; margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+  }
+  .toolbar-info { font-size: 0.88rem; color: var(--aurora-cyan); }
+  .download-btn {
+    background: var(--aurora-teal); color: #050b12; border: none;
+    padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+    cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .download-btn:hover:not(:disabled) { box-shadow: 0 0 12px rgba(46, 230, 184, 0.5); opacity: 0.95; }
+  .download-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Photos Masonry Grid */
+  .photos-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;
+  }
+  .photo-card {
+    position: relative; border-radius: 12px; overflow: hidden;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    aspect-ratio: 4 / 3; cursor: pointer; transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .photo-card:hover { transform: translateY(-4px); border-color: var(--aurora-cyan); }
+  .photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+  .photo-card:hover img { transform: scale(1.05); }
+
+  .photo-select-checkbox {
+    position: absolute; top: 10px; left: 10px; z-index: 10;
+    width: 20px; height: 20px; accent-color: var(--aurora-teal); cursor: pointer;
+  }
+
+  .photo-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(5, 11, 18, 0.85) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.3s ease; display: flex; flex-direction: column;
+    justify-content: flex-end; padding: 14px;
+  }
+  .photo-card:hover .photo-overlay { opacity: 1; }
+  .photo-title { font-size: 0.95rem; font-weight: 600; color: #ffffff; }
+  .photo-folder { font-size: 0.75rem; color: var(--aurora-cyan); }
+
+  /* Lightbox Modal */
+  .lightbox-modal {
+    position: fixed; inset: 0; z-index: 10000;
+    background: rgba(5, 11, 18, 0.92); backdrop-filter: blur(12px);
+    display: flex; justify-content: center; align-items: center;
+    opacity: 0; visibility: hidden; transition: opacity 0.3s ease;
+  }
+  .lightbox-modal.active { opacity: 1; visibility: visible; }
+  .lightbox-content {
+    max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column; align-items: center;
+  }
+  .lightbox-img { max-width: 100%; max-height: 75vh; border-radius: 8px; object-fit: contain; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+  .lightbox-title { margin-top: 14px; font-size: 1.1rem; color: #ffffff; text-align: center; }
+  .lightbox-close {
+    position: absolute; top: 24px; right: 28px; background: transparent; border: none;
+    color: #ffffff; font-size: 2rem; cursor: pointer; transition: color 0.2s ease;
+  }
+  .lightbox-close:hover { color: var(--aurora-teal); }
+
+  /* Mobile Responsive Media Query */
   @media (max-width: 768px) {
-    .toolbar { flex-direction: column; align-items: stretch; }
-    .selection-controls { justify-content: space-between; }
-
     .hamburger-btn { display: flex; }
-
-    .navbar {
-      justify-content: flex-start;
-      gap: 16px;
-      padding: 0.8rem 1rem;
-    }
-
+    .navbar { justify-content: flex-start; gap: 16px; padding: 0.8rem 1rem; }
     .nav-title { display: inline-block; }
-
     .nav-links {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 260px;
-      height: 100vh;
-      height: 100dvh;
-      background: rgba(10, 26, 32, 0.95);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-right: 1px solid rgba(127, 233, 240, 0.25);
-      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 80px 20px 24px;
-      gap: 0.8rem;
-      transform: translateX(-100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 99;
-      overflow-y: auto;
+      position: fixed; top: 0; left: 0; width: 260px; height: 100vh; height: 100dvh;
+      background: rgba(10, 26, 32, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(127, 233, 240, 0.25); box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+      flex-direction: column; align-items: flex-start; padding: 80px 20px 24px; gap: 0.8rem;
+      transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); z-index: 99;
     }
-
     .nav-links.active { transform: translateX(0); }
-
-    .nav-btn {
-      width: 100%;
-      text-align: left;
-      padding: 10px 16px;
-      font-size: 0.95rem;
-    }
-
-    .lang-toggle {
-      bottom: 16px;
-      right: 16px;
-      padding: 8px 14px;
-      font-size: 0.8rem;
-    }
+    .nav-btn { width: 100%; text-align: left; padding: 10px 16px; font-size: 0.95rem; }
   }
 </style>
 </head>
-<body>
 
-  <!-- Preloader -->
+<body class="is-loaded">
   <div id="preloader"></div>
-
-  <!-- Language Toggle Button -->
-  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
-    <span class="lang-icon">🌐</span>
-    <span id="lang-text">繁體中文</span>
-  </button>
 
   <!-- Dynamic Navigation Panel Mount Point -->
   <div id="panel-container"></div>
 
-  <!-- Video Background -->
+  <!-- Video Background Container -->
   <div id="background-container"></div>
 
-  <main class="page-container">
+  <!-- Content -->
+  <div class="page-container">
     <div class="header-section">
-      <h1 class="page-title i18n" data-en="Photo Gallery" data-zh="活動相冊">Photo Gallery</h1>
-      <p class="page-description i18n" data-en="Exclusive gallery for G.T. College students. Please sign in with your official school email account (@gtcollege.edu.hk) to view and download event photos." data-zh="優才書院學生專屬相冊。請使用學校官方電郵賬號 (@gtcollege.edu.hk) 登入以查看及下載活動照片。">
-        Exclusive gallery for G.T. College students. Please sign in with your official school email account (@gtcollege.edu.hk) to view and download event photos.
-      </p>
+      <p class="page-subtitle">Visual Experience</p>
+      <h1 class="page-title">Photo Gallery</h1>
+      <p class="page-desc">Browse high-resolution captures from our events and activities.</p>
     </div>
 
-    <!-- State 1: Login Card -->
-    <div id="auth-section" class="fade-in">
-      <div class="glass-card auth-card">
-        <h2 class="i18n" data-en="Student Verification" data-zh="學生身份認證" style="font-family:'Cinzel',serif; color:var(--aurora-teal); margin-bottom:12px;">Student Verification</h2>
-        <p class="i18n" data-en="Access to these photos is restricted to registered G.T. College students and staff." data-zh="只有優才書院之學生及教職員方可瀏覽此相冊。" style="font-size:0.9rem; color:rgba(223,246,242,0.75);">
-          Access to these photos is restricted to registered G.T. College students and staff.
-        </p>
+    <!-- Sign In Prompt (Shown when not authenticated with @gtcollege.edu.hk) -->
+    <div id="auth-container" class="auth-card" style="display: none;">
+      <div class="auth-icon">🔒</div>
+      <h2 class="auth-title">School Access Required</h2>
+      <p class="auth-desc">Please sign in with your official <strong>@gtcollege.edu.hk</strong> email address to view the photo gallery.</p>
+      <button id="google-signin-btn" class="google-btn">
+        <svg class="google-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span>Sign in with Google</span>
+      </button>
+    </div>
 
-        <button id="google-login-btn" class="google-btn">
-          <svg viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.13C3.26 21.3 7.31 24 12 24z"/>
-            <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.63H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.37l3.99-3.13z"/>
-            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.63l3.99 3.13c.95-2.85 3.6-4.96 6.72-4.96z"/>
-          </svg>
-          <span class="i18n" data-en="Sign in with Google" data-zh="以 Google 賬號登入">Sign in with Google</span>
+    <!-- Gallery Content (Shown after successful authentication) -->
+    <div id="gallery-content" style="display: none;">
+      <!-- Category Filter Bar -->
+      <div class="filter-bar" id="folder-filters">
+        <button class="filter-btn active" data-folder-id="all">✨ All Photos</button>
+      </div>
+
+      <!-- Toolbar for Multi-select Downloads -->
+      <div class="toolbar">
+        <span class="toolbar-info" id="selected-count">0 photos selected</span>
+        <button class="download-btn" id="download-zip-btn" disabled>
+          📥 Download Selected (ZIP)
         </button>
-
-        <div id="auth-error" class="error-message"></div>
-      </div>
-    </div>
-
-    <!-- State 2: Photos Gallery -->
-    <div id="gallery-section" style="display: none;">
-      <!-- Profile Header -->
-      <div class="glass-card profile-bar fade-in">
-        <div class="user-info">
-          <img id="user-avatar" src="" alt="User Avatar" class="user-avatar">
-          <div class="user-details">
-            <span id="user-name" class="user-name">Student Name</span>
-            <span id="user-email" class="user-email">email@gtcollege.edu.hk</span>
-          </div>
-        </div>
-        <button id="logout-btn" class="btn-secondary i18n" data-en="Sign Out" data-zh="登出">Sign Out</button>
       </div>
 
-      <!-- Controls Toolbar -->
-      <div class="toolbar fade-in">
-        <div class="folder-tabs" id="folder-tabs">
-          <!-- Folder buttons rendered dynamically -->
-        </div>
-
-        <div class="selection-controls">
-          <button id="select-all-btn" class="btn-secondary i18n" data-en="Select All" data-zh="全選">Select All</button>
-          <button id="download-selected-btn" class="btn-primary" disabled>
-            <span class="i18n" data-en="Download Selected" data-zh="下載已選項目">Download Selected</span>
-            <span id="selected-count">(0)</span>
-          </button>
-        </div>
+      <!-- Gallery Grid -->
+      <div class="photos-grid" id="photos-grid">
+        <p style="grid-column: 1/-1; text-align: center; color: rgba(223,246,242,0.5); padding: 40px;">
+          Loading photos gallery...
+        </p>
       </div>
-
-      <!-- Photos Grid -->
-      <div id="photo-grid" class="photo-grid fade-in">
-        <!-- Rendered dynamically -->
-      </div>
-    </div>
-  </main>
-
-  <!-- Lightbox Modal -->
-  <div id="lightbox" class="lightbox-modal">
-    <div class="lightbox-content">
-      <button class="lightbox-close" id="lightbox-close">&times;</button>
-      <img id="lightbox-img" class="lightbox-img" src="" alt="Enlarged photo">
-      <div id="lightbox-caption" class="lightbox-caption"></div>
     </div>
   </div>
 
-  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
+  <!-- Lightbox Popup -->
+  <div class="lightbox-modal" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close">&times;</button>
+    <div class="lightbox-content">
+      <img id="lightbox-img" src="" alt="" class="lightbox-img">
+      <div id="lightbox-title" class="lightbox-title"></div>
+    </div>
+  </div>
 
-  <!-- Firebase Modular SDK -->
   <script type="module">
-    import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { db, auth, isAllowedEmail } from './firebase-config.js';
-    
-    // Configure Google Auth Provider with Domain Restriction Hints
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ 
-      hd: 'gtcollege.edu.hk', // Prompts Google OAuth picker to default to school domain
-      prompt: 'select_account' 
-    });
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { db, auth } from './firebase-config.js';
 
-    let GALLERY_DATA = {};
-    let activeFolder = "";
-    let selectedPhotos = new Set();
+    const firebaseAuth = auth || getAuth();
+    const authContainer = document.getElementById('auth-container');
+    const galleryContent = document.getElementById('gallery-content');
+    const googleSigninBtn = document.getElementById('google-signin-btn');
 
-    // DOM Elements
-    const authSection = document.getElementById('auth-section');
-    const gallerySection = document.getElementById('gallery-section');
-    const authError = document.getElementById('auth-error');
-    const googleLoginBtn = document.getElementById('google-login-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const photoGrid = document.getElementById('photo-grid');
-    const folderTabs = document.getElementById('folder-tabs');
-    const selectAllBtn = document.getElementById('select-all-btn');
-    const downloadBtn = document.getElementById('download-selected-btn');
-    const selectedCountSpan = document.getElementById('selected-count');
+    let allImages = [];
+    let allFolders = [];
+    let activeFolderId = 'all';
+    let selectedImageIds = new Set();
 
-    /* ==========================================================================
-       PHOTO & FOLDER LOADING — Cloudinary + Firestore
-       Images are uploaded via the admin "Upload Photos" tab, which pushes
-       the file to Cloudinary (no Firebase Storage billing needed) and
-       writes a small metadata doc to the "galleryImages" Firestore
-       collection. This just reads that back and groups it by folder.
-       ========================================================================== */
-    async function autoDetectPhotos() {
-      GALLERY_DATA = {};
-      try {
-        const snap = await getDocs(collection(db, "galleryImages"));
-        snap.forEach(docSnap => {
-          const data = docSnap.data();
-          const folderName = data.folderPath || "Uncategorized";
-          if (!GALLERY_DATA[folderName]) GALLERY_DATA[folderName] = [];
-          GALLERY_DATA[folderName].push({
-            name: data.name || docSnap.id,
-            path: data.url,
-            title: data.title || data.name || "Untitled"
-          });
-        });
-      } catch (err) {
-        console.error("Failed to load gallery from Firestore:", err);
-      }
+    const gridEl = document.getElementById('photos-grid');
+    const filtersEl = document.getElementById('folder-filters');
+    const countEl = document.getElementById('selected-count');
+    const downloadBtn = document.getElementById('download-zip-btn');
 
-      const folders = Object.keys(GALLERY_DATA);
-      if (folders.length > 0) {
-        activeFolder = folders[0];
-        renderFolderTabs();
-        renderPhotos();
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxTitle = document.getElementById('lightbox-title');
+    const lightboxClose = document.getElementById('lightbox-close');
+
+    // 1. Authentication Check Listener
+    onAuthStateChanged(firebaseAuth, (user) => {
+      if (user && user.email && user.email.toLowerCase().endsWith('@gtcollege.edu.hk')) {
+        authContainer.style.display = 'none';
+        galleryContent.style.display = 'block';
+        initGallery();
       } else {
-        photoGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.6; padding: 40px 0;">No photos uploaded yet. Ask an admin to upload some in the Admin panel\'s "Upload Photos" tab.</p>';
-      }
-    }
-
-    // Authentication Handlers
-    googleLoginBtn.addEventListener('click', async () => {
-      authError.style.display = 'none';
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        
-        // Strict Domain Check
-        if (!isAllowedEmail(user.email)) {
-          await signOut(auth);
-          showError("Access denied. You must sign in using an official @gtcollege.edu.hk email account.");
+        if (user) {
+          alert("Access restricted: Please sign in with your @gtcollege.edu.hk email account.");
+          signOut(firebaseAuth);
         }
-      } catch (error) {
-        showError(error.message || "Failed to sign in. Please try again.");
+        galleryContent.style.display = 'none';
+        authContainer.style.display = 'block';
       }
     });
 
-    logoutBtn.addEventListener('click', () => signOut(auth));
+    // 2. Google Sign-In Handler
+    googleSigninBtn.addEventListener('click', async () => {
+      try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ hd: 'gtcollege.edu.hk' });
+        
+        const result = await signInWithPopup(firebaseAuth, provider);
+        const user = result.user;
 
-    onAuthStateChanged(auth, async (user) => {
-      if (user && isAllowedEmail(user.email)) {
-        authSection.style.display = 'none';
-        gallerySection.style.display = 'block';
-
-        document.getElementById('user-avatar').src = user.photoURL || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(user.displayName);
-        document.getElementById('user-name').textContent = user.displayName || 'G.T. Student';
-        document.getElementById('user-email').textContent = user.email;
-
-        await autoDetectPhotos();
-      } else {
-        gallerySection.style.display = 'none';
-        authSection.style.display = 'block';
+        if (user && user.email && user.email.toLowerCase().endsWith('@gtcollege.edu.hk')) {
+          // Immediately refresh the page upon successful login
+          window.location.reload();
+        } else {
+          alert("Access restricted: You must use a @gtcollege.edu.hk email account.");
+          await signOut(firebaseAuth);
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error("Sign in failed:", err);
+        if (err.code !== 'auth/popup-closed-by-user') {
+          alert("Sign-in failed: " + err.message);
+        }
       }
     });
 
-    function showError(msg) {
-      authError.textContent = msg;
-      authError.style.display = 'block';
+    // 3. Load Firestore Gallery Data
+    async function initGallery() {
+      try {
+        const [imagesSnap, foldersSnap] = await Promise.all([
+          getDocs(collection(db, "galleryImages")),
+          getDocs(collection(db, "galleryFolders"))
+        ]);
+
+        allImages = imagesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        allFolders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        renderFilters();
+        renderGallery();
+      } catch (err) {
+        console.error("Failed to load gallery:", err);
+        gridEl.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#ff6b6b; padding:40px;">Failed to load photos: ${err.message}</p>`;
+      }
     }
 
-    // Gallery Render Logic
-    function renderFolderTabs() {
-      folderTabs.innerHTML = '';
-      Object.keys(GALLERY_DATA).forEach(folder => {
-        const btn = document.createElement('button');
-        btn.className = `tab-btn ${folder === activeFolder ? 'active' : ''}`;
-        btn.textContent = folder;
-        btn.onclick = () => {
-          activeFolder = folder;
-          selectedPhotos.clear();
-          updateSelectionUI();
-          renderFolderTabs();
-          renderPhotos();
-        };
-        folderTabs.appendChild(btn);
+    function renderFilters() {
+      let html = `<button class="filter-btn ${activeFolderId === 'all' ? 'active' : ''}" data-folder-id="all">✨ All Photos</button>`;
+      allFolders.forEach(folder => {
+        html += `<button class="filter-btn ${activeFolderId === folder.id ? 'active' : ''}" data-folder-id="${folder.id}">📁 ${escapeHtml(folder.name)}</button>`;
+      });
+      filtersEl.innerHTML = html;
+
+      filtersEl.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeFolderId = btn.getAttribute('data-folder-id');
+          filtersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderGallery();
+        });
       });
     }
 
-    function renderPhotos() {
-      photoGrid.innerHTML = '';
-      const photos = GALLERY_DATA[activeFolder] || [];
+    function renderGallery() {
+      const filtered = activeFolderId === 'all'
+        ? allImages
+        : allImages.filter(img => img.folderId === activeFolderId);
 
-      if (photos.length === 0) {
-        photoGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.6; padding: 40px 0;">No photos available in this folder.</p>';
+      if (filtered.length === 0) {
+        gridEl.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:rgba(223,246,242,0.5); padding:40px;">No photos available in this folder.</p>`;
         return;
       }
 
-      photos.forEach((photo) => {
-        const card = document.createElement('div');
-        const isSelected = selectedPhotos.has(photo.path);
-        card.className = `photo-card ${isSelected ? 'selected' : ''}`;
-
-        card.innerHTML = `
-          <div class="photo-checkbox-wrapper">
-            <input type="checkbox" class="photo-checkbox" ${isSelected ? 'checked' : ''}>
-          </div>
-          <img src="${photo.path}" alt="${photo.title}" class="photo-img" loading="lazy" onerror="this.src='https://via.placeholder.com/400x300/0a1a20/7fe9f0?text=Photo+Not+Found'">
-          <div class="photo-overlay">
-            <span class="photo-title">${photo.title}</span>
+      gridEl.innerHTML = filtered.map(img => {
+        const isChecked = selectedImageIds.has(img.id);
+        return `
+          <div class="photo-card" data-img-id="${img.id}">
+            <input type="checkbox" class="photo-select-checkbox" data-id="${img.id}" ${isChecked ? 'checked' : ''}>
+            <img src="${img.url}" alt="${escapeHtml(img.title || img.name || 'Photo')}" loading="lazy">
+            <div class="photo-overlay">
+              <span class="photo-title">${escapeHtml(img.title || img.name || 'Untitled')}</span>
+              <span class="photo-folder">${escapeHtml(img.folderPath || 'Gallery')}</span>
+            </div>
           </div>
         `;
+      }).join('');
 
-        const checkbox = card.querySelector('.photo-checkbox');
-
-        checkbox.addEventListener('click', (e) => {
+      gridEl.querySelectorAll('.photo-select-checkbox').forEach(cb => {
+        cb.addEventListener('click', (e) => {
           e.stopPropagation();
-          toggleSelection(photo.path, checkbox.checked, card);
+          const id = cb.getAttribute('data-id');
+          if (cb.checked) selectedImageIds.add(id);
+          else selectedImageIds.delete(id);
+          updateToolbar();
         });
+      });
 
+      gridEl.querySelectorAll('.photo-card').forEach(card => {
         card.addEventListener('click', () => {
-          openLightbox(photo.path, photo.title);
+          const id = card.getAttribute('data-img-id');
+          const img = allImages.find(x => x.id === id);
+          if (img) openLightbox(img);
         });
-
-        photoGrid.appendChild(card);
       });
     }
 
-    function toggleSelection(path, isChecked, cardEl) {
-      if (isChecked) {
-        selectedPhotos.add(path);
-        cardEl.classList.add('selected');
-      } else {
-        selectedPhotos.delete(path);
-        cardEl.classList.remove('selected');
-      }
-      updateSelectionUI();
+    function updateToolbar() {
+      countEl.textContent = `${selectedImageIds.size} photo(s) selected`;
+      downloadBtn.disabled = selectedImageIds.size === 0;
     }
 
-    function updateSelectionUI() {
-      const count = selectedPhotos.size;
-      selectedCountSpan.textContent = `(${count})`;
-      downloadBtn.disabled = count === 0;
-    }
-
-    selectAllBtn.addEventListener('click', () => {
-      const photos = GALLERY_DATA[activeFolder] || [];
-      const allSelected = photos.every(p => selectedPhotos.has(p.path));
-
-      photos.forEach(p => {
-        if (allSelected) {
-          selectedPhotos.delete(p.path);
-        } else {
-          selectedPhotos.add(p.path);
-        }
-      });
-
-      updateSelectionUI();
-      renderPhotos();
-    });
-
-    // Multi-Download using JSZip
-    downloadBtn.addEventListener('click', async () => {
-      if (selectedPhotos.size === 0) return;
-
-      const originalText = downloadBtn.innerHTML;
-      downloadBtn.disabled = true;
-      downloadBtn.textContent = "Zipping photos...";
-
-      const zip = new JSZip();
-      const folder = zip.folder("Aurora_Photos");
-
-      const promises = Array.from(selectedPhotos).map(async (path) => {
-        try {
-          const response = await fetch(path);
-          const blob = await response.blob();
-          const filename = path.split('/').pop();
-          folder.file(filename, blob);
-        } catch (err) {
-          console.error("Failed to fetch image:", path, err);
-        }
-      });
-
-      await Promise.all(promises);
-
-      const content = await zip.generateAsync({ type: "blob" });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `Aurora_${activeFolder.replace(/\s+/g, '_')}_Photos.zip`;
-      link.click();
-
-      downloadBtn.innerHTML = originalText;
-      updateSelectionUI();
-    });
-
-    // Lightbox Functionality
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    const lightboxCaption = document.getElementById('lightbox-caption');
-    const lightboxClose = document.getElementById('lightbox-close');
-
-    function openLightbox(src, title) {
-      lightboxImg.src = src;
-      lightboxCaption.textContent = title;
+    function openLightbox(img) {
+      lightboxImg.src = img.url;
+      lightboxTitle.textContent = img.title || img.name || '';
       lightbox.classList.add('active');
     }
 
     lightboxClose.addEventListener('click', () => lightbox.classList.remove('active'));
-    lightbox.addEventListener('click', (e) => {
-      if (e.target === lightbox) lightbox.classList.remove('active');
-    });
-  </script>
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) lightbox.classList.remove('active'); });
 
-  <!-- Page Loader & Language Switching Scripts -->
-  <script>
-    let currentLang = localStorage.getItem('aurora_lang') || 'en';
-    let isSwitching = false;
+    downloadBtn.addEventListener('click', async () => {
+      if (selectedImageIds.size === 0) return;
+      downloadBtn.disabled = true;
+      downloadBtn.textContent = '⏳ Zipping...';
 
-    function setLanguage(lang) {
-      currentLang = lang;
-      localStorage.setItem('aurora_lang', lang);
-      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+      const zip = new JSZip();
+      const selected = allImages.filter(img => selectedImageIds.has(img.id));
 
-      document.querySelectorAll('.i18n').forEach(el => {
-        const text = el.getAttribute(`data-${lang}`);
-        if (text) el.innerHTML = text;
-      });
+      try {
+        for (let i = 0; i < selected.length; i++) {
+          const img = selected[i];
+          const response = await fetch(img.url);
+          const blob = await response.blob();
+          const filename = img.name || `photo-${i + 1}.jpg`;
+          zip.file(filename, blob);
+        }
 
-      const langText = document.getElementById('lang-text');
-      if (langText) {
-        langText.textContent = lang === 'en' ? '繁體中文' : 'English';
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = 'aurora-photos.zip';
+        a.click();
+      } catch (err) {
+        alert("Failed to download ZIP: " + err.message);
+      } finally {
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = '📥 Download Selected (ZIP)';
       }
+    });
+
+    function escapeHtml(str) { 
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
     }
-
-    setLanguage(currentLang);
-
-    document.getElementById('lang-btn').addEventListener('click', () => {
-      if (isSwitching) return;
-      isSwitching = true;
-      document.body.classList.remove('is-loaded');
-
-      setTimeout(() => {
-        setLanguage(currentLang === 'en' ? 'zh' : 'en');
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            document.body.classList.add('is-loaded');
-            setTimeout(() => { isSwitching = false; }, 1200);
-          });
-        });
-      }, 350);
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const video = document.getElementById('bg-video');
-      let pageRevealed = false;
-
-      const observerOptions = { root: null, rootMargin: '400px 0px 400px 0px', threshold: 0.01 };
-      const fadeObserver = new IntersectionObserver((entries, obs) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            obs.unobserve(entry.target);
-          }
-        });
-      }, observerOptions);
-
-      function revealPage() {
-        if (pageRevealed) return;
-        pageRevealed = true;
-        if (video) video.play().catch(() => {});
-        document.body.classList.add('is-loaded');
-        document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
-      }
-
-      const fallbackTimer = new Promise((resolve) => setTimeout(resolve, 2500));
-      Promise.race([
-        Promise.all([
-          document.fonts ? document.fonts.ready : Promise.resolve()
-        ]),
-        fallbackTimer
-      ]).then(() => revealPage());
-    });
   </script>
 </body>
 </html>
