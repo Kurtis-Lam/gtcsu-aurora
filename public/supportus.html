@@ -512,37 +512,11 @@
     <span id="lang-text">繁體中文</span>
   </button>
 
-  <!-- Mobile Navigation Overlay -->
-  <div class="nav-overlay" id="nav-overlay"></div>
-
-  <!-- Top Navigation Header -->
-  <header class="navbar">
-    <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Navigation">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-    <a href="index.html" class="nav-brand">
-      <img src="assets/aurora-logo.png" alt="Aurora Logo" class="nav-logo" onerror="this.style.display='none'">
-      <span class="nav-title">Aurora</span>
-    </a>
-    <nav class="nav-links" id="nav-links">
-      <a href="aboutus.html" class="nav-btn i18n" data-en="About Us" data-zh="關於我們">About Us</a>
-      <a href="activities.html" class="nav-btn i18n" data-en="Activities" data-zh="活動">Activities</a>
-      <a href="welfare.html" class="nav-btn i18n" data-en="Welfare" data-zh="福利">Welfare</a>
-      <a href="schedule.html" class="nav-btn i18n" data-en="Schedule" data-zh="日程表">Schedule</a>
-      <a href="feedbacks.html" class="nav-btn i18n" data-en="Feedback" data-zh="意見反饋">Feedback</a>
-      <a href="supportus.html" class="nav-btn active i18n" data-en="Support Us" data-zh="支持我們">Support Us</a>
-    </nav>
-  </header>
+  <!-- Dynamic Navigation Panel Mount Point -->
+  <div id="panel-container"></div>
 
   <!-- Video Background -->
-  <div class="sky">
-    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
-      <source src="assets/background.mp4" type="video/mp4">
-    </video>
-    <div class="sky-overlay"></div>
-  </div>
+  <div id="background-container"></div>
 
   <main class="page-container">
     <div class="header-section">
@@ -572,7 +546,7 @@
 
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
 
-  <script src="load-components.js"></script>
+  <script type="module" src="load-components.js"></script>
 
   <!--
     Support Us: vote tracking.
@@ -599,23 +573,10 @@
     unless the cooldown has genuinely elapsed.
   -->
   <script type="module">
-    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
-      getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, serverTimestamp
+      collection, doc, getDoc, setDoc, updateDoc, onSnapshot, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
-      authDomain: "gtcsu-aurora.firebaseapp.com",
-      projectId: "gtcsu-aurora",
-      storageBucket: "gtcsu-aurora.firebasestorage.app",
-      messagingSenderId: "961705164297",
-      appId: "1:961705164297:web:34331ed1cf626ec4e5c2d8",
-      measurementId: "G-ZWE0Z6VTZK"
-    };
-
-    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    import { db } from './firebase-config.js';
 
     // Must match the `duration.value(10, 'm')` in firestore.rules — this
     // copy only drives the on-page countdown display, the rule is what

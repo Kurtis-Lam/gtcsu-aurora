@@ -11,9 +11,8 @@
 <!-- Asset & Component Preloading -->
 <link rel="preload" href="panel.html" as="fetch" crossorigin>
 <link rel="preload" href="assets/aurora-logo.png" as="image">
-<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
 
-<script src="load-components.js"></script>
+<script type="module" src="load-components.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -468,12 +467,7 @@
   <div id="panel-container"></div>
 
   <!-- Video Background -->
-  <div class="sky">
-    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
-      <source src="assets/background.mp4" type="video/mp4">
-    </video>
-    <div class="sky-overlay"></div>
-  </div>
+  <div id="background-container"></div>
 
   <main class="wrap">
     <p class="council i18n" data-en="We are" data-zh="我們是">We are</p>

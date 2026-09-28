@@ -266,12 +266,7 @@
   <!-- Replaced inline header/nav components with panel container -->
   <div id="panel-container"></div>
 
-  <div class="sky">
-    <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto">
-      <source src="assets/background.mp4" type="video/mp4">
-    </video>
-    <div class="sky-overlay"></div>
-  </div>
+  <div id="background-container"></div>
 
   <main class="page-container">
     <div class="header-section fade-in">
@@ -533,6 +528,6 @@
       });
     });
   </script>
-  <script src="load-components.js"></script>
+  <script type="module" src="load-components.js"></script>
 </body>
 </html>
