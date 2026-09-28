@@ -1,9 +1,3 @@
-// GET  /api/support -> { ok, remainingMs }   (cooldown left for this account)
-// POST /api/support -> records one support vote for this account
-//
-// Identity = the signed-in @gtcollege.edu.hk Google account (verified server-side
-// from the Firebase ID token). Nothing is keyed on IP any more, so a whole school
-// sharing one network no longer shares one vote.
 import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
 import { guard, bearerToken, hashIp } from './_lib/http.js';
