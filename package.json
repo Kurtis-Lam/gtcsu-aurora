@@ -1,5 +1,9 @@
 {
+  "name": "gtcsu-aurora",
+  "private": true,
+  "type": "module",
   "dependencies": {
-    "javascript-obfuscator": "^5.7.0"
+    "cloudinary": "^2.5.0",
+    "firebase-admin": "^12.7.0"
   }
 }
