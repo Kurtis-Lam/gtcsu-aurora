@@ -8,9 +8,12 @@
 
 <script type="module" src="analytics.js"></script>
 
-<!-- Asset Preloading --> 
+<!-- Asset & Component Preloading --> 
+<link rel="preload" href="panel.html" as="fetch" crossorigin>
 <link rel="preload" href="assets/aurora-logo.png" as="image">
-<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+<link rel="preload" href="https://res.cloudinary.com/dl2xijhcd/video/upload/f_auto,q_auto,w_1280/v1790563703/background.mp4" as="video" type="video/mp4" crossorigin>
+
+<script type="module" src="load-components.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -546,32 +549,6 @@
 
   <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1" data-zh="優才（楊殷有娣）書院  -  2026–27 1 號候選內閣">G.T. (Ellen Yeung) College - 2026–27 Candidate Cabinet No. 1</footer>
 
-  <script type="module" src="load-components.js"></script>
-
-  <!--
-    Support Us: vote tracking.
-
-    Everything specific to this page's "support counter" now lives here
-    rather than in the shared analytics.js — it isn't general site
-    analytics, it's a one-off, rate-limited counter feature.
-
-    Identity/rate-limiting: instead of browser fingerprinting (screen
-    size, WebGL renderer, canvas hash, audio fingerprint, installed
-    fonts, etc. — which, combined with an IP address, ends up MORE
-    identifying than the IP alone, and is not proportionate to collect
-    just to gate a support-counter button), this only ever computes a
-    salted SHA-256 hash of the visitor's public IP address. That hash is
-    the sole thing stored, and it's enough to enforce "once per network
-    per cooldown" regardless of browser, profile, or incognito mode,
-    since none of those change your IP address.
-
-    Security: the cooldown is enforced by firestore.rules, not just by
-    this script — see the comment on the `supporters/{ipHash}` rule.
-    That means the button being disabled client-side is just a UX nicety;
-    even if someone bypasses it entirely (e.g. by pasting Firestore SDK
-    calls into the console), the write will be rejected by Firestore
-    unless the cooldown has genuinely elapsed.
-  -->
   <script type="module">
     import {
       collection, doc, getDoc, setDoc, updateDoc, onSnapshot, serverTimestamp
