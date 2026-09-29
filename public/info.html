@@ -1,0 +1,75 @@
+<div class="info-popup" id="info-popup" role="dialog" aria-modal="true" aria-labelledby="info-title" aria-hidden="true">
+  <div class="info-sheet">
+    <button type="button" class="info-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+
+    <h2 class="info-title i18n" id="info-title" data-en="About this site" data-zh="關於本網站">About this site</h2>
+
+    <section class="info-section">
+      <h3 class="i18n" data-en="Version" data-zh="版本">Version</h3>
+      <p class="info-version" id="info-version"></p>
+      <p class="info-meta"><span class="i18n" data-en="Last updated:" data-zh="最後更新：">Last updated:</span> <span id="info-updated"></span></p>
+    </section>
+
+    <section class="info-section">
+      <h3 class="i18n" data-en="Contributing" data-zh="參與貢獻">Contributing</h3>
+      <p class="i18n" data-en="I'd love for people to contribute! Feel free to submit a pull request <a href=&quot;https://github.com/Kurtis-Lam/gtcsu-aurora&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;>here</a>."
+         data-zh="非常歡迎大家一起參與貢獻！歡迎在<a href=&quot;https://github.com/Kurtis-Lam/gtcsu-aurora&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;>這裡</a>提交 Pull Request。">I'd love for people to contribute! Feel free to submit a pull request <a href="https://github.com/Kurtis-Lam/gtcsu-aurora" target="_blank" rel="noopener noreferrer">here</a>.</p>
+    </section>
+
+    <p class="info-footer i18n" data-en="Made by Kurtis" data-zh="由 Kurtis 製作">Made by Kurtis</p>
+  </div>
+</div>
+<style>
+  .info-popup {
+    position: fixed; inset: 0; z-index: 4000;
+    display: flex; align-items: flex-end; justify-content: center;
+    background: rgba(5, 11, 18, 0.72);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; visibility: hidden;
+    transition: opacity .3s ease, visibility .3s ease;
+  }
+  .info-popup.active { opacity: 1; visibility: visible; }
+
+  .info-sheet {
+    position: relative; width: 100%; max-width: 480px; max-height: 85vh; max-height: 85dvh;
+    overflow-y: auto; overscroll-behavior: contain;
+    padding: 30px 28px calc(24px + env(safe-area-inset-bottom, 0px));
+    background: rgba(10, 26, 32, 0.97);
+    border: 1px solid rgba(127, 233, 240, 0.3); border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
+    color: #dff6f2; font-family: 'Manrope', sans-serif; text-align: left;
+    transform: translateY(100%);
+    transition: transform .4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .info-popup.active .info-sheet { transform: translateY(0); }
+
+  .info-close {
+    position: absolute; top: 14px; right: 14px;
+    width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: 1px solid rgba(127, 233, 240, 0.3);
+    background: transparent; color: #eafffb; cursor: pointer; transition: all .25s ease;
+  }
+  .info-close:hover { background: rgba(127, 233, 240, 0.15); border-color: rgba(127, 233, 240, 0.7); }
+  .info-close:focus-visible, .info-sheet a:focus-visible { outline: 2px solid #7fe9f0; outline-offset: 2px; }
+
+  .info-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 1.3rem; color: #eafffb; margin: 0 40px 20px 0; }
+  .info-section { margin-bottom: 20px; }
+  .info-section h3 { font-size: 0.95rem; font-weight: 600; color: #7fe9f0; margin: 0 0 6px; }
+  .info-section p { font-size: 0.92rem; line-height: 1.65; color: rgba(223, 246, 242, 0.85); margin: 0; }
+  .info-version { font-size: 1.15rem !important; font-weight: 600; color: #eafffb !important; }
+  .info-meta { margin-top: 4px !important; font-size: 0.82rem !important; color: rgba(223, 246, 242, 0.6) !important; }
+  .info-sheet a { color: #2fe6b8; text-decoration: underline; text-underline-offset: 3px; }
+  .info-sheet a:hover { color: #6ee89a; }
+  .info-footer { margin: 24px 0 0; padding-top: 16px; border-top: 1px solid rgba(223, 246, 242, 0.12); text-align: center; font-size: 0.82rem; color: rgba(223, 246, 242, 0.55); }
+
+  @media (min-width: 600px) {
+    .info-popup { align-items: flex-end; }
+    .info-sheet { border-bottom: 1px solid rgba(127, 233, 240, 0.3); border-radius: 20px 20px 0 0; margin-bottom: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .info-popup, .info-sheet { transition-duration: 0.001ms; }
+  }
+</style>
