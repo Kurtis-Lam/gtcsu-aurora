@@ -97,4 +97,4 @@ Be kind and respectful. Feedback on code is about the code, not the person. Hara
 
 ---
 
-Made with ❤️ by Kurtis
+Built with ❤️ by Kurtis

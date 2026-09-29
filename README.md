@@ -69,7 +69,7 @@ If you are looking forward to contributing, please see CONTRIBUTING.md
 
 ## 🙌 Acknowledgements
 
-Built with ❤️ by Kurtis.
+Built with ❤️ by Kurtis
 
 ---
 
