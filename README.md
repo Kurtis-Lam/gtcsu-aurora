@@ -45,10 +45,8 @@ The webpage is hosted on:
 
 ## 🙌 Credits
 
-- **Design & Development:** Aurora Cabinet 2026–27 Vice President and Members 
-- **Fonts:** Google Fonts – Cinzel, Manrope, Cormorant Garamond
-- **Icons:** Custom SVG icons
-- **Video Background:** Provided by the cabinet
+- **Contents:** Aurora Cabinet 2026–27 Vice President and Members
+- **Development:** Kurtis
 
 ---
 
@@ -61,9 +59,11 @@ Licensed under MIT.
 
 ---
 
-## 📬 Contact
+## 📬 Contact & Contributing
 
 For any enquiries, please reach out via Aurora's Official Instagram: [@gteyc_aurora2627](https://www.instagram.com/gteyc_aurora2627/) or me at: `kurtislam100@gmail.com`
+
+If you are looking forward to contributing, please see CONTRIBUTING.md
 
 ---
 
