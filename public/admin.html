@@ -1023,20 +1023,47 @@
     let timeSpentChartInstance = null;
     let dailyViewsChartInstance = null;
 
+    /*
+     * Specified Sub Destinations Order:
+     * 1. /                       -> Yellow (#ffd700)
+     * 2. /photos                 -> Orange (#ff9800)
+     * 3. /aboutus                -> Red (#ff4d4d)
+     * 4. /activities             -> Pink (#ff69b4)
+     * 5. /welfare                -> Violet (#a855f7)
+     * 6. /schedule               -> Purple (#7b1fa2)
+     * 7. /financial              -> Blue (#2196f3)
+     * 8. /feedbacks              -> Blue-Green / Turquoise (#00ced1)
+     * 9. /supportus              -> Green (#2ecc71)
+     */
+    const DESTINATION_ORDER = [
+      '/',
+      '/photos',
+      '/aboutus',
+      '/activities',
+      '/welfare',
+      '/schedule',
+      '/financial',
+      '/feedbacks',
+      '/supportus'
+    ];
+
     const routeColors = {
       'all': '#2fe6b8',
       '/admin': '#ffffff',
-      '/': '#ffd700',
-      '/index': '#ffd700',
-      '/aboutus': '#ff9800',
-      '/activities': '#ff69b4',
-      '/welfare': '#9c27b0',
-      '/schedule': '#0914e6',
-      '/financial': '#00b4d8',
-      '/feedbacks': '#2ecc71',
-      '/supportus': '#009635',
-      '/photos': '#00b4d8'
+      '/': '#ffd700',          // Yellow
+      '/index': '#ffd700',     // Yellow
+      '/photos': '#ff9800',     // Orange
+      '/aboutus': '#ff4d4d',    // Red
+      '/activities': '#ff69b4', // Pink
+      '/acitivites': '#ff69b4', // Pink
+      '/welfare': '#a855f7',    // Violet
+      '/schedule': '#7b1fa2',   // Purple
+      '/financial': '#2196f3',  // Blue
+      '/feedbacks': '#00ced1',  // Blue-green (turquoise)
+      '/feedback': '#00ced1',   // Blue-green (turquoise)
+      '/supportus': '#2ecc71'   // Green
     };
+
     const FALLBACK_PALETTE = ['#f77f00', '#06d6a0', '#ef476f', '#118ab2', '#ffd166', '#8338ec', '#3a86ff', '#fb5607'];
     
     function colorForRoute(route) {
@@ -1191,10 +1218,6 @@
       if (currentPage < maxPages) { currentPage++; renderLogsModal(); }
     });
 
-    // Who is an admin is defined ONLY in firestore.rules (isAdmin()). We ask
-    // the rules by reading a doc that only admins may read. The real protection
-    // is server-side: even if someone bypasses this page, Firestore and the
-    // /api routes still refuse them.
     async function isAdminUser() {
       try {
         await getDoc(doc(db, 'adminCheck', 'ping'));
@@ -1230,7 +1253,7 @@
         showLogin();
         return;
       }
-      if (auth.currentUser?.uid !== user.uid) return; // account changed while checking
+      if (auth.currentUser?.uid !== user.uid) return;
 
       if (!admin) {
         alert('This Google account is not authorized to access the admin portal.');
@@ -1265,29 +1288,18 @@
 
     const MAX_RANGE_DAYS = 365;
 
-    const VALID_ROUTES = new Set([
-      '/',
-      '/aboutus',
-      '/activities',
-      '/welfare',
-      '/schedule',
-      '/financial',
-      '/feedbacks',
-      '/supportus',
-      '/photos',
-      '/admin'
-    ]);
-
     const ALLOWED_DESTINATIONS = new Set([
       '/',
+      '/photos',
       '/aboutus',
       '/activities',
+      '/acitivites',
       '/welfare',
       '/schedule',
       '/financial',
       '/feedbacks',
+      '/feedback',
       '/supportus',
-      '/photos',
       '/admin'
     ]);
 
@@ -1301,14 +1313,24 @@
         querySnapshot.forEach(docSnap => {
           let path = (docSnap.data().path || '/').toLowerCase().replace(/\.html$/, '');
           if (path === '/index' || path === '') path = '/';
+          if (path === '/acitivites') path = '/activities';
+          if (path === '/feedback') path = '/feedbacks';
           
-          // Only recognize routes in the allowed destinations set
           if (ALLOWED_DESTINATIONS.has(path)) {
             discoveredRoutes.add(path);
           }
         });
 
-        const validRoutes = Array.from(discoveredRoutes);
+        // Sort discovered routes according to the strict sub-destination order
+        const validRoutes = Array.from(discoveredRoutes).sort((a, b) => {
+          const indexA = DESTINATION_ORDER.indexOf(a);
+          const indexB = DESTINATION_ORDER.indexOf(b);
+          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+          if (indexA !== -1) return -1;
+          if (indexB !== -1) return 1;
+          return a.localeCompare(b);
+        });
+
         const metricRoutes = validRoutes.filter(r => r !== '/admin');
         metricRoutes.forEach(colorForRoute);
 
@@ -1332,8 +1354,9 @@
           const data = docSnap.data();
           let path = (data.path || '/').toLowerCase().replace(/\.html$/, '');
           if (path === '/index' || path === '') path = '/';
+          if (path === '/acitivites') path = '/activities';
+          if (path === '/feedback') path = '/feedbacks';
 
-          // Skip entries that do not match a valid route
           if (!validRoutes.includes(path)) return;
 
           const duration = Number(data.durationSeconds) || 0;
@@ -1671,8 +1694,6 @@
 
     function tsToMillis(ts) { return ts && ts.toMillis ? ts.toMillis() : 0; }
 
-    // supporters/{id}: user_<uid> = account cooldown record, device_<hash> = device
-    // cooldown record, ip_<hash> = legacy records from before the device switch.
     function supporterKind(s) {
       if (s.type === 'account' || String(s.id).startsWith('user_')) return 'account';
       if (String(s.id).startsWith('ip_')) return 'legacy';
@@ -1788,7 +1809,6 @@
       });
     }
 
-    // Firestore batches are limited to 500 operations, so delete in chunks.
     async function deleteInChunks(refs) {
       for (let i = 0; i < refs.length; i += 400) {
         const batch = writeBatch(db);
@@ -1842,8 +1862,6 @@
 
     /* =========================================================================
        PHOTOS TAB — private Cloudinary uploads (signed by /api/sign-upload)
-       + Firestore metadata. Files are only viewable through signed URLs that
-       /api/photo-urls gives to signed-in school accounts and admins.
        ========================================================================= */
     const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
     let allFolders = [];
@@ -1859,7 +1877,6 @@
     const fileInputEl = document.getElementById('upload-file-input');
     const uploadProgressListEl = document.getElementById('upload-progress-list');
 
-    // Authenticated call to one of our /api routes (the server re-checks admin via the rules).
     async function apiPost(path, payload) {
       const token = await auth.currentUser.getIdToken();
       const res = await fetch(API_BASE + path, {
@@ -1998,7 +2015,6 @@
       });
     }
 
-    // Uploads go straight to Cloudinary with a one-time signature from our server.
     async function uploadToCloudinary(file, progressRow) {
       const s = await apiPost('/api/sign-upload');
       const form = new FormData();
