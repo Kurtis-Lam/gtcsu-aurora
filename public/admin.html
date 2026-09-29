@@ -1265,6 +1265,32 @@
 
     const MAX_RANGE_DAYS = 365;
 
+    const VALID_ROUTES = new Set([
+      '/',
+      '/aboutus',
+      '/activities',
+      '/welfare',
+      '/schedule',
+      '/financial',
+      '/feedbacks',
+      '/supportus',
+      '/photos',
+      '/admin'
+    ]);
+
+    const ALLOWED_DESTINATIONS = new Set([
+      '/',
+      '/aboutus',
+      '/activities',
+      '/welfare',
+      '/schedule',
+      '/financial',
+      '/feedbacks',
+      '/supportus',
+      '/photos',
+      '/admin'
+    ]);
+
     function loadAnalyticsData() {
       if (analyticsUnsub) analyticsUnsub();
       analyticsUnsub = onSnapshot(collection(db, "pageviews"), (querySnapshot) => {
@@ -1275,8 +1301,13 @@
         querySnapshot.forEach(docSnap => {
           let path = (docSnap.data().path || '/').toLowerCase().replace(/\.html$/, '');
           if (path === '/index' || path === '') path = '/';
-          discoveredRoutes.add(path);
+          
+          // Only recognize routes in the allowed destinations set
+          if (ALLOWED_DESTINATIONS.has(path)) {
+            discoveredRoutes.add(path);
+          }
         });
+
         const validRoutes = Array.from(discoveredRoutes);
         const metricRoutes = validRoutes.filter(r => r !== '/admin');
         metricRoutes.forEach(colorForRoute);
@@ -1301,6 +1332,8 @@
           const data = docSnap.data();
           let path = (data.path || '/').toLowerCase().replace(/\.html$/, '');
           if (path === '/index' || path === '') path = '/';
+
+          // Skip entries that do not match a valid route
           if (!validRoutes.includes(path)) return;
 
           const duration = Number(data.durationSeconds) || 0;
@@ -1354,7 +1387,6 @@
 
       }, (err) => console.error("Error subscribing to pageviews:", err));
     }
-
     document.querySelectorAll('#range-filter-container .dest-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         activeDateRangeDays = parseInt(e.currentTarget.getAttribute('data-range'), 10);

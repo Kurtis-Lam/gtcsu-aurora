@@ -8,165 +8,153 @@ import {
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { db, auth, firebaseConfig } from './firebase-config.js';
 
-// ---------------------------------------------------------------------------
-// Aurora page-view analytics.
-//
-// This file has ONE job: record that someone opened this page, and how
-// long they were actually looking at it. It does not identify visitors
-// in any way (no fingerprinting, no device info, no IP).
-//
-// Support-vote rate limiting is handled server-side by /api/support.
-// ---------------------------------------------------------------------------
+// List of allowed page routes
+const VALID_ROUTES = new Set([
+  '/',
+  '/aboutus',
+  '/activities',
+  '/welfare',
+  '/schedule',
+  '/financial',
+  '/feedbacks',
+  '/supportus',
+  '/photos',
+  '/admin'
+]);
 
 function getHKTDateString(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(date);
 }
 
-const path = window.location.pathname || '/';
-const pageviewRef = doc(collection(db, "pageviews"));
+let path = (window.location.pathname || '/').toLowerCase().replace(/\.html$/, '');
+if (path === '/index' || path === '') path = '/';
 
-const FIRESTORE_COMMIT_URL =
-  `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}` +
-  `/databases/(default)/documents:commit?key=${firebaseConfig.apiKey}`;
+// Only initiate pageview tracking if the route is valid
+if (VALID_ROUTES.has(path)) {
+  const pageviewRef = doc(collection(db, "pageviews"));
 
-const PAGEVIEW_DOC_PATH =
-  `projects/${firebaseConfig.projectId}/databases/(default)/documents/pageviews/${pageviewRef.id}`;
+  const FIRESTORE_COMMIT_URL =
+    `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}` +
+    `/databases/(default)/documents:commit?key=${firebaseConfig.apiKey}`;
 
-function toFirestoreValue(value) {
-  if (value === null) return { nullValue: "NULL_VALUE" };
-  if (value instanceof Date) return { timestampValue: value.toISOString() };
-  if (typeof value === "number") {
-    return Number.isInteger(value) ? { integerValue: value } : { doubleValue: value };
+  const PAGEVIEW_DOC_PATH =
+    `projects/${firebaseConfig.projectId}/databases/(default)/documents/pageviews/${pageviewRef.id}`;
+
+  function toFirestoreValue(value) {
+    if (value === null) return { nullValue: "NULL_VALUE" };
+    if (value instanceof Date) return { timestampValue: value.toISOString() };
+    if (typeof value === "number") {
+      return Number.isInteger(value) ? { integerValue: value } : { doubleValue: value };
+    }
+    return { stringValue: String(value) };
   }
-  return { stringValue: String(value) };
-}
 
-// Fired from `pagehide`, where we can no longer rely on an async SDK call
-// completing. sendBeacon (with a manual REST fallback) guarantees the
-// write is queued before the page is torn down.
-function sendExitUpdate(fields) {
-  const fieldPaths = Object.keys(fields);
-  const fieldsPayload = {};
-  fieldPaths.forEach((key) => {
-    fieldsPayload[key] = toFirestoreValue(fields[key]);
+  function sendExitUpdate(fields) {
+    const fieldPaths = Object.keys(fields);
+    const fieldsPayload = {};
+    fieldPaths.forEach((key) => {
+      fieldsPayload[key] = toFirestoreValue(fields[key]);
+    });
+
+    const body = JSON.stringify({
+      writes: [
+        {
+          updateMask: { fieldPaths },
+          update: { name: PAGEVIEW_DOC_PATH, fields: fieldsPayload }
+        }
+      ]
+    });
+
+    let sent = false;
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: "application/json" });
+      sent = navigator.sendBeacon(FIRESTORE_COMMIT_URL, blob);
+    }
+
+    if (!sent) {
+      fetch(FIRESTORE_COMMIT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true
+      }).catch((err) => console.error("Analytics exit beacon fallback failed:", err));
+    }
+  }
+
+  function isEngaged() {
+    return document.visibilityState === "visible" && document.hasFocus();
+  }
+
+  let accumulatedMs = 0;
+  let engagedSince = isEngaged() ? Date.now() : null;
+
+  function flushEngagedTime() {
+    if (engagedSince !== null) {
+      accumulatedMs += Date.now() - engagedSince;
+      engagedSince = null;
+    }
+  }
+
+  function refreshEngagementState() {
+    const engaged = isEngaged();
+    if (engaged && engagedSince === null) {
+      engagedSince = Date.now();
+    } else if (!engaged && engagedSince !== null) {
+      flushEngagedTime();
+    }
+  }
+
+  function currentDurationSeconds() {
+    const liveMs = accumulatedMs + (engagedSince !== null ? Date.now() - engagedSince : 0);
+    return Math.max(1, Math.round(liveMs / 1000));
+  }
+
+  function updateDuration() {
+    return updateDoc(pageviewRef, {
+      durationSeconds: currentDurationSeconds(),
+      lastActiveAt: serverTimestamp()
+    }).catch(err => console.error("Analytics duration update failed:", err));
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    refreshEngagementState();
+    if (!isEngaged()) updateDuration();
   });
 
-  const body = JSON.stringify({
-    writes: [
-      {
-        updateMask: { fieldPaths },
-        update: { name: PAGEVIEW_DOC_PATH, fields: fieldsPayload }
-      }
-    ]
+  window.addEventListener("focus", refreshEngagementState);
+  window.addEventListener("blur", () => {
+    refreshEngagementState();
+    updateDuration();
   });
 
-  let sent = false;
-  if (navigator.sendBeacon) {
-    const blob = new Blob([body], { type: "application/json" });
-    sent = navigator.sendBeacon(FIRESTORE_COMMIT_URL, blob);
-  }
-
-  if (!sent) {
-    fetch(FIRESTORE_COMMIT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      keepalive: true
-    }).catch((err) => console.error("Analytics exit beacon fallback failed:", err));
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Engagement time tracking.
-//
-// A page only counts as "being viewed" while its tab is the visible tab
-// AND the browser window has focus. That means:
-//   - switching to another tab pauses the clock
-//   - switching to another application (alt-tab) pauses the clock, even
-//     though the tab itself is technically still "visible" according to
-//     the Page Visibility API
-//   - coming back to the tab resumes the clock
-// Previously only tab-visibility was tracked, so a tab left open (but
-// unfocused, e.g. behind another window) all day kept accumulating time,
-// which is almost certainly why some pages showed multi-thousand-second
-// "average" durations - a handful of forgotten open tabs were dragging
-// the average way up.
-// ---------------------------------------------------------------------------
-
-function isEngaged() {
-  return document.visibilityState === "visible" && document.hasFocus();
-}
-
-let accumulatedMs = 0;
-let engagedSince = isEngaged() ? Date.now() : null;
-
-function flushEngagedTime() {
-  if (engagedSince !== null) {
-    accumulatedMs += Date.now() - engagedSince;
-    engagedSince = null;
-  }
-}
-
-function refreshEngagementState() {
-  const engaged = isEngaged();
-  if (engaged && engagedSince === null) {
-    engagedSince = Date.now();
-  } else if (!engaged && engagedSince !== null) {
-    flushEngagedTime();
-  }
-}
-
-function currentDurationSeconds() {
-  const liveMs = accumulatedMs + (engagedSince !== null ? Date.now() - engagedSince : 0);
-  return Math.max(1, Math.round(liveMs / 1000));
-}
-
-function updateDuration() {
-  return updateDoc(pageviewRef, {
-    durationSeconds: currentDurationSeconds(),
+  setDoc(pageviewRef, {
+    path: path,
+    durationSeconds: 0,
+    dateStr: getHKTDateString(),
+    timestamp: serverTimestamp(),
+    openedAt: serverTimestamp(),
     lastActiveAt: serverTimestamp()
-  }).catch(err => console.error("Analytics duration update failed:", err));
-}
+  }).catch(err => console.error("Analytics open logging failed:", err));
 
-document.addEventListener("visibilitychange", () => {
-  refreshEngagementState();
-  if (!isEngaged()) updateDuration();
-});
-
-window.addEventListener("focus", refreshEngagementState);
-window.addEventListener("blur", () => {
-  refreshEngagementState();
-  updateDuration();
-});
-
-setDoc(pageviewRef, {
-  path: path,
-  durationSeconds: 0,
-  dateStr: getHKTDateString(),
-  timestamp: serverTimestamp(),
-  openedAt: serverTimestamp(),
-  lastActiveAt: serverTimestamp()
-}).catch(err => console.error("Analytics open logging failed:", err));
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    updateDoc(pageviewRef, {
-      userEmail: user.email || "",
-      userName: user.displayName || user.email || ""
-    }).catch(err => console.error("Analytics user update failed:", err));
-  }
-});
-
-// 15s keeps duration accurate enough while staying well inside Firestore's free write quota.
-const HEARTBEAT_INTERVAL_MS = 15000;
-setInterval(() => {
-  if (isEngaged()) updateDuration();
-}, HEARTBEAT_INTERVAL_MS);
-
-window.addEventListener("pagehide", () => {
-  sendExitUpdate({
-    durationSeconds: currentDurationSeconds(),
-    lastActiveAt: new Date(),
-    closedAt: new Date()
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      updateDoc(pageviewRef, {
+        userEmail: user.email || "",
+        userName: user.displayName || user.email || ""
+      }).catch(err => console.error("Analytics user update failed:", err));
+    }
   });
-});
+
+  const HEARTBEAT_INTERVAL_MS = 15000;
+  setInterval(() => {
+    if (isEngaged()) updateDuration();
+  }, HEARTBEAT_INTERVAL_MS);
+
+  window.addEventListener("pagehide", () => {
+    sendExitUpdate({
+      durationSeconds: currentDurationSeconds(),
+      lastActiveAt: new Date(),
+      closedAt: new Date()
+    });
+  });
+}
