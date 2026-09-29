@@ -42,7 +42,49 @@
   </nav>
 </header>
 <div class="nav-overlay" id="nav-overlay"></div>
+
+<!-- Floating bottom-left info button (opens the popup from info.html) -->
+<button id="info-btn" class="info-toggle" type="button" aria-label="About this site" title="About this site">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+    <circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/>
+  </svg>
+</button>
+
+<!-- Floating bottom-right language button. Click handling lives in load-components.js -->
+<button id="lang-btn" class="lang-toggle" type="button" aria-label="Toggle Language">
+  <span class="lang-icon">🌐</span>
+  <span id="lang-text">繁體中文</span>
+</button>
+
 <style>
+  /* Floating language + info buttons (shared by every page) */
+  .lang-toggle {
+    position:fixed; bottom:24px; right:24px; z-index:1000; display:flex; align-items:center; gap:8px;
+    padding:10px 18px; border-radius:999px; border:1px solid rgba(127,233,240,0.35);
+    background:rgba(10,26,32,0.75); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    color:#eafffb; font-family:'Manrope',sans-serif; font-size:0.85rem; font-weight:500; letter-spacing:0.04em;
+    cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    transition:border-color .35s ease, background .35s ease, transform .35s ease, box-shadow .35s ease, opacity .35s ease;
+  }
+  .lang-toggle:hover { border-color:rgba(127,233,240,0.8); background:rgba(18,42,50,0.85); box-shadow:0 0 16px rgba(46,230,184,0.3); transform:translateY(-2px); }
+  .info-toggle {
+    position:fixed; bottom:24px; left:24px; z-index:1000; width:42px; height:42px;
+    display:flex; align-items:center; justify-content:center; padding:0; border-radius:50%;
+    border:1px solid rgba(127,233,240,0.35); background:rgba(10,26,32,0.75);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#eafffb; cursor:pointer;
+    box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    opacity:0; transform:translateY(16px); pointer-events:none;
+    transition:opacity 1.2s cubic-bezier(0.16,1,0.3,1), transform 1.2s cubic-bezier(0.16,1,0.3,1), border-color .35s ease, background .35s ease, box-shadow .35s ease;
+  }
+  body.is-loaded .info-toggle { opacity:1; transform:translateY(0); pointer-events:auto; transition-delay:0.55s, 0.55s, 0s, 0s, 0s; }
+  body.is-loaded .info-toggle:hover { border-color:rgba(127,233,240,0.8); background:rgba(18,42,50,0.85); box-shadow:0 0 16px rgba(46,230,184,0.3); transform:translateY(-2px); transition-delay:0s; }
+  .info-toggle:focus-visible, .lang-toggle:focus-visible { outline:2px solid #7fe9f0; outline-offset:2px; }
+  @media (max-width: 768px) {
+    .info-toggle { bottom:16px; left:16px; width:38px; height:38px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .info-toggle { transition:none !important; opacity:1 !important; transform:none !important; pointer-events:auto !important; }
+  }
   /* Minimal, self-contained styles for the auth control so it works even
      on pages that haven't defined nav-auth styling of their own. */
   .nav-auth { display:flex; align-items:center; gap:8px; margin-left:4px; }

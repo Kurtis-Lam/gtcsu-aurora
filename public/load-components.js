@@ -1,4 +1,5 @@
 import { auth, isSchoolUser, ALLOWED_DOMAIN } from './firebase-config.js';
+import { initInfo, refreshInfo } from './info.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Start fetching shared components immediately; they are mounted once the DOM is ready.
@@ -9,6 +10,10 @@ const panelFetchPromise = fetch('panel.html')
 const backgroundFetchPromise = fetch('background.html')
   .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
   .catch(err => { console.error('Error loading background component:', err); return null; });
+
+const infoFetchPromise = fetch('info.html')
+  .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+  .catch(err => { console.error('Error loading info component:', err); return null; });
 
 const currentLang = () => (localStorage.getItem('aurora_lang') === 'zh' ? 'zh' : 'en');
 
@@ -177,6 +182,42 @@ function updateNavAuthUI(user) {
   document.getElementById('nav-user-name').textContent = name;
 }
 
+
+// ---------------------------------------------------------------------------
+// Language toggle (button lives in panel.html). Pages don't need any code for it.
+// A page may define window.setLanguage(lang) to re-render its own dynamic
+// content; it is called if present. A 'aurora:langchange' event is also fired.
+// ---------------------------------------------------------------------------
+let isSwitching = false;
+
+function syncLangButton() {
+  const langText = document.getElementById('lang-text');
+  if (langText) langText.textContent = currentLang() === 'en' ? '繁體中文' : 'English';
+}
+
+function applyLanguageEverywhere(lang) {
+  localStorage.setItem('aurora_lang', lang);
+  document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+  if (typeof window.setLanguage === 'function') window.setLanguage(lang);
+  applyLanguage(document); // covers pages without their own setLanguage + the popups
+  syncLangButton();
+  refreshInfo();
+  window.dispatchEvent(new CustomEvent('aurora:langchange', { detail: { lang } }));
+}
+
+function switchLanguage() {
+  if (isSwitching) return;
+  isSwitching = true;
+  document.body.classList.remove('is-loaded');
+  setTimeout(() => {
+    applyLanguageEverywhere(currentLang() === 'en' ? 'zh' : 'en');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.body.classList.add('is-loaded');
+      setTimeout(() => { isSwitching = false; }, 1200);
+    }));
+  }, 350);
+}
+
 // ---------------------------------------------------------------------------
 // Background video: pause while the tab is hidden to cut CPU/GPU load
 // ---------------------------------------------------------------------------
@@ -201,7 +242,7 @@ async function loadPanel() {
   const mountPoint = document.getElementById('panel-container');
   const bgMountPoint = document.getElementById('background-container');
 
-  const [panelHtml, backgroundHtml] = await Promise.all([panelFetchPromise, backgroundFetchPromise]);
+  const [panelHtml, backgroundHtml, infoHtml] = await Promise.all([panelFetchPromise, backgroundFetchPromise, infoFetchPromise]);
 
   if (mountPoint && panelHtml) {
     mountPoint.innerHTML = panelHtml;
@@ -230,6 +271,19 @@ async function loadPanel() {
     document.getElementById('nav-signin-btn')?.addEventListener('click', () => AuroraAuth.signIn());
     document.getElementById('nav-signout-btn')?.addEventListener('click', () => AuroraAuth.signOut());
     updateNavAuthUI(currentUser);
+
+    // Language toggle
+    document.getElementById('lang-btn')?.addEventListener('click', switchLanguage);
+    syncLangButton();
+  }
+
+  if (infoHtml) {
+    const infoMount = document.createElement('div');
+    infoMount.id = 'info-container';
+    infoMount.innerHTML = infoHtml;
+    document.body.appendChild(infoMount);
+    applyLanguage(infoMount);
+    initInfo(infoMount, document.getElementById('info-btn'));
   }
 
   if (bgMountPoint && backgroundHtml) {
