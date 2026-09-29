@@ -37,11 +37,9 @@ This is a multi‑page, bilingual (English / Traditional Chinese) static website
 
 ## 🌐 Deployment
 
-The site is a static website and can be hosted on any static hosting service:
-- **Firebase Hosting**
-- **Vercel**
-- **Netlify**
-- **GitHub Pages**
+The webpage is hosted on:
+- **Firebase Hosting**: Frontend
+- **Vercel**: Backend and Cloud Functions
 
 ---
 
