@@ -267,11 +267,6 @@
 <body class="is-loaded">
   <div id="preloader"></div>
 
-  <!-- Floating Bottom-Right Language Toggle Button -->
-  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
-    <span class="lang-icon">🌐</span>
-    <span id="lang-text">繁體中文</span>
-  </button>
 
   <!-- Dynamic Navigation Panel Mount Point -->
   <div id="panel-container"></div>
@@ -354,7 +349,6 @@
     const lightboxTitle = document.getElementById('lightbox-title');
 
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
-    let isSwitching = false;
     let zipping = false;
     let lastMessage = null; // { key, isError } so status text can be re-translated
 
@@ -597,19 +591,7 @@
       }
     }
 
-    document.getElementById('lang-btn').addEventListener('click', () => {
-      if (isSwitching) return;
-      isSwitching = true;
-      document.body.classList.remove('is-loaded');
-      setTimeout(() => {
-        setLanguage(currentLang === 'en' ? 'zh' : 'en');
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          document.body.classList.add('is-loaded');
-          setTimeout(() => { isSwitching = false; }, 1200);
-        }));
-      }, 350);
-    });
-
+    window.setLanguage = setLanguage; // used by the shared language button
     setLanguage(currentLang);
   </script>
 </body>

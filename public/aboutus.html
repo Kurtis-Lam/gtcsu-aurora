@@ -604,11 +604,6 @@
   <!-- Black Preloader Overlay -->
   <div id="preloader"></div>
 
-  <!-- Floating Bottom-Right Language Toggle Button -->
-  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
-    <span class="lang-icon">🌐</span>
-    <span id="lang-text">繁體中文</span>
-  </button>
 
   <!-- Dynamic Navigation Panel Mount Point -->
   <div id="panel-container"></div>
@@ -803,7 +798,6 @@
     })();
 
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
-    let isSwitching = false;
 
     function setLanguage(lang) {
       currentLang = lang;
@@ -822,24 +816,6 @@
     }
 
     setLanguage(currentLang);
-
-    document.getElementById('lang-btn').addEventListener('click', () => {
-      if (isSwitching) return;
-      isSwitching = true;
-
-      document.body.classList.remove('is-loaded');
-
-      setTimeout(() => {
-        setLanguage(currentLang === 'en' ? 'zh' : 'en');
-
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            document.body.classList.add('is-loaded');
-            setTimeout(() => { isSwitching = false; }, 1200);
-          });
-        });
-      }, 350);
-    });
 
     // ADDED: Logic to inject video source only upon interaction to avoid buffering 570 MB
     function startPromoVideo() {

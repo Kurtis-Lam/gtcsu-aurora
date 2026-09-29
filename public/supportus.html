@@ -436,8 +436,8 @@
   /* ---------- Bottom-Left Device / Click Info Bar ---------- */
   .support-info-bar {
     position: fixed;
-    bottom: 24px;
-    left: 24px;
+    bottom: 26px;
+    left: 76px; /* leaves room for the shared info button */
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -473,8 +473,8 @@
 
   @media (max-width: 640px) {
     .support-info-bar {
-      left: 12px;
-      bottom: 12px;
+      left: 62px;
+      bottom: 16px;
       right: 12px;
       justify-content: center;
       flex-wrap: wrap;
@@ -509,11 +509,6 @@
   <!-- Black Preloader Overlay -->
   <div id="preloader"></div>
 
-  <!-- Floating Bottom-Right Language Toggle Button -->
-  <button id="lang-btn" class="lang-toggle" aria-label="Toggle Language">
-    <span class="lang-icon">🌐</span>
-    <span id="lang-text">繁體中文</span>
-  </button>
 
   <!-- Dynamic Navigation Panel Mount Point -->
   <div id="panel-container"></div>
@@ -710,7 +705,6 @@
 
   <script>
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
-    let isSwitching = false;
 
     function setLanguage(lang) {
       currentLang = lang;
@@ -729,24 +723,6 @@
     }
 
     setLanguage(currentLang);
-
-    document.getElementById('lang-btn').addEventListener('click', () => {
-      if (isSwitching) return;
-      isSwitching = true;
-
-      document.body.classList.remove('is-loaded');
-
-      setTimeout(() => {
-        setLanguage(currentLang === 'en' ? 'zh' : 'en');
-
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            document.body.classList.add('is-loaded');
-            setTimeout(() => { isSwitching = false; }, 1200);
-          });
-        });
-      }, 350);
-    });
 
     document.addEventListener('DOMContentLoaded', () => {
       const video = document.getElementById('bg-video');
