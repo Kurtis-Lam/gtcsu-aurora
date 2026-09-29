@@ -33,8 +33,6 @@ This is a multi‑page, bilingual (English / Traditional Chinese) static website
 | `financial.html` | Complete budget breakdown with itemised costs. |
 | `supportus.html` | Real‑time support counter with a “Support Us” button. |
 
-> **Note:** `panel.html` and `load-components.js` are used to inject the shared header/navigation. They are not standalone pages.
-
 ---
 
 ## 🌐 Deployment
