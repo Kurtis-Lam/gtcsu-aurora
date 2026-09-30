@@ -745,7 +745,193 @@
   @media (max-width: 1024px) {
     .charts-grid { grid-template-columns: 1fr; }
   }
+
+  /* =====================  POLISH LAYER  ===================== */
+  html { scroll-behavior: smooth; }
+  body {
+    background:
+      radial-gradient(900px 500px at 10% -10%, rgba(47,230,184,0.10), transparent 60%),
+      radial-gradient(800px 500px at 100% 0%, rgba(143,140,240,0.10), transparent 60%),
+      var(--void);
+    background-attachment: fixed;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: rgba(47,230,184,0.3); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(127,233,240,0.25); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(127,233,240,0.45); }
+  button, input, select, label[for], .folder-node, .upload-dropzone { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid var(--aurora-teal); outline-offset: 2px; }
+
+  header {
+    position: sticky; top: 0; z-index: 50;
+    margin: -30px -5vw 28px; padding: 16px 5vw;
+    background: rgba(5,11,18,0.75); backdrop-filter: blur(14px);
+    flex-wrap: wrap; gap: 12px;
+  }
+  h1 { letter-spacing: 0.02em; }
+  header h1 { font-size: 1.5rem; background: linear-gradient(90deg,#eafffb,var(--aurora-teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .user-avatar { object-fit: cover; box-shadow: 0 0 0 3px rgba(127,233,240,0.12); }
+  .nav-btn { display: inline-flex; align-items: center; gap: 6px; font-family: inherit; font-weight: 600; }
+  .nav-btn:hover:not(:disabled) { background: rgba(127,233,240,0.12); border-color: var(--aurora-cyan); transform: translateY(-1px); }
+  .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .auth-card { box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(47,230,184,0.06); }
+
+  .tab-bar { gap: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--card-border); padding-bottom: 0; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn { font-family: inherit; white-space: nowrap; border-radius: 10px 10px 0 0; border-bottom: 2px solid transparent; padding: 10px 18px; }
+  .tab-btn:hover { color: #fff; background: rgba(127,233,240,0.06); }
+  .tab-btn.active { border-bottom-color: var(--aurora-teal); background: linear-gradient(180deg, transparent, rgba(47,230,184,0.12)); }
+
+  .kpi-card, .chart-card, .card, .supporters-table-wrap {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .kpi-card:hover { transform: translateY(-2px); border-color: rgba(47,230,184,0.45); }
+  .kpi-value { letter-spacing: -0.01em; }
+  .btn, .page-btn, .dest-btn, .expand-btn { font-family: inherit; }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .btn-delete:hover { background: rgba(255,107,107,0.25); color: #ffb3b3; }
+  .input-text:focus, .input-textarea:focus, .select-input:focus { outline: none; border-color: var(--aurora-teal); box-shadow: 0 0 0 3px rgba(47,230,184,0.15); }
+  .select-input { background: rgba(5,11,18,0.7); color: #fff; border: 1px solid rgba(127,233,240,0.25); border-radius: 8px; font-family: inherit; }
+  .logs-table th, .supporters-table th { position: sticky; top: 0; }
+  .modal-content { animation: pop .18s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+  .supporters-table-wrap { min-width: 0; }
+
+  @media (max-width: 700px) {
+    body { padding: 20px 4vw; }
+    header { margin: -20px -4vw 20px; padding: 12px 4vw; }
+    .user-info { display: none; }
+    .supporters-actions { flex-wrap: wrap; }
+  }
+
+  /* =====================  PHOTOS TAB  ===================== */
+  .photos-manager-grid { grid-template-columns: 300px minmax(0,1fr); gap: 22px; }
+  .folder-tree { max-height: 560px; }
+  .folder-node { gap: 8px; border: 1px solid transparent; }
+  .folder-node.active { border-color: rgba(47,230,184,0.35); }
+  .folder-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .folder-count { font-size: 0.72rem; color: rgba(223,246,242,0.55); background: rgba(127,233,240,0.1); padding: 1px 8px; border-radius: 999px; }
+  .folder-delete-btn { opacity: 0; }
+  .folder-node:hover .folder-delete-btn, .folder-node.active .folder-delete-btn { opacity: 1; }
+  @media (hover: none) { .folder-delete-btn { opacity: 1; } }
+
+  .upload-target {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-size: 0.85rem; color: rgba(223,246,242,0.75); margin-bottom: 10px;
+  }
+  .upload-target strong { color: var(--aurora-teal); background: rgba(47,230,184,0.12); padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+
+  .upload-dropzone {
+    position: relative; cursor: pointer; margin-bottom: 14px; padding: 34px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    border: 2px dashed rgba(127,233,240,0.4); border-radius: 16px;
+    background: linear-gradient(180deg, rgba(127,233,240,0.05), rgba(47,230,184,0.03));
+    transition: all .2s ease;
+  }
+  .upload-dropzone:hover { border-color: var(--aurora-teal); background: rgba(47,230,184,0.07); }
+  .upload-dropzone.dragging { border-color: var(--aurora-teal); background: rgba(47,230,184,0.14); transform: scale(1.01); box-shadow: 0 0 0 4px rgba(47,230,184,0.12), 0 0 30px rgba(47,230,184,0.15); }
+  .upload-dropzone.busy { opacity: .85; }
+  .dz-icon {
+    width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(47,230,184,0.14); color: var(--aurora-teal); transition: transform .2s ease;
+  }
+  .upload-dropzone:hover .dz-icon, .upload-dropzone.dragging .dz-icon { transform: translateY(-3px); }
+  .dz-title { font-size: 1.05rem; font-weight: 700; color: #fff; }
+  .dz-sub { font-size: 0.8rem; color: rgba(223,246,242,0.6); }
+  .dz-btn { margin-top: 6px; padding: 9px 22px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; background: var(--aurora-teal); color: #050b12; box-shadow: 0 4px 16px rgba(47,230,184,0.3); }
+
+  .upload-progress-list { margin: -2px 0 14px; gap: 8px; }
+  .upload-progress-list:empty { display: none; }
+  .upload-progress-row { align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); }
+  .up-thumb { width: 38px; height: 38px; border-radius: 8px; overflow: hidden; flex: none; background: rgba(255,255,255,0.06); }
+  .up-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .up-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .upload-progress-name { max-width: 100%; font-size: 0.82rem; }
+  .up-bar { height: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); overflow: hidden; }
+  .up-bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--aurora-teal), var(--aurora-cyan)); transition: width .15s ease; }
+  .upload-progress-row.done .up-bar-fill { background: var(--aurora-teal); }
+  .upload-progress-row.failed .up-bar-fill { background: var(--aurora-red); }
+  .upload-progress-pct { font-weight: 700; font-size: 0.8rem; min-width: 58px; text-align: right; }
+  .upload-progress-row.done .upload-progress-pct { color: var(--aurora-teal); }
+  .upload-progress-row.failed .upload-progress-pct { color: var(--aurora-red); }
+  .up-error { font-size: 0.72rem; color: #ffb3b3; }
+
+  .photos-grid-admin { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 2px; }
+  .photo-admin-card { border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+  .photo-admin-card:hover { transform: translateY(-2px); border-color: var(--aurora-teal); box-shadow: 0 8px 22px rgba(0,0,0,0.4); }
+  .photo-admin-card img { transition: transform .3s ease; }
+  .photo-admin-card:hover img { transform: scale(1.05); }
+  .photo-admin-cap {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 8px 6px; font-size: 0.7rem;
+    color: #fff; background: linear-gradient(transparent, rgba(0,0,0,0.75));
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    opacity: 0; transition: opacity .2s ease;
+  }
+  .photo-admin-card:hover .photo-admin-cap { opacity: 1; }
+  .photo-admin-delete { top: 6px; right: 6px; width: 26px; height: 26px; opacity: 0; transition: all .2s ease; display: grid; place-items: center; }
+  .photo-admin-card:hover .photo-admin-delete, .photo-admin-delete:focus-visible { opacity: 1; }
+  @media (hover: none) { .photo-admin-delete, .photo-admin-cap { opacity: 1; } }
+
+  .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px 16px; color: rgba(223,246,242,0.55); font-size: 0.9rem; }
+  .empty-state .big { font-size: 2.2rem; display: block; margin-bottom: 8px; }
+
+  .toast-wrap { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .toast { background: var(--deep); border: 1px solid var(--aurora-teal); color: #eafffb; padding: 10px 18px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: pop .2s ease-out; }
+  .toast.error { border-color: var(--aurora-red); color: #ffb3b3; }
+  @media (max-width: 900px) { .photos-manager-grid { grid-template-columns: 1fr; } .folder-tree { max-height: 240px; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+  /* =====================  CUSTOM DIALOGS  ===================== */
+  #ui-dialog { z-index: 20000; }
+  .dlg { background: var(--deep); border: 1px solid var(--card-border); border-radius: 18px; width: 92%; max-width: 420px; padding: 26px 24px 20px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.65); animation: pop .18s ease-out; }
+  .dlg-icon { width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 1.5rem; background: rgba(127,233,240,0.12); }
+  .dlg.danger .dlg-icon, .dlg.error .dlg-icon { background: rgba(255,107,107,0.15); }
+  .dlg.success .dlg-icon { background: rgba(47,230,184,0.15); }
+  .dlg-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .dlg-msg { font-size: 0.9rem; line-height: 1.55; color: rgba(223,246,242,0.75); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .dlg-input { margin-top: 14px; text-align: left; }
+  .dlg-actions { display: flex; gap: 10px; justify-content: center; margin-top: 22px; }
+  .dlg-actions .btn { flex: 1; padding: 10px 18px; font-size: 0.9rem; }
+  .btn-ghost { background: rgba(255,255,255,0.08); color: #fff; }
+  .btn-ghost:hover { background: rgba(255,255,255,0.15); }
+  .btn-danger { background: var(--aurora-red); color: #1a0505; }
+  .btn-danger:hover { box-shadow: 0 0 14px rgba(255,107,107,0.45); }
+
+  /* =====================  FEEDBACK EMBEDS  ===================== */
+  .fb-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .fb-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fb-search { flex: 1; min-width: 200px; max-width: 320px; }
+  .fb-count { font-size: 0.8rem; color: rgba(223,246,242,0.55); }
+  #admin-container.admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; align-items: start; }
+  @media (max-width: 480px) { #admin-container.admin-grid { grid-template-columns: 1fr; } }
+  .embed { --embed-color: var(--aurora-cyan); display: flex; background: rgba(10,26,32,0.9); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.3); transition: transform .2s ease, border-color .2s ease; }
+  .embed:hover { transform: translateY(-2px); border-color: var(--embed-color); }
+  .embed-bar { width: 5px; flex: none; background: var(--embed-color); }
+  .embed-body { flex: 1; min-width: 0; padding: 16px 18px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .embed-author { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; }
+  .embed-avatar { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 0.85rem; color: #050b12; background: var(--embed-color); }
+  .embed-who { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .embed-name { font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .embed-email { font-size: 0.72rem; color: rgba(223,246,242,0.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .embed-time { font-size: 0.75rem; color: var(--embed-color); font-weight: 600; white-space: nowrap; }
+  .embed-title { font-size: 1.02rem; font-weight: 700; color: var(--embed-color); line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .embed-desc { font-size: 0.9rem; line-height: 1.6; color: rgba(223,246,242,0.88); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .embed-desc.clamped { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .embed-more { align-self: flex-start; background: none; border: none; color: var(--aurora-cyan); font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 0; }
+  .embed-more:hover { text-decoration: underline; }
+  .embed-footer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid rgba(127,233,240,0.12); font-size: 0.72rem; color: rgba(223,246,242,0.5); }
+  .embed-actions { display: flex; gap: 6px; }
+  .embed-actions .btn, .embed-actions a.btn { padding: 5px 12px; font-size: 0.75rem; text-decoration: none; display: inline-block; }
+  .embed.anon { --embed-color: var(--aurora-violet); }
+  .embed.named { --embed-color: var(--aurora-teal); }
+  .embed.unchecked { --embed-color: #ffc107; }
 </style>
+
+
 </head>
 <body>
 
@@ -860,6 +1046,16 @@
 
     <!-- Feedback Inbox (read-only; feedback is never published on the site) -->
     <div id="feedback-section" class="hidden">
+      <div class="fb-toolbar">
+        <div class="fb-filters" id="fb-filters">
+          <button class="dest-btn active" data-fb="all">All</button>
+          <button class="dest-btn" data-fb="named">👤 Signed in</button>
+          <button class="dest-btn" data-fb="anon">Anonymous</button>
+          <button class="dest-btn" data-fb="unchecked">⚠ Unchecked</button>
+        </div>
+        <input type="search" id="fb-search" class="input-text fb-search" placeholder="Search feedback…">
+        <span class="fb-count" id="fb-count"></span>
+      </div>
       <main id="admin-container" class="admin-grid"></main>
     </div>
 
@@ -938,19 +1134,41 @@
             <button class="nav-btn" id="new-subfolder-btn" style="font-size:0.8rem;" disabled>+ Subfolder Here</button>
           </div>
 
-          <div id="upload-dropzone" class="upload-dropzone">
-            <p>Drag & drop images here, or <label for="upload-file-input" class="upload-browse-link">browse</label></p>
+          <div class="upload-target">Uploading to: <strong id="upload-target-label">Uncategorized</strong> <span style="opacity:.6;">— pick a folder on the left to change</span></div>
+
+          <div id="upload-dropzone" class="upload-dropzone" role="button" tabindex="0" aria-label="Upload photos: click to choose or drag and drop">
+            <div class="dz-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="dz-title" id="dz-title">Drag &amp; drop photos here</div>
+            <div class="dz-sub">or click anywhere in this box &middot; you can pick many at once &middot; JPG, PNG, WebP up to 10 MB each</div>
+            <span class="dz-btn">Choose photos</span>
             <input type="file" id="upload-file-input" accept="image/*" multiple style="display:none;">
-            <div id="upload-progress-list" class="upload-progress-list"></div>
           </div>
+          <div id="upload-progress-list" class="upload-progress-list"></div>
 
           <div id="photos-grid-admin" class="photos-grid-admin">
-            <p style="color:rgba(223,246,242,0.5); padding:20px;">Select or create a folder, then upload images.</p>
+            <div class="empty-state"><span class="big">🖼</span>Loading photos…</div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <div id="ui-dialog" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="dlg" id="ui-dlg-box">
+      <div class="dlg-icon" id="ui-dlg-icon">ℹ️</div>
+      <div class="dlg-title" id="ui-dlg-title"></div>
+      <div class="dlg-msg" id="ui-dlg-msg"></div>
+      <div class="dlg-input hidden" id="ui-dlg-input-wrap"><input type="text" id="ui-dlg-input" class="input-text" autocomplete="off"></div>
+      <div class="dlg-actions">
+        <button class="btn btn-ghost" id="ui-dlg-cancel">Cancel</button>
+        <button class="btn btn-publish" id="ui-dlg-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
 
   <!-- Detailed Activity Logs Modal Popup -->
   <div id="logs-modal" class="modal-overlay hidden">
@@ -1249,14 +1467,14 @@
         admin = await isAdminUser();
       } catch (err) {
         console.error('Admin check failed:', err);
-        alert('Could not verify admin access. Please try again.');
+        await uiError('Could not verify admin access. Please try again.', 'Access check failed');
         showLogin();
         return;
       }
       if (auth.currentUser?.uid !== user.uid) return;
 
       if (!admin) {
-        alert('This Google account is not authorized to access the admin portal.');
+        await uiAlert('This Google account is not authorized to access the admin portal.', { title: 'Not authorized', kind: 'error' });
         showLogin();
         await signOut(auth);
         return;
@@ -1279,7 +1497,7 @@
       try { await signInWithPopup(auth, googleProvider); }
       catch (err) {
         if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-          alert('Google Sign-In failed: ' + err.message);
+          uiError(err.message, 'Google sign-in failed');
         }
       }
     });
@@ -1602,63 +1820,119 @@
       }
     }
 
+    let feedbackItems = [];
+    let fbFilter = 'all';
+    let fbQuery = '';
+
     async function loadAdminFeedbacks() {
       const container = document.getElementById('admin-container');
-      container.innerHTML = `<p style="text-align:center; color:rgba(223,246,242,0.5); padding: 40px;">Loading feedbacks...</p>`;
-
+      container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:rgba(223,246,242,0.5); padding: 40px;">Loading feedback…</p>`;
       try {
         const querySnapshot = await getDocs(collection(db, "feedbacks"));
-        if (querySnapshot.empty) {
-          container.innerHTML = `<p style="text-align:center; color:rgba(223,246,242,0.5); padding: 40px;">No feedback yet.</p>`;
-          return;
-        }
-
-        const items = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        items.sort((a, b) => tsToMillis(b.createdAt) - tsToMillis(a.createdAt));
-
-        container.innerHTML = items.map((item) => {
-          const submitted = item.createdAt?.toDate ? formatHKTTime(item.createdAt.toDate()) : (item.submittedAtHKT || 'N/A');
-          const identityHtml = item.isAnonymous === false && (item.userName || item.userEmail)
-            ? `<span style="color:var(--aurora-cyan); font-weight:600;">👤 ${escapeHtml(item.userName || '')} ${item.userEmail ? `(${escapeHtml(item.userEmail)})` : ''}</span>`
-            : `<span style="color:rgba(223,246,242,0.45);">Anonymous</span>`;
-          const unchecked = item.moderation === 'unchecked'
-            ? `<span class="badge pending" title="The AI spam check was unavailable when this was submitted">SPAM CHECK SKIPPED</span>`
-            : '';
-
-          return `
-            <div class="card">
-              <div class="card-header">
-                <span>Submitted: <strong>${escapeHtml(submitted)}</strong> &nbsp;|&nbsp; From: ${identityHtml}</span>
-                ${unchecked}
-              </div>
-              <div class="field-group">
-                <span class="field-label">Title</span>
-                <div style="font-weight:600; color:var(--aurora-cyan); white-space:pre-wrap; overflow-wrap:anywhere;">${escapeHtml(item.title)}</div>
-              </div>
-              <div class="field-group">
-                <span class="field-label">Description</span>
-                <div style="line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere;">${escapeHtml(item.description)}</div>
-              </div>
-              <div class="actions">
-                <button class="btn btn-delete" data-action="delete" data-id="${escapeHtml(item.id)}">Delete</button>
-              </div>
-            </div>`;
-        }).join('');
-
-        container.querySelectorAll('button[data-action="delete"]').forEach(btn => {
-          btn.addEventListener('click', () => deleteItem(btn.getAttribute('data-id')));
-        });
+        feedbackItems = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        feedbackItems.sort((a, b) => tsToMillis(b.createdAt) - tsToMillis(a.createdAt));
+        renderFeedbackList();
       } catch (err) {
-        container.innerHTML = `<p style="text-align:center; color:var(--aurora-red); padding: 40px;">Failed to load feedback: ${escapeHtml(err.message)}</p>`;
+        container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--aurora-red); padding: 40px;">Failed to load feedback: ${escapeHtml(err.message)}</p>`;
       }
     }
 
+    function fbKind(item) {
+      if (item.moderation === 'unchecked') return 'unchecked';
+      return item.isAnonymous === false && (item.userName || item.userEmail) ? 'named' : 'anon';
+    }
+
+    function renderFeedbackList() {
+      const container = document.getElementById('admin-container');
+      const q = fbQuery.trim().toLowerCase();
+      const list = feedbackItems.filter(item => {
+        if (fbFilter === 'named' && !(item.isAnonymous === false && (item.userName || item.userEmail))) return false;
+        if (fbFilter === 'anon' && !(item.isAnonymous !== false || !(item.userName || item.userEmail))) return false;
+        if (fbFilter === 'unchecked' && item.moderation !== 'unchecked') return false;
+        if (!q) return true;
+        return [item.title, item.description, item.userName, item.userEmail].some(v => String(v || '').toLowerCase().includes(q));
+      });
+      document.getElementById('fb-count').textContent = `${list.length} of ${feedbackItems.length} message${feedbackItems.length === 1 ? '' : 's'}`;
+
+      if (!feedbackItems.length) {
+        container.innerHTML = `<div class="empty-state"><span class="big">💬</span>No feedback yet.</div>`;
+        return;
+      }
+      if (!list.length) {
+        container.innerHTML = `<div class="empty-state"><span class="big">🔍</span>No feedback matches your filter.</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(item => {
+        const kind = fbKind(item);
+        const date = item.createdAt?.toDate ? item.createdAt.toDate() : null;
+        const submitted = date ? formatHKTTime(date) : (item.submittedAtHKT || 'N/A');
+        const ago = date ? getRelativeTimeAgo(date) : '';
+        const named = item.isAnonymous === false && (item.userName || item.userEmail);
+        const name = named ? (item.userName || item.userEmail) : 'Anonymous';
+        const initial = named ? String(name).trim().charAt(0).toUpperCase() : '?';
+        const desc = String(item.description ?? '');
+        const long = desc.length > 320 || desc.split('\n').length > 6;
+        const badge = kind === 'unchecked'
+          ? `<span class="badge pending" title="The AI spam check was unavailable when this was submitted">⚠ Spam check skipped</span>` : '';
+        const reply = item.userEmail
+          ? `<a class="btn btn-ghost" href="mailto:${escapeHtml(item.userEmail)}?subject=${encodeURIComponent('Re: ' + (item.title || 'Your feedback'))}">✉ Reply</a>` : '';
+        return `
+          <article class="embed ${kind}">
+            <div class="embed-bar"></div>
+            <div class="embed-body">
+              <div class="embed-author">
+                <span class="embed-avatar">${escapeHtml(initial)}</span>
+                <span class="embed-who">
+                  <span class="embed-name">${escapeHtml(name)}</span>
+                  ${named && item.userName && item.userEmail ? `<span class="embed-email">${escapeHtml(item.userEmail)}</span>` : ''}
+                </span>
+                <span class="embed-time" title="${escapeHtml(submitted)}">${escapeHtml(ago)}</span>
+              </div>
+              <div class="embed-title">${escapeHtml(item.title)}</div>
+              <div class="embed-desc ${long ? 'clamped' : ''}">${escapeHtml(desc)}</div>
+              ${long ? `<button class="embed-more" data-more>Show more ▾</button>` : ''}
+              <div class="embed-footer">
+                <span>🕒 ${escapeHtml(submitted)}</span>
+                ${badge}
+                <div class="embed-actions">
+                  ${reply}
+                  <button class="btn btn-delete" data-action="delete" data-id="${escapeHtml(item.id)}">Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>`;
+      }).join('');
+
+      container.querySelectorAll('button[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', () => deleteItem(btn.getAttribute('data-id')));
+      });
+      container.querySelectorAll('[data-more]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const d = btn.previousElementSibling;
+          const open = d.classList.toggle('clamped');
+          btn.textContent = open ? 'Show more ▾' : 'Show less ▴';
+        });
+      });
+    }
+
+    document.getElementById('fb-filters').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-fb]');
+      if (!b) return;
+      fbFilter = b.getAttribute('data-fb');
+      document.querySelectorAll('#fb-filters .dest-btn').forEach(x => x.classList.toggle('active', x === b));
+      renderFeedbackList();
+    });
+    document.getElementById('fb-search').addEventListener('input', (e) => { fbQuery = e.target.value; renderFeedbackList(); });
+
     async function deleteItem(id) {
-      if (!confirm("Delete this feedback permanently?")) return;
+      if (!await uiConfirm("This feedback will be permanently removed.", { title: "Delete feedback?", okText: "Delete" })) return;
       try {
         await deleteDoc(doc(db, "feedbacks", id));
-        loadAdminFeedbacks();
-      } catch (err) { alert("Failed to delete feedback: " + err.message); }
+        feedbackItems = feedbackItems.filter(f => f.id !== id);
+        renderFeedbackList();
+        toast('Feedback deleted');
+      } catch (err) { uiError(err.message, "Couldn't delete feedback"); }
     }
 
     function escapeHtml(str) {
@@ -1803,8 +2077,8 @@
           const note = input ? input.value.trim() : '';
           try {
             await updateDoc(doc(db, "supporters", id), { note });
-            alert("Note saved successfully!");
-          } catch (err) { alert("Failed to save note: " + err.message); }
+            toast("Note saved ✓");
+          } catch (err) { uiError(err.message, "Couldn't save note"); }
         });
       });
     }
@@ -1824,8 +2098,8 @@
     document.getElementById('delete-selected-votes-btn')?.addEventListener('click', async () => {
       if (!currentUser) return;
       const checkedBoxes = Array.from(document.querySelectorAll('.supporter-checkbox:checked'));
-      if (checkedBoxes.length === 0) { alert("Please select at least one supporter to delete."); return; }
-      if (!confirm(`Are you sure you want to delete ${checkedBoxes.length} selected record(s)?`)) return;
+      if (checkedBoxes.length === 0) { uiAlert("Tick at least one supporter first, then try again.", { title: "Nothing selected" }); return; }
+      if (!await uiConfirm(`${checkedBoxes.length} selected record(s) and their votes will be removed from the total.`, { title: "Delete selected votes?", okText: "Delete" })) return;
 
       try {
         let totalClicksToRemove = 0;
@@ -1840,14 +2114,14 @@
         const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
         await setDoc(counterRef, { count: Math.max(0, currentCount - totalClicksToRemove) }, { merge: true });
 
-        alert("Selected records deleted.");
-      } catch (err) { alert("Failed to delete votes: " + err.message); }
+        toast("Selected records deleted ✓");
+      } catch (err) { uiError(err.message, "Couldn't delete votes"); }
     });
 
     document.getElementById('reset-votes-btn').addEventListener('click', async () => {
       if (!currentUser) return;
-      if (!confirm("Are you sure you want to delete all vote records and reset counters?")) return;
-      const input = prompt("Enter starting count:", "0");
+      if (!await uiConfirm("Every vote record will be deleted and the counter reset. This can't be undone.", { title: "Reset all votes?", okText: "Yes, reset" })) return;
+      const input = await uiPrompt("What should the vote counter start at?", { title: "Starting count", defaultValue: "0", inputType: "number", okText: "Reset" });
       if (input === null) return;
       const newCount = parseInt(input, 10);
       if (isNaN(newCount) || newCount < 0) return;
@@ -1856,8 +2130,8 @@
         const querySnapshot = await getDocs(collection(db, "supporters"));
         await deleteInChunks(querySnapshot.docs.map(d => d.ref));
         await setDoc(doc(db, "counters", "supportCounter"), { count: newCount });
-        alert("All votes reset successfully.");
-      } catch (err) { alert("Failed to reset votes: " + err.message); }
+        toast("All votes reset ✓");
+      } catch (err) { uiError(err.message, "Couldn't reset votes"); }
     });
 
     /* =========================================================================
@@ -1918,14 +2192,15 @@
     }
 
     function renderFolderTree() {
-      const rootBtn = `<div class="folder-node ${selectedFolderId === null ? 'active' : ''}" data-folder-id="">📂 All Photos</div>`;
+      const rootBtn = `<div class="folder-node ${selectedFolderId === null ? 'active' : ''}" data-folder-id=""><span class="folder-name">📂 All Photos</span><span class="folder-count">${allImages.length}</span></div>`;
 
       function renderLevel(parentId, depth) {
         return childrenOf(parentId).map(folder => {
           const isActive = selectedFolderId === folder.id;
           return `
             <div class="folder-node ${isActive ? 'active' : ''}" data-folder-id="${escapeHtml(folder.id)}" style="padding-left:${12 + depth * 16}px;">
-              📁 ${escapeHtml(folder.name)}
+              <span class="folder-name">📁 ${escapeHtml(folder.name)}</span>
+              <span class="folder-count">${allImages.filter(i => i.folderId === folder.id).length}</span>
               <button class="folder-delete-btn" data-folder-id="${escapeHtml(folder.id)}" title="Delete folder">✕</button>
             </div>
             ${renderLevel(folder.id, depth + 1)}
@@ -1948,24 +2223,25 @@
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const fid = btn.getAttribute('data-folder-id');
-          if (childrenOf(fid).length > 0) { alert('Delete subfolders first.'); return; }
-          if (allImages.some(img => img.folderId === fid)) { alert('Remove the photos in this folder first.'); return; }
-          if (!confirm('Delete folder?')) return;
+          if (childrenOf(fid).length > 0) { uiAlert('This folder still has subfolders. Delete those first.', { title: 'Folder not empty' }); return; }
+          if (allImages.some(img => img.folderId === fid)) { uiAlert('Remove or move the photos in this folder first.', { title: 'Folder not empty' }); return; }
+          if (!await uiConfirm('This empty folder will be deleted.', { title: 'Delete folder?', okText: 'Delete' })) return;
           try {
             await deleteDoc(doc(db, "galleryFolders", fid));
             if (selectedFolderId === fid) selectedFolderId = null;
             await loadPhotosTabData();
-          } catch (err) { alert('Failed to delete folder: ' + err.message); }
+          } catch (err) { uiError(err.message, "Couldn't delete folder"); }
         });
       });
 
       newSubfolderBtn.disabled = selectedFolderId === null;
       const activeFolder = allFolders.find(f => f.id === selectedFolderId);
       currentFolderTitleEl.textContent = activeFolder ? `📂 ${activeFolder.path}` : '📂 All Photos';
+      document.getElementById('upload-target-label').textContent = activeFolder ? activeFolder.path : 'Uncategorized';
     }
 
     async function createFolder(parentId) {
-      const name = prompt(parentId ? 'New subfolder name:' : 'New top-level folder name:');
+      const name = await uiPrompt(parentId ? 'Name for the new subfolder:' : 'Name for the new folder:', { title: parentId ? 'New subfolder' : 'New folder', placeholder: 'e.g. Summer Camp 2026', okText: 'Create' });
       if (!name || !name.trim()) return;
       const parent = allFolders.find(f => f.id === parentId);
       const path = parent ? `${parent.path}/${name.trim()}` : name.trim();
@@ -1977,7 +2253,7 @@
           createdAt: serverTimestamp()
         });
         await loadPhotosTabData();
-      } catch (err) { alert('Failed to create folder: ' + err.message); }
+      } catch (err) { uiError(err.message, "Couldn't create folder"); }
     }
 
     newRootFolderBtn.addEventListener('click', () => createFolder(null));
@@ -1989,7 +2265,7 @@
         : allImages.filter(img => img.folderId === selectedFolderId);
 
       if (imgs.length === 0) {
-        photosGridAdminEl.innerHTML = '<p style="color:rgba(223,246,242,0.5); padding:20px;">No photos in this folder yet.</p>';
+        photosGridAdminEl.innerHTML = '<div class="empty-state"><span class="big">🖼</span>No photos here yet.<br>Drop some into the box above to get started.</div>';
         return;
       }
 
@@ -1998,6 +2274,7 @@
           ${img.thumb
             ? `<img src="${escapeHtml(img.thumb)}" alt="${escapeHtml(img.title || img.name || '')}" loading="lazy">`
             : `<div style="padding:10px; font-size:0.75rem; color:#ffb3b3; overflow-wrap:anywhere;" title="Old record without a private file. Remove it and re-upload.">⚠ ${escapeHtml(img.name || 'Old photo')}</div>`}
+          <div class="photo-admin-cap">${escapeHtml(img.title || img.name || '')}</div>
           <button class="photo-admin-delete" data-img-id="${escapeHtml(img.id)}" title="Delete photo">✕</button>
         </div>
       `).join('');
@@ -2005,12 +2282,12 @@
       photosGridAdminEl.querySelectorAll('.photo-admin-delete').forEach(btn => {
         btn.addEventListener('click', async () => {
           const img = allImages.find(x => x.id === btn.getAttribute('data-img-id'));
-          if (!img || !confirm('Delete this photo permanently?')) return;
+          if (!img || !await uiConfirm('This photo will be permanently deleted.', { title: 'Delete photo?', okText: 'Delete' })) return;
           try {
             if (img.publicId) await apiPost('/api/delete-photo', { publicId: img.publicId });
             await deleteDoc(doc(db, "galleryImages", img.id));
             await loadPhotosTabData();
-          } catch (err) { alert('Failed to delete photo: ' + err.message); }
+          } catch (err) { uiError(err.message, "Couldn't delete photo"); }
         });
       });
     }
@@ -2027,7 +2304,9 @@
         xhr.open('POST', `https://api.cloudinary.com/v1_1/${encodeURIComponent(s.cloudName)}/image/upload`);
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
-            progressRow.querySelector('.upload-progress-pct').textContent = `${Math.round((e.loaded / e.total) * 100)}%`;
+            const pct = Math.round((e.loaded / e.total) * 100);
+            progressRow.querySelector('.upload-progress-pct').textContent = `${pct}%`;
+            progressRow.querySelector('.up-bar-fill').style.width = pct + '%';
           }
         };
         xhr.onload = () => {
@@ -2039,42 +2318,161 @@
       });
     }
 
+    let dlgQueue = Promise.resolve();
+    function openDialog(opts) {
+      const run = () => new Promise((resolve) => {
+        const ov = document.getElementById('ui-dialog');
+        const box = document.getElementById('ui-dlg-box');
+        const okBtn = document.getElementById('ui-dlg-ok');
+        const cancelBtn = document.getElementById('ui-dlg-cancel');
+        const inputWrap = document.getElementById('ui-dlg-input-wrap');
+        const input = document.getElementById('ui-dlg-input');
+        const icons = { info: 'ℹ️', error: '⚠️', danger: '🗑️', success: '✅', prompt: '✏️' };
+        const kind = opts.kind || 'info';
+        box.className = 'dlg ' + kind;
+        document.getElementById('ui-dlg-icon').textContent = opts.icon || icons[kind] || 'ℹ️';
+        document.getElementById('ui-dlg-title').textContent = opts.title || '';
+        document.getElementById('ui-dlg-msg').textContent = opts.message || '';
+        okBtn.textContent = opts.okText || 'OK';
+        okBtn.className = 'btn ' + (kind === 'danger' ? 'btn-danger' : 'btn-publish');
+        cancelBtn.textContent = opts.cancelText || 'Cancel';
+        cancelBtn.classList.toggle('hidden', !opts.showCancel);
+        inputWrap.classList.toggle('hidden', !opts.input);
+        if (opts.input) { input.value = opts.defaultValue || ''; input.placeholder = opts.placeholder || ''; input.type = opts.inputType || 'text'; }
+        ov.classList.remove('hidden');
+        setTimeout(() => (opts.input ? input : okBtn).focus(), 30);
+
+        function done(val) {
+          ov.classList.add('hidden');
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          ov.removeEventListener('mousedown', onBackdrop);
+          document.removeEventListener('keydown', onKey, true);
+          resolve(val);
+        }
+        const onOk = () => done(opts.input ? input.value : true);
+        const onCancel = () => done(opts.input ? null : false);
+        const onBackdrop = (e) => { if (e.target === ov) onCancel(); };
+        const onKey = (e) => {
+          if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); onCancel(); }
+          else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); onOk(); }
+        };
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        ov.addEventListener('mousedown', onBackdrop);
+        document.addEventListener('keydown', onKey, true);
+      });
+      dlgQueue = dlgQueue.then(run, run);
+      return dlgQueue;
+    }
+    const uiAlert = (message, o = {}) => openDialog({ title: 'Notice', kind: 'info', okText: 'Got it', ...o, message });
+    const uiError = (message, title = 'Something went wrong') => openDialog({ title, kind: 'error', okText: 'Close', message });
+    const uiConfirm = (message, o = {}) => openDialog({ title: 'Are you sure?', kind: 'danger', showCancel: true, okText: 'Confirm', ...o, message });
+    const uiPrompt = (message, o = {}) => openDialog({ title: 'Enter a value', kind: 'prompt', showCancel: true, input: true, okText: 'Save', ...o, message });
+
+    function toast(msg, isError) {
+      const wrap = document.getElementById('toast-wrap');
+      const t = document.createElement('div');
+      t.className = 'toast' + (isError ? ' error' : '');
+      t.textContent = msg;
+      wrap.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    }
+
+    function makeProgressRow(file) {
+      const row = document.createElement('div');
+      row.className = 'upload-progress-row';
+      row.innerHTML = `
+        <div class="up-thumb"><img alt=""></div>
+        <div class="up-meta">
+          <span class="upload-progress-name">${escapeHtml(file.name)}</span>
+          <div class="up-bar"><div class="up-bar-fill"></div></div>
+        </div>
+        <span class="upload-progress-pct">Waiting</span>`;
+      try {
+        const img = row.querySelector('img');
+        const url = URL.createObjectURL(file);
+        img.src = url;
+        img.onload = () => URL.revokeObjectURL(url);
+      } catch (e) {}
+      uploadProgressListEl.appendChild(row);
+      return row;
+    }
+
+    function markRow(row, ok, msg) {
+      row.classList.add(ok ? 'done' : 'failed');
+      row.querySelector('.upload-progress-pct').textContent = ok ? '✓ Done' : '✗ Failed';
+      row.querySelector('.up-bar-fill').style.width = '100%';
+      if (!ok && msg) {
+        const e = document.createElement('span');
+        e.className = 'up-error';
+        e.textContent = msg;
+        row.querySelector('.up-meta').appendChild(e);
+      }
+    }
+
+    let uploadsRunning = false;
     async function handleFiles(fileList) {
-      const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+      const all = Array.from(fileList);
+      const files = all.filter(f => f.type.startsWith('image/'));
+      const skipped = all.length - files.length;
+      if (skipped) toast(`${skipped} file${skipped > 1 ? 's' : ''} skipped (not an image)`, true);
       if (files.length === 0) return;
+      if (uploadsRunning) { toast('Please wait for the current upload to finish', true); return; }
+      uploadsRunning = true;
+      dropzoneEl.classList.add('busy');
+      document.getElementById('dz-title').textContent = `Uploading ${files.length} photo${files.length > 1 ? 's' : ''}…`;
+      uploadProgressListEl.innerHTML = '';
 
       const folderId = selectedFolderId;
       const folder = allFolders.find(f => f.id === folderId);
       const folderPath = folder ? folder.path : null;
+      const rows = files.map(makeProgressRow);
+      let okCount = 0, next = 0;
 
-      for (const file of files) {
-        const row = document.createElement('div');
-        row.className = 'upload-progress-row';
-        row.innerHTML = `<span class="upload-progress-name">${escapeHtml(file.name)}</span><span class="upload-progress-pct">0%</span>`;
-        uploadProgressListEl.appendChild(row);
-
-        try {
-          if (file.size > MAX_UPLOAD_BYTES) throw new Error('File is larger than 10 MB.');
-          const result = await uploadToCloudinary(file, row);
-          await addDoc(collection(db, "galleryImages"), {
-            folderId: folderId || null,
-            folderPath: folderPath || "Uncategorized",
-            publicId: result.public_id,
-            name: file.name,
-            title: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
-            createdAt: serverTimestamp()
-          });
-          row.querySelector('.upload-progress-pct').textContent = '✓ Done';
-        } catch (err) {
-          console.error(err);
-          row.querySelector('.upload-progress-pct').textContent = '✗ Failed';
-          row.title = err.message;
+      async function worker() {
+        while (next < files.length) {
+          const i = next++;
+          const file = files[i], row = rows[i];
+          try {
+            if (file.size > MAX_UPLOAD_BYTES) throw new Error('Larger than 10 MB');
+            const result = await uploadToCloudinary(file, row);
+            await addDoc(collection(db, "galleryImages"), {
+              folderId: folderId || null,
+              folderPath: folderPath || "Uncategorized",
+              publicId: result.public_id,
+              name: file.name,
+              title: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+              createdAt: serverTimestamp()
+            });
+            okCount++;
+            markRow(row, true);
+          } catch (err) {
+            console.error(err);
+            markRow(row, false, err.message);
+          }
         }
       }
+      await Promise.all([worker(), worker(), worker()]);
 
-      setTimeout(() => { uploadProgressListEl.innerHTML = ''; }, 4000);
+      const failed = files.length - okCount;
+      toast(failed ? `${okCount} uploaded, ${failed} failed` : `${okCount} photo${okCount > 1 ? 's' : ''} uploaded ✓`, failed > 0);
+      uploadsRunning = false;
+      dropzoneEl.classList.remove('busy');
+      document.getElementById('dz-title').textContent = 'Drag & drop photos here';
+      setTimeout(() => { if (!uploadsRunning) uploadProgressListEl.innerHTML = ''; }, failed ? 12000 : 4000);
       await loadPhotosTabData();
     }
+
+    dropzoneEl.addEventListener('click', () => { if (!uploadsRunning) fileInputEl.click(); });
+    dropzoneEl.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !uploadsRunning) { e.preventDefault(); fileInputEl.click(); }
+    });
+    document.addEventListener('paste', (e) => {
+      if (photosSection.classList.contains('hidden')) return;
+      const imgs = Array.from(e.clipboardData?.files || []).filter(f => f.type.startsWith('image/'));
+      if (imgs.length) handleFiles(imgs);
+    });
 
     fileInputEl.addEventListener('change', (e) => { handleFiles(e.target.files); e.target.value = ''; });
     dropzoneEl.addEventListener('dragover', (e) => { e.preventDefault(); dropzoneEl.classList.add('dragging'); });
