@@ -95,11 +95,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Published news is visible only to verified school Google accounts.
+    // Published announcements are public; read receipts remain account-private.
     match /news/{newsId} {
       allow get, list: if isAdmin() || (
-        isSchoolUser()
-        && resource.data.status == 'published'
+        resource.data.status == 'published'
         && resource.data.deleted == false
       );
       allow create, update, delete: if isAdmin();
@@ -128,6 +127,21 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.deleted == false
         && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.revision == request.resource.data.revision;
       allow delete: if isAdmin() || (isSchoolUser() && resource.data.uid == request.auth.uid);
+    }
+
+    // Subscription addresses are private and can only be created by their
+    // verified school account. Unsubscribes are handled by the signed email link.
+    match /newsSubscriptions/{uid} {
+      allow read: if isAdmin() || (isSchoolUser() && request.auth.uid == uid);
+      allow create: if isSchoolUser()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'language', 'subscribed', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.language in ['en', 'zh']
+        && request.resource.data.subscribed == true
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
     }
   }
 }

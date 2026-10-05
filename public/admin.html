@@ -934,11 +934,22 @@
   .news-admin-card { padding:18px; border:1px solid var(--card-border); border-radius:12px; background:var(--card-bg); }
   .news-admin-card h3 { margin-bottom:8px; color:var(--aurora-teal); }
   .news-admin-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-  .news-editor { display:grid; gap:14px; margin:18px 0; padding:18px; border:1px solid rgba(127,233,240,.25); border-radius:12px; background:rgba(10,26,32,.72); }
+  .news-editor:not([open]) { display:none; }
+  .news-editor { position:fixed; z-index:1100; inset:50% auto auto 50%; transform:translate(-50%,-50%); width:min(900px,94vw); max-height:90vh; overflow:auto; display:grid; gap:14px; margin:0; padding:24px; border:1px solid rgba(127,233,240,.35); border-radius:16px; background:#08151d; box-shadow:0 18px 60px rgba(0,0,0,.6); }
+  .news-editor::backdrop { background:rgba(0,0,0,.78); backdrop-filter:blur(5px); }
   .news-field label { display:block; margin-bottom:6px; font-size:.86rem; color:rgba(223,246,242,.8); }
   .news-field .input-text { width:100%; }
   .news-field textarea.input-text { min-height:120px; resize:vertical; }
   .news-log-list { margin-top:12px; padding-left:20px; color:rgba(223,246,242,.75); line-height:1.8; }
+  .news-step-title { margin:0; color:var(--aurora-teal); }
+  .news-review { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .news-review-language { min-width:0; padding:16px; border:1px solid var(--card-border); border-radius:12px; background:var(--card-bg); }
+  .news-review-language h4 { margin:0 0 12px; color:var(--aurora-cyan); }
+  .news-review-language h5 { margin:12px 0 6px; color:var(--aurora-teal); }
+  .news-review-language p { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.65; }
+  .news-translation-dialog { width:min(420px,90vw); margin:auto; padding:24px; color:var(--aurora-ink); border:1px solid rgba(127,233,240,.35); border-radius:16px; background:#08151d; text-align:center; }
+  .news-translation-dialog::backdrop { background:rgba(0,0,0,.82); backdrop-filter:blur(6px); }
+  @media (max-width:640px) { .news-review { grid-template-columns:1fr; } .news-editor { padding:18px; max-height:94vh; } }
 </style>
 
 
@@ -1076,36 +1087,70 @@
         <h2 class="news-i18n" data-en="News management" data-zh="消息管理">News management</h2>
         <div>
           <button id="news-language-btn" class="nav-btn" type="button">繁體中文</button>
-          <button id="news-new-btn" class="nav-btn news-i18n" data-en="New announcement" data-zh="新增公告">New announcement</button>
+          <button id="news-new-btn" class="nav-btn news-i18n" data-en="Add news" data-zh="新增消息">Add news</button>
         </div>
       </div>
       <p id="news-save-status" class="news-i18n" data-en="Drafts and edits save automatically. They remain private until published." data-zh="草稿及修改內容會自動儲存，發布前不會公開。">Drafts and edits save automatically. They remain private until published.</p>
-      <section id="news-editor" class="news-editor hidden">
-        <div class="news-field">
-          <div class="news-field-heading"><label for="news-title-en" class="news-i18n" data-en="English title" data-zh="英文標題">English title</label><button id="news-translate-title-en" class="nav-btn news-i18n" data-en="Translate Chinese → English" data-zh="翻譯中文 → 英文" type="button">Translate Chinese → English</button></div>
-          <input id="news-title-en" class="input-text" maxlength="200">
+      <dialog id="news-editor" class="news-editor" aria-labelledby="news-editor-title">
+        <h2 id="news-editor-title" class="news-step-title news-i18n" data-en="New announcement" data-zh="新增公告">New announcement</h2>
+        <div id="news-step-en" class="news-step">
+          <h3 class="news-step-title news-i18n" data-en="1. English version" data-zh="1. 英文版本">1. English version</h3>
+          <div class="news-field">
+            <label for="news-title-en" class="news-i18n" data-en="English title" data-zh="英文標題">English title</label>
+            <input id="news-title-en" class="input-text" maxlength="200">
+          </div>
+          <div class="news-field">
+            <label for="news-body-en" class="news-i18n" data-en="English announcement" data-zh="英文公告內容">English announcement</label>
+            <textarea id="news-body-en" class="input-text" maxlength="10000"></textarea>
+          </div>
+          <button id="news-next-btn" class="nav-btn news-i18n" data-en="Next: Chinese version" data-zh="下一步：中文版本" type="button">Next: Chinese version</button>
         </div>
-        <div class="news-field">
-          <div class="news-field-heading"><label for="news-body-en" class="news-i18n" data-en="English announcement" data-zh="英文公告內容">English announcement</label><button id="news-translate-body-en" class="nav-btn news-i18n" data-en="Translate Chinese → English" data-zh="翻譯中文 → 英文" type="button">Translate Chinese → English</button></div>
-          <textarea id="news-body-en" class="input-text" maxlength="10000"></textarea>
+        <div id="news-step-zh" class="news-step hidden">
+          <h3 class="news-step-title news-i18n" data-en="2. Traditional Chinese version" data-zh="2. 繁體中文版">2. Traditional Chinese version</h3>
+          <div class="news-field">
+            <label for="news-title-zh" class="news-i18n" data-en="Traditional Chinese title" data-zh="繁體中文標題">Traditional Chinese title</label>
+            <input id="news-title-zh" class="input-text" maxlength="200">
+          </div>
+          <div class="news-field">
+            <label for="news-body-zh" class="news-i18n" data-en="Traditional Chinese announcement" data-zh="繁體中文公告內容">Traditional Chinese announcement</label>
+            <textarea id="news-body-zh" class="input-text" maxlength="10000"></textarea>
+          </div>
+          <div class="news-editor-actions">
+            <button id="news-translate-zh-btn" class="nav-btn news-i18n" data-en="Use AI to translate" data-zh="使用 AI 翻譯" type="button">Use AI to translate</button>
+            <button id="news-review-btn" class="nav-btn news-i18n" data-en="Review versions" data-zh="檢查版本" type="button">Review versions</button>
+          </div>
         </div>
-        <div class="news-field">
-          <div class="news-field-heading"><label for="news-title-zh" class="news-i18n" data-en="Traditional Chinese title" data-zh="繁體中文標題">Traditional Chinese title</label><button id="news-translate-title-zh" class="nav-btn news-i18n" data-en="Translate English → Chinese" data-zh="翻譯英文 → 中文" type="button">Translate English → Chinese</button></div>
-          <input id="news-title-zh" class="input-text" maxlength="200">
-        </div>
-        <div class="news-field">
-          <div class="news-field-heading"><label for="news-body-zh" class="news-i18n" data-en="Traditional Chinese announcement" data-zh="繁體中文公告內容">Traditional Chinese announcement</label><button id="news-translate-body-zh" class="nav-btn news-i18n" data-en="Translate English → Chinese" data-zh="翻譯英文 → 中文" type="button">Translate English → Chinese</button></div>
-          <textarea id="news-body-zh" class="input-text" maxlength="10000"></textarea>
+        <div id="news-step-review" class="news-step hidden">
+          <h3 class="news-step-title news-i18n" data-en="3. Review before publishing" data-zh="3. 發布前檢查">3. Review before publishing</h3>
+          <div class="news-review">
+            <article class="news-review-language">
+              <h4>English</h4>
+              <h5 id="news-review-title-en"></h5>
+              <p id="news-review-body-en"></p>
+            </article>
+            <article class="news-review-language" lang="zh-Hant">
+              <h4>繁體中文</h4>
+              <h5 id="news-review-title-zh"></h5>
+              <p id="news-review-body-zh"></p>
+            </article>
+          </div>
+          <button id="news-review-back-btn" class="nav-btn news-i18n" data-en="Back to edit" data-zh="返回修改" type="button">Back to edit</button>
         </div>
         <div class="news-editor-actions">
           <span id="news-editor-status" aria-live="polite"></span>
           <div>
             <button id="news-cancel-btn" class="nav-btn news-i18n" data-en="Close editor" data-zh="關閉編輯器" type="button">Close editor</button>
-            <button id="news-publish-btn" class="nav-btn news-i18n" data-en="Publish" data-zh="發布" type="button">Publish</button>
+            <button id="news-back-btn" class="nav-btn hidden news-i18n" data-en="Back" data-zh="上一步" type="button">Back</button>
+            <button id="news-publish-btn" class="nav-btn hidden news-i18n" data-en="Publish" data-zh="發布" type="button">Publish</button>
           </div>
         </div>
-      </section>
+      </dialog>
       <div id="news-admin-list" class="news-admin-list"></div>
+      <dialog id="news-translation-dialog" class="news-translation-dialog">
+        <h3 class="news-step-title news-i18n" data-en="Translating announcement" data-zh="正在翻譯公告">Translating announcement</h3>
+        <p id="news-translation-status" aria-live="polite">Estimated time left: about 10 seconds</p>
+        <progress id="news-translation-progress" max="12" value="0" style="width:100%;accent-color:var(--aurora-teal);"></progress>
+      </dialog>
     </div>
 
     <!-- Supporters View -->
@@ -1114,7 +1159,7 @@
         <div class="kpi-card">
           <span class="kpi-title">Total Support Clicks</span>
           <span class="kpi-value support-value" id="kpi-total-supports">0</span>
-          <span class="kpi-subtitle">All-time count shown on supportus.html</span>
+          <span class="kpi-subtitle">All-time count shown on feedbacks.html</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-title">Unique Supporters</span>
@@ -1291,31 +1336,29 @@
     let timeSpentChartInstance = null;
     let dailyViewsChartInstance = null;
 
-    /*
-     * Specified Sub Destinations Order:
-     * 1. /                       -> Yellow (#ffd700)
-     * 2. /news                   -> Red (#ff4d5e)
-     * 3. /photos                 -> Orange (#ff9800)
-     * 4. /aboutus                -> Red (#ff4d4d)
-     * 5. /activities             -> Pink (#ff69b4)
-     * 6. /welfare                -> Violet (#a855f7)
-     * 7. /schedule               -> Purple (#7b1fa2)
-     * 8. /financial              -> Blue (#2196f3)
-     * 9. /feedbacks              -> Blue-Green / Turquoise (#00ced1)
-     * 10. /supportus             -> Green (#2ecc71)
-     */
+    // Analytics route order matches the public navigation and requested admin view.
     const DESTINATION_ORDER = [
       '/',
-      '/news',
-      '/photos',
       '/aboutus',
+      '/news',
       '/activities',
-      '/welfare',
-      '/schedule',
       '/financial',
-      '/feedbacks',
-      '/supportus'
+      '/schedule',
+      '/welfare',
+      '/photos',
+      '/feedbacks'
     ];
+    const DESTINATION_LABELS = {
+      '/':'Home',
+      '/aboutus':'About Us',
+      '/news':'Latest News',
+      '/activities':'Activities',
+      '/financial':'Financial',
+      '/schedule':'Schedule',
+      '/welfare':'Welfare',
+      '/photos':'Photos',
+      '/feedbacks':'Feedbacks'
+    };
 
     const routeColors = {
       'all': '#2fe6b8',
@@ -1331,8 +1374,7 @@
       '/schedule': '#7b1fa2',   // Purple
       '/financial': '#2196f3',  // Blue
       '/feedbacks': '#00ced1',  // Blue-green (turquoise)
-      '/feedback': '#00ced1',   // Blue-green (turquoise)
-      '/supportus': '#2ecc71'   // Green
+      '/feedback': '#00ced1'    // Blue-green (turquoise)
     };
 
     const FALLBACK_PALETTE = ['#f77f00', '#06d6a0', '#ef476f', '#118ab2', '#ffd166', '#8338ec', '#3a86ff', '#fb5607'];
@@ -1564,17 +1606,15 @@
 
     const ALLOWED_DESTINATIONS = new Set([
       '/',
-      '/news',
-      '/photos',
       '/aboutus',
+      '/news',
       '/activities',
-      '/acitivites',
-      '/welfare',
-      '/schedule',
       '/financial',
+      '/schedule',
+      '/welfare',
+      '/photos',
       '/feedbacks',
       '/feedback',
-      '/supportus',
       '/admin'
     ]);
 
@@ -1590,6 +1630,7 @@
           if (path === '/index' || path === '') path = '/';
           if (path === '/acitivites') path = '/activities';
           if (path === '/feedback') path = '/feedbacks';
+          if (path === '/supportus') path = '/feedbacks';
           
           if (ALLOWED_DESTINATIONS.has(path)) {
             discoveredRoutes.add(path);
@@ -1631,6 +1672,7 @@
           if (path === '/index' || path === '') path = '/';
           if (path === '/acitivites') path = '/activities';
           if (path === '/feedback') path = '/feedbacks';
+          if (path === '/supportus') path = '/feedbacks';
 
           if (!validRoutes.includes(path)) return;
 
@@ -1672,12 +1714,12 @@
         const avgSecs = totalViews > 0 ? Math.round(totalTimeSeconds / totalViews) : 0;
         document.getElementById('kpi-avg-time').textContent = `${Math.floor(avgSecs / 60)}m ${avgSecs % 60}s`;
 
-        let topPage = 'None';
-        let maxViews = 0;
-        Object.keys(pageMetrics).forEach(p => {
-          if (pageMetrics[p].views > maxViews) { maxViews = pageMetrics[p].views; topPage = p; }
-        });
-        document.getElementById('kpi-top-page').textContent = maxViews > 0 ? topPage : 'None';
+        const topPage = Object.entries(pageMetrics)
+          .sort((a, b) => b[1].views - a[1].views
+            || DESTINATION_ORDER.indexOf(a[0]) - DESTINATION_ORDER.indexOf(b[0]))[0];
+        document.getElementById('kpi-top-page').textContent = topPage?.[1].views
+          ? DESTINATION_LABELS[topPage[0]]
+          : 'None';
 
         renderDestinationFilterButtons(metricRoutes);
         renderCharts(pageMetrics);

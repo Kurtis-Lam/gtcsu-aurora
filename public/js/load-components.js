@@ -1,7 +1,7 @@
 import { auth, db, isSchoolUser, ALLOWED_DOMAIN } from './firebase-config.js';
 import { initInfo, refreshInfo } from './info.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { collection, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Start fetching shared components immediately; they are mounted once the DOM is ready.
 const panelFetchPromise = fetch('panel.html')
@@ -148,6 +148,23 @@ function watchUnreadNews(user) {
   ];
 }
 
+async function createNewsSubscription(user) {
+  const subscriptionRef = doc(db, 'newsSubscriptions', user.uid);
+  try {
+    const existing = await getDoc(subscriptionRef);
+    if (existing.exists()) return;
+    await setDoc(subscriptionRef, {
+      uid: user.uid,
+      email: user.email,
+      language: currentLang(),
+      subscribed: true,
+      createdAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Could not subscribe to Aurora news:', error);
+  }
+}
+
 const siteProvider = new GoogleAuthProvider();
 siteProvider.setCustomParameters({ hd: ALLOWED_DOMAIN, prompt: 'select_account' });
 
@@ -157,6 +174,7 @@ onAuthStateChanged(auth, (user) => {
   authListeners.forEach(cb => { try { cb(currentUser); } catch (e) { console.error(e); } });
   updateNavAuthUI(currentUser);
   watchUnreadNews(currentUser);
+  if (currentUser) createNewsSubscription(currentUser);
 });
 
 export const AuroraAuth = {

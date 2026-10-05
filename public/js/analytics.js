@@ -12,13 +12,13 @@ import { db, auth, firebaseConfig } from './firebase-config.js';
 const VALID_ROUTES = new Set([
   '/',
   '/aboutus',
+  '/news',
   '/activities',
-  '/welfare',
-  '/schedule',
   '/financial',
-  '/feedbacks',
-  '/supportus',
+  '/schedule',
+  '/welfare',
   '/photos',
+  '/feedbacks',
   '/admin'
 ]);
 
@@ -28,6 +28,7 @@ function getHKTDateString(date = new Date()) {
 
 let path = (window.location.pathname || '/').toLowerCase().replace(/\.html$/, '');
 if (path === '/index' || path === '') path = '/';
+if (path === '/supportus' || path === '/feedback') path = '/feedbacks';
 
 // Only initiate pageview tracking if the route is valid
 if (VALID_ROUTES.has(path)) {

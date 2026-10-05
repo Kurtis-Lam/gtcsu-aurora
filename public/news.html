@@ -26,7 +26,7 @@
     .news-card h2 { color:var(--teal); margin:0 0 12px; font:600 1.4rem Cinzel,serif; }
     .news-card p { white-space:pre-wrap; line-height:1.75; margin:0 0 18px; }
     .news-meta { font-size:.78rem; color:rgba(223,246,242,.58); margin-bottom:14px; }
-    .read-btn,.signin-btn { border:1px solid rgba(127,233,240,.42); border-radius:999px; background:rgba(47,230,184,.12); color:white; padding:9px 16px; font:inherit; cursor:pointer; }
+    .read-btn { border:1px solid rgba(127,233,240,.42); border-radius:999px; background:rgba(47,230,184,.12); color:white; padding:9px 16px; font:inherit; cursor:pointer; }
     .read-btn:disabled { opacity:.65; cursor:default; }
     .notice { text-align:center; color:rgba(223,246,242,.78); }
     @media (max-width:600px) { .news-card,.notice { padding:18px; } }
@@ -102,7 +102,7 @@
       <p class="subtitle i18n" data-en="Aurora announcements" data-zh="Aurora 最新公告">Aurora announcements</p>
       <h1 class="i18n" data-en="Latest News" data-zh="最新消息">Latest News</h1>
     </header>
-    <section id="news-content" class="notice i18n" data-en="Sign in with your verified school Google account to view the latest news." data-zh="請使用已驗證的學校 Google 帳戶登入以查看最新消息。">Sign in with your verified school Google account to view the latest news.</section>
+    <section id="news-content" class="notice i18n" data-en="Loading news…" data-zh="正在載入消息……">Loading news…</section>
   </main>
   <script type="module">
     import { collection, doc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -112,7 +112,7 @@
     const content = document.getElementById('news-content');
     const lang = () => localStorage.getItem('aurora_lang') === 'zh' ? 'zh' : 'en';
     let activeUser = null;
-    let articles = [];
+    let articles = null;
     let readReceipts = new Map();
     let newsUnsubscribers = [];
     const revealedIds = new Set();
@@ -133,8 +133,12 @@
     window.setLanguage = updateLanguage;
 
     function render() {
-      if (!activeUser) return;
       const t = text[lang()];
+      if (!articles) {
+        content.className = 'notice';
+        content.textContent = t.loading;
+        return;
+      }
       if (!articles.length) {
         content.className = 'notice';
         content.textContent = t.empty;
@@ -149,7 +153,10 @@
         const date = publishedAt ? new Intl.DateTimeFormat(lang() === 'zh' ? 'zh-HK' : 'en-GB', { dateStyle:'medium', timeStyle:'short', timeZone:'Asia/Hong_Kong' }).format(publishedAt) : '';
         const seen = revealedIds.has(article.id);
         revealedIds.add(article.id);
-        return `<article class="news-card fade-in${seen ? ' is-visible' : ''}"${seen ? '' : ` style="transition-delay:${Math.min(index, 4) * 0.05}s"`}><div class="news-meta">${escapeHtml(t.date)}${date ? ` · ${escapeHtml(date)}` : ''}</div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(body)}</p><button class="read-btn" data-news-id="${escapeHtml(article.id)}" ${isRead ? 'disabled' : ''}>${isRead ? escapeHtml(t.read) : escapeHtml(t.mark)}</button></article>`;
+        const readButton = activeUser
+          ? `<button class="read-btn" data-news-id="${escapeHtml(article.id)}" ${isRead ? 'disabled' : ''}>${isRead ? escapeHtml(t.read) : escapeHtml(t.mark)}</button>`
+          : '';
+        return `<article class="news-card fade-in${seen ? ' is-visible' : ''}"${seen ? '' : ` style="transition-delay:${Math.min(index, 4) * 0.05}s"`}><div class="news-meta">${escapeHtml(t.date)}${date ? ` · ${escapeHtml(date)}` : ''}</div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(body)}</p>${readButton}</article>`;
       }).join('');
       content.querySelectorAll('.news-card.fade-in:not(.is-visible)').forEach(card => window.auroraFade?.(card));
       content.querySelectorAll('[data-news-id]').forEach(button => button.addEventListener('click', () => markRead(button.dataset.newsId, button)));
@@ -159,32 +166,25 @@
       newsUnsubscribers.forEach(unsubscribe => unsubscribe());
       newsUnsubscribers = [];
       activeUser = user;
-      if (!user) {
-        articles = [];
-        readReceipts = new Map();
-        content.className = 'notice i18n';
-        content.setAttribute('data-en', 'Sign in with your verified school Google account to view the latest news.');
-        content.setAttribute('data-zh', '請使用已驗證的學校 Google 帳戶登入以查看最新消息。');
-        updateLanguage(lang());
-        return;
-      }
       content.className = 'notice';
       content.textContent = text[lang()].loading;
-      articles = [];
+      articles = null;
       readReceipts = new Map();
       newsUnsubscribers = [
         onSnapshot(query(collection(db, 'news'), where('status', '==', 'published'), where('deleted', '==', false)), snapshot => {
-          if (activeUser?.uid !== user.uid) return;
+          if (activeUser?.uid !== user?.uid) return;
           articles = snapshot.docs.map(item => ({ id:item.id, ...item.data() }))
             .sort((a,b) => millis(b.updatedAt) - millis(a.updatedAt));
           render();
-        }, error => showLoadError(error)),
-        onSnapshot(query(collection(db, 'newsReads'), where('uid', '==', user.uid)), snapshot => {
+        }, error => showLoadError(error))
+      ];
+      if (user) {
+        newsUnsubscribers.push(onSnapshot(query(collection(db, 'newsReads'), where('uid', '==', user.uid)), snapshot => {
           if (activeUser?.uid !== user.uid) return;
           readReceipts = new Map(snapshot.docs.map(item => [item.data().newsId, item.data()]));
           render();
-        }, error => showLoadError(error))
-      ];
+        }, error => showLoadError(error)));
+      }
     }
 
     function showLoadError(error) {
@@ -194,6 +194,7 @@
     }
 
     async function markRead(newsId, button) {
+      if (!activeUser) return;
       button.disabled = true;
       try {
         const receiptId = `${activeUser.uid}_${newsId}`;

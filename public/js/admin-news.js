@@ -34,9 +34,15 @@ const messages = {
     save:'Saving draft…', saved:'Draft saved automatically.', saveFailed:'Draft could not be saved.',
     publishing:'Publishing…', confirmPublish:'Publish this announcement? Students will be able to read it immediately.',
     missing:'Complete both language titles and announcement texts before publishing.',
+    missingEnglish:'Enter an English title and announcement before continuing.',
+    missingChinese:'Enter a Traditional Chinese title and announcement before reviewing.',
     confirmDelete:'Move this announcement to deleted items?', confirmRestore:'Restore and republish this announcement?',
     close:'Close', translationEmpty:'Enter the source text before translating.',
     translating:'Translating…', translateFailed:'Translation failed. Check the server translation configuration and try again.',
+    pastNews:'Past news', sendEmails:'Send / retry subscriber emails',
+    emailResult:(sent,failed,skipped) => `Email delivery: ${sent} sent, ${failed} failed, ${skipped} already sent.`,
+    emailFailed:'Could not send news emails. The announcement is published; use Send / retry subscriber emails to try again.',
+    eta:(seconds) => `Estimated time left: about ${seconds} seconds`,
     noLogs:'No activity has been recorded.', saveFirst:'Start typing to create an auto-saved draft.'
   },
   zh: {
@@ -46,9 +52,15 @@ const messages = {
     save:'正在儲存草稿……', saved:'草稿已自動儲存。', saveFailed:'無法儲存草稿。',
     publishing:'正在發布……', confirmPublish:'要發布此公告嗎？學生將可立即閱讀。',
     missing:'發布前請填寫中英文標題及公告內容。',
+    missingEnglish:'請先填寫英文標題及公告內容。',
+    missingChinese:'請填寫繁體中文標題及公告內容以檢查版本。',
     confirmDelete:'要將此公告移至已刪除項目嗎？', confirmRestore:'要還原並重新發布此公告嗎？',
     close:'關閉', translationEmpty:'請先輸入要翻譯的內容。',
     translating:'正在翻譯……', translateFailed:'翻譯失敗。請檢查伺服器翻譯設定後再試。',
+    pastNews:'過往消息', sendEmails:'發送／重試訂閱者電郵',
+    emailResult:(sent,failed,skipped) => `電郵發送：已寄出 ${sent} 封，失敗 ${failed} 封，已發送 ${skipped} 封。`,
+    emailFailed:'無法發送消息電郵。公告已發布；請使用「發送／重試訂閱者電郵」再試。',
+    eta:(seconds) => `預計剩餘時間：約 ${seconds} 秒`,
     noLogs:'尚未有操作紀錄。', saveFirst:'輸入內容後便會自動建立草稿。'
   }
 };
@@ -87,9 +99,18 @@ async function showEditor(nextEditor, values = {}) {
   editor = nextEditor;
   editorDirty = false;
   fields.forEach(field => { $(fieldElements[field]).value = values[field] || ''; });
-  $('news-editor').classList.remove('hidden');
+  $('news-editor').showModal();
+  showNewsStep('en');
   setEditorStatus(editor.draftId ? t().saved : t().saveFirst);
-  $('news-editor').scrollIntoView({ behavior:'smooth', block:'start' });
+  $('news-title-en').focus();
+}
+
+function showNewsStep(step) {
+  ['en', 'zh', 'review'].forEach(name => {
+    $(`news-step-${name}`).classList.toggle('hidden', name !== step);
+  });
+  $('news-back-btn').classList.toggle('hidden', step !== 'zh');
+  $('news-publish-btn').classList.toggle('hidden', step !== 'review');
 }
 
 async function closeEditor(savePending = false) {
@@ -98,7 +119,7 @@ async function closeEditor(savePending = false) {
     if (!(await saveDraft())) return;
     if (editorDirty && !(await saveDraft())) return;
   }
-  $('news-editor').classList.add('hidden');
+  $('news-editor').close();
   editor = null;
   editorDirty = false;
 }
@@ -205,23 +226,47 @@ function renderNewsList() {
         <button class="nav-btn" data-edit-news="${escapeHtml(item.id)}">${escapeHtml(t().edit)}</button>
         ${removed
           ? `<button class="nav-btn" data-restore-news="${escapeHtml(item.id)}">${escapeHtml(t().restore)}</button>`
-          : `<button class="nav-btn nav-btn-danger" data-delete-news="${escapeHtml(item.id)}">${escapeHtml(t().remove)}</button>`}
+          : `<button class="nav-btn nav-btn-danger" data-delete-news="${escapeHtml(item.id)}">${escapeHtml(t().remove)}</button><button class="nav-btn" data-email-news="${escapeHtml(item.id)}">${escapeHtml(t().sendEmails)}</button>`}
         <button class="nav-btn" data-show-logs="${escapeHtml(item.id)}">${escapeHtml(t().logs)}</button>
       </div>
       <ol class="news-log-list hidden" data-log-list="${escapeHtml(item.id)}"></ol>
     </article>`;
   }).join('');
-  list.innerHTML = `${draftCards}${articleCards}`;
+  list.innerHTML = `${draftCards}${articleCards ? `<h3 class="news-step-title">${escapeHtml(t().pastNews)}</h3>${articleCards}` : ''}`;
   list.querySelectorAll('[data-edit-draft]').forEach(button => button.addEventListener('click', () => editDraft(button.dataset.editDraft)));
   list.querySelectorAll('[data-delete-draft]').forEach(button => button.addEventListener('click', () => removeDraft(button.dataset.deleteDraft)));
   list.querySelectorAll('[data-edit-news]').forEach(button => button.addEventListener('click', () => editNews(button.dataset.editNews)));
   list.querySelectorAll('[data-delete-news]').forEach(button => button.addEventListener('click', () => setDeleted(button.dataset.deleteNews, true)));
   list.querySelectorAll('[data-restore-news]').forEach(button => button.addEventListener('click', () => setDeleted(button.dataset.restoreNews, false)));
   list.querySelectorAll('[data-show-logs]').forEach(button => button.addEventListener('click', () => showLogs(button.dataset.showLogs)));
+  list.querySelectorAll('[data-email-news]').forEach(button => button.addEventListener('click', () => retryNewsEmails(button)));
 }
 
 function startNewDraft() {
   showEditor({ newsId:null, draftId:null });
+}
+
+function continueToChinese() {
+  const values = editorValues();
+  if (!values.titleEn || !values.bodyEn) {
+    setEditorStatus(t().missingEnglish, true);
+    return;
+  }
+  showNewsStep('zh');
+  $('news-title-zh').focus();
+}
+
+function reviewDraft() {
+  const values = editorValues();
+  if (!values.titleZh || !values.bodyZh) {
+    setEditorStatus(t().missingChinese, true);
+    return;
+  }
+  $('news-review-title-en').textContent = values.titleEn;
+  $('news-review-body-en').textContent = values.bodyEn;
+  $('news-review-title-zh').textContent = values.titleZh;
+  $('news-review-body-zh').textContent = values.bodyZh;
+  showNewsStep('review');
 }
 
 function editDraft(draftId) {
@@ -279,6 +324,13 @@ async function publishDraft() {
     });
     if (editor.draftId) batch.delete(doc(services.db, 'newsDrafts', editor.draftId));
     await batch.commit();
+    try {
+      const delivery = await sendNewsEmails(articleRef.id, false);
+      if (delivery.failed) window.alert(t().emailResult(delivery.sent, delivery.failed, delivery.skipped));
+    } catch (error) {
+      console.error('Announcement published, but subscriber emails could not be delivered:', error);
+      window.alert(t().emailFailed);
+    }
     await closeEditor();
     await loadNewsData();
   } catch (error) {
@@ -350,31 +402,81 @@ async function showLogs(newsId) {
   }
 }
 
-async function translateField(targetField) {
-  const targetLanguage = targetField.endsWith('En') ? 'en' : 'zh';
-  const sourceField = targetLanguage === 'en' ? targetField.replace(/En$/, 'Zh') : targetField.replace(/Zh$/, 'En');
-  const source = $(fieldElements[sourceField]).value.trim();
-  if (!source) {
+async function translateText(text) {
+  const token = await services.auth.currentUser.getIdToken();
+  const response = await fetch(`${services.apiBase}/api/translate-news`, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+    body:JSON.stringify({ text, targetLanguage:'zh' })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.translation) throw new Error(result.error || t().translateFailed);
+  return result.translation;
+}
+
+async function translateChinese() {
+  const title = $('news-title-en').value.trim();
+  const body = $('news-body-en').value.trim();
+  if (!title || !body) {
     setEditorStatus(t().translationEmpty, true);
     return;
   }
-  const button = $(`news-translate-${targetField.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`);
+  const button = $('news-translate-zh-btn');
+  const dialog = $('news-translation-dialog');
+  const status = $('news-translation-status');
+  const progress = $('news-translation-progress');
+  const duration = 12;
+  let seconds = duration;
   button.disabled = true;
   setEditorStatus(t().translating);
+  status.textContent = t().eta(seconds);
+  progress.value = 0;
+  dialog.showModal();
+  const timer = setInterval(() => {
+    seconds = Math.max(1, seconds - 1);
+    status.textContent = t().eta(seconds);
+    progress.value = duration - seconds;
+  }, 1000);
   try {
-    const token = await services.auth.currentUser.getIdToken();
-    const response = await fetch(`${services.apiBase}/api/translate-news`, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
-      body:JSON.stringify({ text:source, targetLanguage })
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.translation) throw new Error(result.error || t().translateFailed);
-    $(fieldElements[targetField]).value = result.translation;
+    const [translatedTitle, translatedBody] = await Promise.all([
+      translateText(title),
+      translateText(body)
+    ]);
+    $('news-title-zh').value = translatedTitle;
+    $('news-body-zh').value = translatedBody;
     scheduleSave();
   } catch (error) {
     console.error('Could not translate news:', error);
     setEditorStatus(error.message || t().translateFailed, true);
+  } finally {
+    clearInterval(timer);
+    dialog.close();
+    button.disabled = false;
+  }
+}
+
+async function sendNewsEmails(newsId, report = true) {
+  const token = await services.auth.currentUser.getIdToken();
+  const response = await fetch(`${services.apiBase}/api/publish-news`, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+    body:JSON.stringify({ newsId })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || t().emailFailed);
+  if (report) {
+    window.alert(t().emailResult(result.sent || 0, result.failed || 0, result.skipped || 0));
+  }
+  return result;
+}
+
+async function retryNewsEmails(button) {
+  button.disabled = true;
+  try {
+    await sendNewsEmails(button.dataset.emailNews, true);
+  } catch (error) {
+    console.error('Could not retry news email delivery:', error);
+    window.alert(error.message || t().emailFailed);
   } finally {
     button.disabled = false;
   }
@@ -388,12 +490,17 @@ export function initAdminNews(options) {
     $('news-language-btn').addEventListener('click', () => setLanguage(lang() === 'en' ? 'zh' : 'en'));
     $('news-new-btn').addEventListener('click', startNewDraft);
     $('news-cancel-btn').addEventListener('click', () => closeEditor(true));
-    $('news-publish-btn').addEventListener('click', publishDraft);
-    fields.forEach(field => $(fieldElements[field]).addEventListener('input', scheduleSave));
-    ['titleEn','bodyEn','titleZh','bodyZh'].forEach(field => {
-      const id = `news-translate-${field.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`;
-      $(id).addEventListener('click', () => translateField(field));
+    $('news-editor').addEventListener('cancel', event => {
+      event.preventDefault();
+      closeEditor(true);
     });
+    $('news-publish-btn').addEventListener('click', publishDraft);
+    $('news-next-btn').addEventListener('click', continueToChinese);
+    $('news-back-btn').addEventListener('click', () => showNewsStep('en'));
+    $('news-review-btn').addEventListener('click', reviewDraft);
+    $('news-review-back-btn').addEventListener('click', () => showNewsStep('zh'));
+    $('news-translate-zh-btn').addEventListener('click', translateChinese);
+    fields.forEach(field => $(fieldElements[field]).addEventListener('input', scheduleSave));
   }
   return loadNewsData();
 }

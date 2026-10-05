@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "cloudinary": "^2.5.0",
-    "firebase-admin": "^12.7.0"
+    "firebase-admin": "^12.7.0",
+    "nodemailer": "^10.0.14"
   }
 }

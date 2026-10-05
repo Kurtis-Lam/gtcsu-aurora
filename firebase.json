@@ -10,6 +10,13 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/supportus",
+        "destination": "/feedbacks.html#support",
+        "type": 301
+      }
+    ],
     "rewrites": [
       {
         "source": "**",
