@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          "kurtislam100@gmail.com",
+          "xtshh524@gmail.com",
+          "namwingso@gmail.com"
+        ];
+    }
+
+    function isSchoolUser() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email.matches('.*@gtcollege[.]edu[.]hk');
+    }
+
+    function isValidString(v, maxLen) {
+      return v is string && v.size() <= maxLen;
+    }
+
+    // Admin and API authorization probe. Reading a missing document returns 404
+    // when authorized and 403 when denied.
+    match /adminCheck/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Analytics pageviews
+    match /pageviews/{pageviewId} {
+      allow read, delete: if isAdmin();
+
+      allow create: if isAdmin() || (
+        request.resource.data.keys().hasOnly(
+          ['path', 'durationSeconds', 'dateStr', 'timestamp', 'openedAt', 'lastActiveAt']
+        ) &&
+        isValidString(request.resource.data.path, 200) &&
+        request.resource.data.path.matches('^/[A-Za-z0-9_./-]*$') &&
+        request.resource.data.durationSeconds == 0 &&
+        isValidString(request.resource.data.dateStr, 10) &&
+        request.resource.data.timestamp == request.time &&
+        request.resource.data.openedAt == request.time &&
+        request.resource.data.lastActiveAt == request.time
+      );
+
+      allow update: if isAdmin() || (
+        request.resource.data.path == resource.data.path &&
+        request.resource.data.dateStr == resource.data.dateStr &&
+        request.resource.data.timestamp == resource.data.timestamp &&
+        request.resource.data.openedAt == resource.data.openedAt &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ['durationSeconds', 'lastActiveAt', 'closedAt', 'userEmail', 'userName']
+        ) &&
+        request.resource.data.durationSeconds is number &&
+        request.resource.data.durationSeconds >= 0 &&
+        request.resource.data.durationSeconds <= 86400 &&
+        request.resource.data.lastActiveAt is timestamp &&
+        (!('closedAt' in request.resource.data) || request.resource.data.closedAt is timestamp) &&
+        (!('userEmail' in request.resource.data) || (
+          request.auth != null &&
+          request.resource.data.userEmail == request.auth.token.email
+        )) &&
+        (!('userName' in request.resource.data) || isValidString(request.resource.data.userName, 200))
+      );
+    }
+
+    // Feedback is written only by /api/feedback using the Admin SDK.
+    match /feedbacks/{feedbackId} {
+      allow read, delete: if isAdmin();
+      allow create, update: if false;
+    }
+
+    // Public feedback
+    match /publicFeedbacks/{feedbackId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Support counter is read publicly and written only by the API/Admin SDK.
+    match /counters/{counterId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Supporter records are written only by the API/Admin SDK.
+    match /supporters/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if false;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['note'])
+        && isValidString(request.resource.data.note, 200);
+    }
+
+    // Gallery metadata
+    match /galleryFolders/{id} {
+      allow read: if isSchoolUser() || isAdmin();
+      allow write: if isAdmin();
+    }
+    match /galleryImages/{id} {
+      allow read: if isSchoolUser() || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}
