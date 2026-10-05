@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aurora - Latest News</title>
   <link rel="icon" type="image/png" href="assets/aurora-logo.png">
+  <link rel="preload" href="assets/aurora-logo.png" as="image">
+  <link rel="preload" href="https://res.cloudinary.com/dl2xijhcd/video/upload/f_auto,q_auto,w_1280/v1790563703/background.mp4" as="video" type="video/mp4" crossorigin>
   <script type="module" src="js/analytics.js"></script>
   <script type="module" src="js/load-components.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +16,7 @@
     :root { color-scheme: dark; --void:#050b12; --ink:#dff6f2; --cyan:#7fe9f0; --teal:#2fe6b8; }
     * { box-sizing:border-box; }
     body { margin:0; min-height:100vh; background:var(--void); color:var(--ink); font-family:Manrope,sans-serif; }
-    #background-container { position:fixed; inset:0; z-index:-1; }
+    #background-container { position:fixed; inset:0; z-index:0; pointer-events:none; }
     main { position:relative; z-index:1; width:min(900px, 92vw); margin:0 auto; padding:145px 0 80px; }
     header { text-align:center; margin-bottom:34px; }
     h1 { margin:0 0 12px; color:white; font:600 clamp(2rem,5vw,3.5rem) Cinzel,serif; }
