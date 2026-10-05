@@ -269,6 +269,15 @@
   }
   .faq-item-title { font-weight: 600; font-size: 1.05rem; color: var(--aurora-cyan); margin-bottom: 8px; }
   .faq-item-desc { font-size: 0.9rem; color: rgba(223, 246, 242, 0.85); line-height: 1.6; }
+  .identity-control { display:flex; align-items:center; gap:12px; flex-wrap:nowrap; }
+  .identity-preview { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.82rem; color:rgba(223,246,242,.72); }
+  .identity-toggle { flex:none; border:1px solid rgba(127,233,240,.42); border-radius:999px; padding:7px 13px; color:#eafffb; background:rgba(127,233,240,.1); font:inherit; font-size:.8rem; cursor:pointer; }
+  .support-panel { margin-top:30px; text-align:center; scroll-margin-top:110px; }
+  .support-count { margin:16px 0; font:700 clamp(2.4rem,8vw,4rem) Cinzel,serif; color:white; text-shadow:0 0 24px rgba(110,195,255,.5); }
+  .support-button { border:1px solid rgba(110,195,255,.7); border-radius:999px; padding:13px 28px; background:linear-gradient(135deg,#8fd6ff,#6ec3ff); color:#04121c; font:700 1rem Manrope,sans-serif; cursor:pointer; }
+  .support-button:disabled { opacity:.6; cursor:not-allowed; }
+  .support-status { min-height:1.4em; margin-top:12px; color:rgba(223,246,242,.75); }
+  .support-local-count { margin-top:10px; font-size:.8rem; color:rgba(223,246,242,.65); }
 
   .modal-overlay {
     position: fixed; inset: 0; z-index: 2000;
@@ -392,11 +401,10 @@
           <textarea id="fb-desc" class="form-textarea" placeholder="Provide detailed feedback..." data-ph-en="Provide detailed feedback..." data-ph-zh="請詳細描述你的意見..."></textarea>
         </div>
         <div class="form-group" id="fb-identity-row" style="display:none;">
-          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-            <input type="checkbox" id="fb-anon-toggle" checked style="width:auto;">
-            <span class="i18n" data-en="Submit anonymously (uncheck to attach your name)" data-zh="匿名提交（取消勾選以附上您的姓名）">Submit anonymously (uncheck to attach your name)</span>
-          </label>
-          <p id="fb-identity-preview" style="font-size:0.8rem; color:rgba(223,246,242,0.6); margin-top:4px;"></p>
+          <div class="identity-control">
+            <span id="fb-identity-preview" class="identity-preview"></span>
+            <button type="button" id="fb-anon-toggle" class="identity-toggle" role="switch" aria-checked="true"></button>
+          </div>
         </div>
         <div class="form-group" id="fb-signin-row">
           <p class="i18n" style="font-size:0.8rem; color:rgba(223,246,242,0.6); margin-bottom:8px;" data-en="You are submitting anonymously. Optionally sign in with your school account to attach your name." data-zh="你正以匿名方式提交。你亦可使用學校帳戶登入以附上姓名。">You are submitting anonymously. Optionally sign in with your school account to attach your name.</p>
@@ -413,7 +421,7 @@
           </div>
           <div class="faq-item">
             <div class="faq-item-title i18n" data-en="Q: Is my submission completely anonymous?" data-zh="問：我的提交是完全匿名的嗎？">Q: Is my submission completely anonymous?</div>
-            <div class="faq-item-desc i18n" data-en="By default, yes — your feedback is stored without your name or email. If you sign in with your school account you can choose to attach your name; leave the option checked to stay anonymous. Only Student Union administrators can see submissions." data-zh="預設情況下是匿名的，意見不會附上你的姓名或電郵。如果你使用學校帳戶登入，可選擇附上姓名；保持勾選即可維持匿名。只有學生會管理員可以查看提交內容。">By default, yes — your feedback is stored without your name or email. If you sign in with your school account you can choose to attach your name; leave the option checked to stay anonymous. Only Student Union administrators can see submissions.</div>
+            <div class="faq-item-desc i18n" data-en="By default, yes — your feedback is stored without your name or email. If you sign in with your school account, use the identity toggle to attach your name or stay anonymous. Only Student Union administrators can see submissions." data-zh="預設情況下是匿名的，意見不會附上你的姓名或電郵。如果你使用學校帳戶登入，可使用身份切換按鈕選擇附上姓名或保持匿名。只有學生會管理員可以查看提交內容。">By default, yes — your feedback is stored without your name or email. If you sign in with your school account, use the identity toggle to attach your name or stay anonymous. Only Student Union administrators can see submissions.</div>
           </div>
           <div class="faq-item">
             <div class="faq-item-title i18n" data-en="Q: How will the Student Union handle my feedback?" data-zh="問：學生會將如何處理我的意見？">Q: How will the Student Union handle my feedback?</div>
@@ -430,6 +438,15 @@
         </div>
       </div>
     </div>
+
+    <section class="glass-panel support-panel" id="support">
+      <h2 class="panel-title i18n" data-en="Support Us" data-zh="支持我們">Support Us</h2>
+      <p class="i18n" data-en="Every tap is a vote of confidence. You can support Aurora once every 10 minutes." data-zh="每次點擊都是對 Aurora 的支持，每 10 分鐘可支持一次。">Every tap is a vote of confidence. You can support Aurora once every 10 minutes.</p>
+      <div id="support-count" class="support-count" aria-live="polite">0</div>
+      <button id="support-btn" class="support-button" disabled data-en="Checking…" data-zh="正在檢查……">Checking…</button>
+      <p id="support-status" class="support-status" aria-live="polite"></p>
+      <p class="support-local-count"><span class="i18n" data-en="Your supports:" data-zh="你的支持次數：">Your supports:</span> <strong id="bar-clicks">0</strong></p>
+    </section>
   </main>
 
   <div id="modal-status" class="modal-overlay">
@@ -451,6 +468,8 @@
   <script type="module">
     import { AuroraAuth } from './js/load-components.js';
     import { API_BASE } from './js/api-config.js';
+    import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db, auth } from './js/firebase-config.js';
 
     let currentLang = localStorage.getItem('aurora_lang') || 'en';
     let progressTimer = null;
@@ -466,6 +485,7 @@
     const fbSigninRow = $('fb-signin-row');
     const fbAnonToggle = $('fb-anon-toggle');
     const fbIdentityPreview = $('fb-identity-preview');
+    let anonymous = true;
 
     const T = {
       en: {
@@ -479,8 +499,10 @@
         errRate: 'You have submitted several times recently. Please try again later.',
         errInvalid: 'Please check that your title and description meet the minimum word counts.',
         words: 'words',
-        anon: 'This feedback will be submitted anonymously.',
-        named: (n) => `This feedback will show as coming from: ${n}`
+        anon: 'You will be displayed as: Anonymous',
+        named: (n) => `You will be displayed as: ${n}`,
+        toggleToNamed: 'Use my name',
+        toggleToAnon: 'Use anonymously'
       },
       zh: {
         checking: '正在審核反饋', checkingMsg: '我們正在檢查您的反饋...',
@@ -493,11 +515,123 @@
         errRate: '您最近提交次數過多，請稍後再試。',
         errInvalid: '請確認標題及內容已達最低字數要求。',
         words: '個字詞',
-        anon: '此意見將以匿名方式提交。',
-        named: (n) => `此意見將顯示為來自：${n}`
+        anon: '你將會以匿名方式顯示。',
+        named: (n) => `你將會顯示為：${n}`,
+        toggleToNamed: '使用我的姓名',
+        toggleToAnon: '匿名提交'
       }
     };
     const t = () => T[currentLang];
+    const supportText = {
+      en: { ready:'Support Aurora 💙', checking:'Checking…', already:'You have already supported recently.', thanks:'Thank you for your support! 💙', error:'Could not reach the server. Please try again later.' },
+      zh: { ready:'支持 Aurora 💙', checking:'正在檢查……', already:'你最近已經支持過了。', thanks:'感謝你的支持！💙', error:'無法連線至伺服器，請稍後再試。' }
+    };
+    const supportButton = $('support-btn');
+    const supportStatus = $('support-status');
+    const supportCount = $('support-count');
+    const supportLocalCount = $('bar-clicks');
+    const supportDeviceKey = 'aurora_device_id';
+    const supportLocalKey = 'aurora_local_support_clicks';
+    let supportTimer = null;
+    let supportCountdownEnds = 0;
+
+    function updateSupportButton() {
+      if (!supportButton) return;
+      if (supportCountdownEnds > Date.now()) {
+        supportButton.disabled = true;
+        supportButton.textContent = `${Math.floor((supportCountdownEnds - Date.now() + 999) / 1000)}s`;
+      } else {
+        supportButton.disabled = false;
+        supportButton.textContent = supportText[currentLang].ready;
+      }
+    }
+
+    async function supportRequest(method) {
+      const device = getSupportDeviceId();
+      const headers = {};
+      if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
+      return fetch(`${API_BASE}/api/support?device=${encodeURIComponent(device)}`, { method, headers });
+    }
+
+    function getSupportDeviceId() {
+      let id = null;
+      try { id = localStorage.getItem(supportDeviceKey); } catch {}
+      if (!id) {
+        const cookie = document.cookie.match(new RegExp(`(?:^|; )${supportDeviceKey}=([^;]*)`));
+        if (cookie) {
+          try { id = decodeURIComponent(cookie[1]); } catch {}
+        }
+      }
+      if (!id || !/^[A-Za-z0-9_-]{16,64}$/.test(id)) {
+        id = crypto.randomUUID();
+      }
+      try { localStorage.setItem(supportDeviceKey, id); } catch {}
+      document.cookie = `${supportDeviceKey}=${encodeURIComponent(id)}; max-age=${60 * 60 * 24 * 365 * 2}; path=/; SameSite=Lax`;
+      return id;
+    }
+
+    function updateLocalSupportCount() {
+      let count = 0;
+      try { count = Number(localStorage.getItem(supportLocalKey)) || 0; } catch {}
+      supportLocalCount.textContent = String(count);
+    }
+
+    async function refreshSupportCooldown() {
+      try {
+        const response = await supportRequest('GET');
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
+        if (result.remainingMs > 0) startSupportCountdown(result.remainingMs);
+        else updateSupportButton();
+      } catch (error) {
+        console.error('Could not load support status:', error);
+        supportButton.disabled = true;
+        supportButton.textContent = supportText[currentLang].error;
+      }
+    }
+
+    function startSupportCountdown(remainingMs) {
+      clearInterval(supportTimer);
+      supportCountdownEnds = Date.now() + remainingMs;
+      updateSupportButton();
+      supportTimer = setInterval(() => {
+        if (Date.now() >= supportCountdownEnds) {
+          clearInterval(supportTimer);
+          supportCountdownEnds = 0;
+          supportStatus.textContent = '';
+        }
+        updateSupportButton();
+      }, 1000);
+    }
+
+    onSnapshot(doc(db, 'counters', 'supportCounter'), snapshot => {
+      if (snapshot.exists()) supportCount.textContent = (snapshot.data().count || 0).toLocaleString();
+    }, error => console.error('Could not load support counter:', error));
+    AuroraAuth.onChange(refreshSupportCooldown);
+    supportButton.addEventListener('click', async () => {
+      supportButton.disabled = true;
+      supportButton.textContent = supportText[currentLang].checking;
+      try {
+        const response = await supportRequest('POST');
+        const result = await response.json();
+        if (response.ok && result.ok) {
+          try { localStorage.setItem(supportLocalKey, String((Number(localStorage.getItem(supportLocalKey)) || 0) + 1)); } catch {}
+          updateLocalSupportCount();
+          supportStatus.textContent = supportText[currentLang].thanks;
+          startSupportCountdown(result.remainingMs || 600000);
+        } else if (response.status === 429 || result.remainingMs > 0) {
+          supportStatus.textContent = supportText[currentLang].already;
+          startSupportCountdown(result.remainingMs || 600000);
+        } else {
+          throw new Error(result.error || `HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Support request failed:', error);
+        supportStatus.textContent = supportText[currentLang].error;
+        updateSupportButton();
+      }
+    });
+    updateLocalSupportCount();
 
     // ---- Language ----
     function setLanguage(lang) {
@@ -515,6 +649,7 @@
       if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
       validateForm();
       refreshIdentityUI();
+      updateSupportButton();
     }
 
     window.setLanguage = setLanguage; // used by the shared language button
@@ -589,17 +724,23 @@
       fbSigninRow.style.display = signedInUser ? 'none' : 'block';
       if (!signedInUser) return;
       const name = signedInUser.displayName || signedInUser.email;
-      fbIdentityPreview.textContent = fbAnonToggle.checked ? t().anon : t().named(name);
+      fbIdentityPreview.textContent = anonymous ? t().anon : t().named(name);
+      fbAnonToggle.textContent = anonymous ? t().toggleToNamed : t().toggleToAnon;
+      fbAnonToggle.setAttribute('aria-checked', String(anonymous));
     }
-    fbAnonToggle.addEventListener('change', refreshIdentityUI);
+    fbAnonToggle.addEventListener('click', () => { anonymous = !anonymous; refreshIdentityUI(); });
     $('fb-signin-btn')?.addEventListener('click', () => AuroraAuth.signIn());
-    AuroraAuth.onChange((user) => { signedInUser = user; refreshIdentityUI(); });
+    AuroraAuth.onChange((user) => {
+      if (signedInUser?.uid !== user?.uid) anonymous = true;
+      signedInUser = user;
+      refreshIdentityUI();
+    });
 
     // ---- Submit: the server checks for spam and stores the feedback ----
     submitBtn.addEventListener('click', async () => {
       const title = titleInput.value.trim();
       const description = descInput.value.trim();
-      const attachIdentity = !!signedInUser && !fbAnonToggle.checked;
+      const attachIdentity = !!signedInUser && !anonymous;
 
       setStatus(t().checking, t().checkingMsg, false);
       startProgressBar(4);

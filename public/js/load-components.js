@@ -1,6 +1,7 @@
-import { auth, isSchoolUser, ALLOWED_DOMAIN } from './firebase-config.js';
+import { auth, db, isSchoolUser, ALLOWED_DOMAIN } from './firebase-config.js';
 import { initInfo, refreshInfo } from './info.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { collection, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Start fetching shared components immediately; they are mounted once the DOM is ready.
 const panelFetchPromise = fetch('panel.html')
@@ -117,6 +118,35 @@ function showSchoolEmailModal(attemptedEmail) {
 let currentUser = null;
 let authResolved = false;
 const authListeners = new Set();
+let newsUnsubscribers = [];
+
+function watchUnreadNews(user) {
+  newsUnsubscribers.forEach(unsubscribe => unsubscribe());
+  newsUnsubscribers = [];
+  const badge = document.querySelector('.news-unread-dot');
+  if (!badge) return;
+  badge.classList.remove('visible');
+  if (!user) return;
+
+  let news = [];
+  let reads = [];
+  const render = () => {
+    const readByNewsId = new Map(reads.map(item => [item.newsId, Number(item.revision) || 0]));
+    const unread = news.some(item => (Number(item.revision) || 1) > (readByNewsId.get(item.id) || 0));
+    badge.classList.toggle('visible', unread);
+  };
+
+  newsUnsubscribers = [
+    onSnapshot(query(collection(db, 'news'), where('status', '==', 'published'), where('deleted', '==', false)), snapshot => {
+      news = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+      render();
+    }, error => console.error('Could not watch news updates:', error)),
+    onSnapshot(query(collection(db, 'newsReads'), where('uid', '==', user.uid)), snapshot => {
+      reads = snapshot.docs.map(item => item.data());
+      render();
+    }, error => console.error('Could not watch news read status:', error))
+  ];
+}
 
 const siteProvider = new GoogleAuthProvider();
 siteProvider.setCustomParameters({ hd: ALLOWED_DOMAIN, prompt: 'select_account' });
@@ -126,6 +156,7 @@ onAuthStateChanged(auth, (user) => {
   authResolved = true;
   authListeners.forEach(cb => { try { cb(currentUser); } catch (e) { console.error(e); } });
   updateNavAuthUI(currentUser);
+  watchUnreadNews(currentUser);
 });
 
 export const AuroraAuth = {
@@ -252,6 +283,26 @@ async function loadPanel() {
     const currentPath = window.location.pathname.split('/').pop() || 'index.html';
     const navLinks = mountPoint.querySelectorAll('.nav-links a[data-page]');
     navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('data-page') === currentPath));
+    const dropdown = mountPoint.querySelector('#info-dropdown');
+    const dropdownToggle = mountPoint.querySelector('#info-dropdown-toggle');
+    if (navLinks.length && [...navLinks].some(link => link.classList.contains('active'))) dropdown?.classList.add('open');
+    dropdownToggle?.addEventListener('click', () => {
+      const open = dropdown.classList.toggle('open');
+      dropdownToggle.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', event => {
+      if (!dropdown?.contains(event.target)) {
+        dropdown?.classList.remove('open');
+        dropdownToggle?.setAttribute('aria-expanded', 'false');
+      }
+    });
+    dropdown?.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        dropdown.classList.remove('open');
+        dropdownToggle?.setAttribute('aria-expanded', 'false');
+        dropdownToggle?.focus();
+      }
+    });
 
     // Mobile hamburger drawer
     const hamburger = mountPoint.querySelector('#hamburger-btn');
@@ -271,6 +322,7 @@ async function loadPanel() {
     document.getElementById('nav-signin-btn')?.addEventListener('click', () => AuroraAuth.signIn());
     document.getElementById('nav-signout-btn')?.addEventListener('click', () => AuroraAuth.signOut());
     updateNavAuthUI(currentUser);
+    watchUnreadNews(currentUser);
 
     // Language toggle
     document.getElementById('lang-btn')?.addEventListener('click', switchLanguage);
