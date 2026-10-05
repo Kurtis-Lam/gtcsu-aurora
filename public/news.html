@@ -34,6 +34,32 @@
     html { background:var(--void); overflow-x:hidden; }
     body { overflow-x:hidden; }
 
+    /* ---------- Preloader + bottom-to-top reveal (same as aboutus.html) ---------- */
+    #preloader { position:fixed; inset:0; z-index:9999; background:#000; transition:opacity .8s ease, visibility .8s ease; }
+    body.is-loaded #preloader { opacity:0; visibility:hidden; }
+
+    .navbar, main > header, #news-content.notice, .lang-toggle {
+      opacity:0; transform:translateY(16px);
+      transition:opacity .35s ease-in, transform .35s ease-in; pointer-events:none;
+    }
+    body.is-loaded .navbar,
+    body.is-loaded main > header,
+    body.is-loaded #news-content.notice,
+    body.is-loaded .lang-toggle {
+      opacity:1; transform:translateY(0); pointer-events:auto;
+      transition:opacity 1.2s cubic-bezier(.16,1,.3,1), transform 1.2s cubic-bezier(.16,1,.3,1);
+    }
+    body.is-loaded .navbar { transition-delay:.15s; }
+    body.is-loaded main > header, body.is-loaded #news-content.notice { transition-delay:.35s; }
+    body.is-loaded .lang-toggle { transition-delay:.55s; }
+
+    .fade-in { opacity:0; transform:translateY(20px); transition:opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1); will-change:opacity, transform; }
+    .fade-in.is-visible { opacity:1; transform:translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .navbar, main > header, #news-content.notice, .fade-in, .lang-toggle { transition:none !important; opacity:1 !important; transform:none !important; }
+    }
+
     /* ---------- Navbar (copied from index.html) ---------- */
     .navbar { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:1rem 4vw; background:rgba(6,13,22,.55); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid rgba(223,246,242,.12); }
     .nav-brand { display:flex; align-items:center; gap:12px; text-decoration:none; }
@@ -68,6 +94,7 @@
   </style>
 </head>
 <body>
+  <div id="preloader"></div>
   <div id="panel-container"></div>
   <div id="background-container"></div>
   <main>
@@ -88,6 +115,7 @@
     let articles = [];
     let readReceipts = new Map();
     let newsUnsubscribers = [];
+    const revealedIds = new Set();
     const text = {
       en: { loading:'Loading news…', empty:'There are no announcements yet.', fail:'Could not load news. Please refresh and try again.', mark:'Mark as read', read:'Read', markFailed:'Could not mark as read. Try again.', date:'Published' },
       zh: { loading:'正在載入消息……', empty:'暫時沒有公告。', fail:'無法載入消息，請重新整理再試。', mark:'標記為已讀', read:'已讀', markFailed:'無法標記為已讀，請再試一次。', date:'發布時間' }
@@ -113,14 +141,17 @@
         return;
       }
       content.className = 'news-list';
-      content.innerHTML = articles.map(article => {
+      content.innerHTML = articles.map((article, index) => {
         const isRead = (Number(readReceipts.get(article.id)?.revision) || 0) >= (Number(article.revision) || 1);
         const title = lang() === 'zh' ? article.titleZh : article.titleEn;
         const body = lang() === 'zh' ? article.bodyZh : article.bodyEn;
         const publishedAt = article.publishedAt?.toDate?.();
         const date = publishedAt ? new Intl.DateTimeFormat(lang() === 'zh' ? 'zh-HK' : 'en-GB', { dateStyle:'medium', timeStyle:'short', timeZone:'Asia/Hong_Kong' }).format(publishedAt) : '';
-        return `<article class="news-card"><div class="news-meta">${escapeHtml(t.date)}${date ? ` · ${escapeHtml(date)}` : ''}</div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(body)}</p><button class="read-btn" data-news-id="${escapeHtml(article.id)}" ${isRead ? 'disabled' : ''}>${isRead ? escapeHtml(t.read) : escapeHtml(t.mark)}</button></article>`;
+        const seen = revealedIds.has(article.id);
+        revealedIds.add(article.id);
+        return `<article class="news-card fade-in${seen ? ' is-visible' : ''}"${seen ? '' : ` style="transition-delay:${Math.min(index, 4) * 0.05}s"`}><div class="news-meta">${escapeHtml(t.date)}${date ? ` · ${escapeHtml(date)}` : ''}</div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(body)}</p><button class="read-btn" data-news-id="${escapeHtml(article.id)}" ${isRead ? 'disabled' : ''}>${isRead ? escapeHtml(t.read) : escapeHtml(t.mark)}</button></article>`;
       }).join('');
+      content.querySelectorAll('.news-card.fade-in:not(.is-visible)').forEach(card => window.auroraFade?.(card));
       content.querySelectorAll('[data-news-id]').forEach(button => button.addEventListener('click', () => markRead(button.dataset.newsId, button)));
     }
 
@@ -182,16 +213,50 @@
     window.addEventListener('aurora:langchange', event => updateLanguage(event.detail.lang));
   </script>
   <script>
-    // Same reveal as index.html: panel.html's info button stays hidden until body.is-loaded.
-    let pageRevealed = false;
-    function revealPage() {
-      if (pageRevealed) return;
-      pageRevealed = true;
-      document.getElementById('bg-video')?.play().catch(() => {});
-      document.body.classList.add('is-loaded');
-    }
-    document.addEventListener('DOMContentLoaded', () => setTimeout(revealPage, 300));
-    window.addEventListener('load', revealPage);
+    document.addEventListener('DOMContentLoaded', () => {
+      const video = document.getElementById('bg-video');
+      let pageRevealed = false;
+      const pending = new Set();
+
+      const fadeObserver = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { root: null, rootMargin: '400px 0px 400px 0px', threshold: 0.01 });
+
+      // Used by dynamically rendered content; waits until the page is revealed.
+      window.auroraFade = el => { pageRevealed ? fadeObserver.observe(el) : pending.add(el); };
+
+      function revealPage() {
+        if (pageRevealed) return;
+        pageRevealed = true;
+        if (video) video.play().catch(() => {});
+        document.body.classList.add('is-loaded');
+        document.querySelectorAll('.fade-in:not(.is-visible)').forEach(el => fadeObserver.observe(el));
+        pending.forEach(el => fadeObserver.observe(el));
+        pending.clear();
+      }
+
+      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
+      const logoLoaded = new Promise(resolve => {
+        const img = new Image();
+        img.onload = img.onerror = resolve;
+        img.src = 'assets/aurora-logo.png';
+        if (img.complete) resolve();
+      });
+      const videoLoaded = new Promise(resolve => {
+        if (!video || video.readyState >= 3) return resolve();
+        const done = () => resolve();
+        video.addEventListener('canplaythrough', done, { once: true });
+        video.addEventListener('loadeddata', done, { once: true });
+      });
+      const fallbackTimer = new Promise(resolve => setTimeout(resolve, 3000));
+
+      Promise.race([Promise.all([fontsLoaded, logoLoaded, videoLoaded]), fallbackTimer]).then(revealPage);
+    });
   </script>
 </body>
 </html>
