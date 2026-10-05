@@ -9,14 +9,19 @@
     <span class="nav-title">Aurora</span>
   </a>
   <nav class="nav-links" id="nav-links">
+    <a href="news.html" id="news-nav-link" class="nav-btn" data-page="news.html"><span class="i18n" data-en="Latest News" data-zh="最新消息">Latest News</span><span class="news-unread-dot" aria-hidden="true"></span></a>
     <a href="photos.html" class="nav-btn i18n" data-page="photos.html" data-en="Photos" data-zh="相冊">Photos</a>
     <a href="aboutus.html" class="nav-btn i18n" data-page="aboutus.html" data-en="About Us" data-zh="關於我們">About Us</a>
-    <a href="activities.html" class="nav-btn i18n" data-page="activities.html" data-en="Activities" data-zh="活動">Activities</a>
-    <a href="welfare.html" class="nav-btn i18n" data-page="welfare.html" data-en="Welfare" data-zh="福利">Welfare</a>
-    <a href="schedule.html" class="nav-btn i18n" data-page="schedule.html" data-en="Schedule" data-zh="日程表">Schedule</a>
-    <a href="financial.html" class="nav-btn i18n" data-page="financial.html" data-en="Financial" data-zh="財政預算">Financial</a>
-    <a href="feedbacks.html" class="nav-btn i18n" data-page="feedbacks.html" data-en="Feedback" data-zh="意見反饋">Feedback</a>
-    <a href="supportus.html" class="nav-btn i18n" data-page="supportus.html" data-en="Support Us" data-zh="支持我們">Support Us</a>
+    <div class="nav-dropdown" id="info-dropdown">
+      <button class="nav-btn nav-dropdown-toggle i18n" id="info-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" data-en="Info ▾" data-zh="資訊 ▾">Info ▾</button>
+      <div class="nav-dropdown-menu" id="info-dropdown-menu">
+        <a href="activities.html" class="nav-btn i18n" data-page="activities.html" data-en="Activities" data-zh="活動">Activities</a>
+        <a href="financial.html" class="nav-btn i18n" data-page="financial.html" data-en="Financial" data-zh="財政預算">Financial</a>
+        <a href="schedule.html" class="nav-btn i18n" data-page="schedule.html" data-en="Schedule" data-zh="日程表">Schedule</a>
+        <a href="welfare.html" class="nav-btn i18n" data-page="welfare.html" data-en="Welfare" data-zh="福利">Welfare</a>
+      </div>
+    </div>
+    <a href="feedbacks.html" class="nav-btn i18n" data-page="feedbacks.html" data-en="Feedbacks" data-zh="意見反饋">Feedbacks</a>
 
     <!-- Site-wide sign-in control. Signing in here is what lets Feedback
          attach your name — you can still submit anonymously there even
@@ -57,6 +62,20 @@
 </button>
 
 <style>
+  .nav-dropdown { position:relative; }
+  .nav-dropdown-toggle { font-family:inherit; cursor:pointer; background:transparent; white-space:nowrap; }
+  .nav-dropdown-menu {
+    position:absolute; top:100%; left:0; min-width:190px; padding:8px;
+    display:none; flex-direction:column; gap:4px; border:1px solid rgba(127,233,240,0.25);
+    border-radius:14px; background:rgba(10,26,32,0.97); box-shadow:0 12px 32px rgba(0,0,0,0.45);
+  }
+  .nav-dropdown:hover .nav-dropdown-menu, .nav-dropdown.open .nav-dropdown-menu { display:flex; }
+  .nav-dropdown-menu .nav-btn { display:block; border-radius:8px; white-space:nowrap; }
+  .news-unread-dot {
+    display:none; width:8px; height:8px; margin-left:7px; vertical-align:middle;
+    border-radius:50%; background:#ff4d5e; box-shadow:0 0 10px rgba(255,77,94,0.8);
+  }
+  .news-unread-dot.visible { display:inline-block; }
   /* Floating language + info buttons (shared by every page) */
   .lang-toggle {
     position:fixed; bottom:24px; right:24px; z-index:1000; display:flex; align-items:center; gap:8px;
@@ -102,5 +121,12 @@
   @media (max-width: 768px) {
     .nav-auth { width:100%; margin:8px 0 0; padding-top:12px; border-top:1px solid rgba(127,233,240,0.15); }
     .nav-user { width:100%; justify-content:space-between; }
+    .nav-dropdown { width:100%; }
+    .nav-dropdown-toggle { text-align:left; }
+    .nav-dropdown-menu {
+      position:static; min-width:0; margin:0 0 0 12px; padding:4px 0 4px 8px;
+      border:0; border-left:1px solid rgba(127,233,240,0.25); border-radius:0;
+      background:transparent; box-shadow:none;
+    }
   }
 </style>

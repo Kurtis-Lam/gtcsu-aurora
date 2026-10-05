@@ -2,7 +2,7 @@
 
 Official website for **Aurora**, the No. 1 candidate cabinet for the Student Union of G.T. (Ellen Yeung) College, 2026–27.
 
-This is a multi‑page, bilingual (English / Traditional Chinese) static website with dynamic features such as a real‑time support counter, anonymous feedback submission, and a detailed financial budget breakdown.
+This is a multi‑page, bilingual (English / Traditional Chinese) static website with dynamic features such as authenticated Aurora news, a real‑time support counter, anonymous feedback submission, and a detailed financial budget breakdown.
 
 ---
 
@@ -10,8 +10,10 @@ This is a multi‑page, bilingual (English / Traditional Chinese) static website
 
 - **Bilingual Interface** – Toggle between English and Traditional Chinese on every page. Language preference is saved in `localStorage`.
 - **Immersive Design** – Animated video background, glass‑morphism cards, and smooth scroll‑reveal effects.
-- **Dynamic Navigation** – A shared navigation panel (`panel.html`) is injected via `load-components.js` for consistent headers across pages.
-- **Support Us Counter** – Real‑time global support counter with IP‑based cooldown (10 minutes). Uses Firebase Firestore.
+- **Dynamic Navigation** – A shared navigation panel (`panel.html`) includes an Info dropdown and per-account unread news indicator.
+- **Latest News** – Verified school Google accounts can read announcements and mark each revision as read. Admins can publish, edit, delete, restore, and inspect audit logs.
+- **Bilingual News Authoring** – News requires English and Traditional Chinese titles and content; admins can request translations via the server-side OpenRouter API.
+- **Support Counter** – The real‑time support counter appears below the feedback form on `feedbacks.html`, with a 10-minute cooldown.
 - **Anonymous Feedback** – Submit feedback with title and description (word‑count validation). Content is moderated via an external API before saving to Firestore.
 - **Activities & Schedule** – Expandable cards detailing festive, regular, and post‑exam activities; month‑by‑month calendar.
 - **Welfare & Discounts** – Curated list of student benefits, merchant discounts, and campus welfares.
@@ -26,12 +28,15 @@ This is a multi‑page, bilingual (English / Traditional Chinese) static website
 |------|-------------|
 | `index.html` | Landing page with cabinet name, slogan, and Instagram link. |
 | `aboutus.html` | Vision, promotion video, and cabinet member profiles. |
+| `news.html` | Latest Aurora announcements (verified school Google account required). |
 | `activities.html` | Detailed descriptions of all planned activities (festive, regular, post‑exam, inter‑school). |
 | `welfare.html` | Student welfare offers, merchant discounts, and external benefits. |
 | `schedule.html` | Month‑by‑month calendar of events for the 2026–27 academic year. |
-| `feedbacks.html` | Anonymous feedback form + FAQ. |
+| `feedbacks.html` | Anonymous feedback form, FAQ, and support counter. |
 | `financial.html` | Complete budget breakdown with itemised costs. |
-| `supportus.html` | Real‑time support counter with a “Support Us” button. |
+| `supportus.html` | Legacy URL that redirects to the support counter on `feedbacks.html`. |
+
+The news translation action requires `OPENROUTER_API_KEY` in the Vercel backend environment. News content and audit records are written through the authenticated `/api/news` endpoint; student reads require a verified `@gtcollege.edu.hk` Google account, and admin changes are checked against the existing Firestore `adminCheck` rules.
 
 ---
 

@@ -14,6 +14,7 @@
 <link rel="preload" href="https://res.cloudinary.com/dl2xijhcd/video/upload/f_auto,q_auto,w_1280/v1790563703/background.mp4" as="video" type="video/mp4" crossorigin>
 
 <script type="module" src="js/load-components.js"></script>
+<script type="module" src="js/support.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -183,6 +184,20 @@
     grid-template-columns: 1fr;
     gap: 30px;
   }
+  .support-section {
+    margin-top:32px; padding:28px; text-align:center; border-radius:16px;
+    background:var(--glass-bg); border:1px solid var(--glass-border); backdrop-filter:blur(12px);
+  }
+  .support-section h2 { font-family:'Cinzel',serif; color:var(--aurora-teal); font-size:1.35rem; margin-bottom:10px; }
+  .support-section p { color:rgba(223,246,242,.72); line-height:1.65; }
+  .support-count-label { margin-top:24px; color:var(--aurora-cyan); font-size:.82rem; letter-spacing:.14em; text-transform:uppercase; }
+  .support-count { margin:8px 0 20px; color:#fff; font:600 clamp(2.6rem,9vw,4.5rem) 'Cinzel',serif; text-shadow:0 0 24px rgba(110,195,255,.35); }
+  .support-btn { min-width:190px; border:0; border-radius:999px; padding:13px 24px; background:linear-gradient(135deg,#8fd6ff,#6ec3ff); color:#06111a; font:700 .95rem 'Manrope',sans-serif; cursor:pointer; }
+  .support-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(110,195,255,.28); }
+  .support-btn:disabled { opacity:.55; cursor:not-allowed; }
+  .support-status { min-height:1.5em; margin-top:12px; font-size:.85rem; }
+  .support-info-bar { display:flex; gap:8px; justify-content:center; margin-top:18px; color:rgba(223,246,242,.58); font-size:.82rem; }
+  .support-info-bar strong { color:var(--support-blue,#6ec3ff); }
 
   .glass-panel {
     background: var(--glass-bg);
@@ -370,7 +385,7 @@
   <main class="page-container">
     <div class="header-section">
       <p class="page-subtitle i18n" data-en="Student Voice" data-zh="學生聲音">Student Voice</p>
-      <h1 class="page-title i18n" data-en="Feedback & FAQ" data-zh="意見反饋與常見問題">Feedback & FAQ</h1>
+      <h1 class="page-title i18n" data-en="Feedbacks" data-zh="意見反饋">Feedbacks</h1>
     </div>
 
     <div class="feedback-grid">
@@ -430,6 +445,19 @@
         </div>
       </div>
     </div>
+
+    <section class="support-section" id="support">
+      <h2 class="i18n" data-en="Support Aurora" data-zh="支持 Aurora">Support Aurora</h2>
+      <p class="i18n" data-en="Every tap is a vote of confidence for us. You can support Aurora once every 10 minutes." data-zh="每次點擊都是對 Aurora 的支持。每 10 分鐘可以支持一次。">Every tap is a vote of confidence for us. You can support Aurora once every 10 minutes.</p>
+      <div class="support-count-label i18n" data-en="Total Support Clicks" data-zh="總支持次數">Total Support Clicks</div>
+      <div class="support-count" id="support-count">0</div>
+      <button id="support-btn" class="support-btn" type="button" disabled>Checking your status…</button>
+      <p class="support-status" id="support-status" aria-live="polite"></p>
+      <div class="support-info-bar">
+        <span class="i18n" data-en="Your support clicks:" data-zh="你的支持次數：">Your support clicks:</span>
+        <strong id="bar-clicks">0</strong>
+      </div>
+    </section>
   </main>
 
   <div id="modal-status" class="modal-overlay">

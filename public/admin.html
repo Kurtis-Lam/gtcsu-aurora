@@ -800,6 +800,27 @@
   .modal-content { animation: pop .18s ease-out; }
   @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
   .supporters-table-wrap { min-width: 0; }
+  .news-admin-layout { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; }
+  .news-admin-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:20px; }
+  .news-admin-header,.news-admin-actions,.news-admin-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .news-admin-header { margin-bottom:18px; }
+  .news-admin-form { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .news-admin-field { display:flex; flex-direction:column; gap:7px; min-width:0; }
+  .news-admin-field label { color:var(--aurora-cyan); font-size:.82rem; font-weight:600; }
+  .news-admin-field input,.news-admin-field textarea { width:100%; padding:10px 12px; border:1px solid rgba(127,233,240,.25); border-radius:8px; background:rgba(5,11,18,.75); color:#fff; font:inherit; }
+  .news-admin-field textarea { min-height:150px; resize:vertical; }
+  .news-admin-field input:focus,.news-admin-field textarea:focus { outline:none; border-color:var(--aurora-teal); }
+  .news-admin-field.full { grid-column:1/-1; }
+  .news-admin-row { padding:14px 0; border-bottom:1px solid rgba(127,233,240,.12); }
+  .news-admin-row:last-child { border-bottom:0; }
+  .news-admin-row-title { min-width:180px; flex:1; }
+  .news-admin-row-title small { display:block; margin-top:4px; color:rgba(223,246,242,.55); }
+  .news-admin-message { min-height:1.5em; margin:10px 0; color:var(--aurora-cyan); }
+  .news-admin-message.error { color:#ff9b9b; }
+  .news-admin-log { padding:10px 0; border-bottom:1px solid rgba(127,233,240,.12); }
+  .news-admin-log small { display:block; margin-top:4px; color:rgba(223,246,242,.55); }
+  .news-admin-lang-toggle { border:1px solid var(--card-border); background:transparent; color:var(--aurora-cyan); border-radius:999px; padding:7px 12px; cursor:pointer; }
+  @media (max-width:700px) { .news-admin-form { grid-template-columns:1fr; } .news-admin-field.full { grid-column:auto; } }
 
   @media (max-width: 700px) {
     body { padding: 20px 4vw; }
@@ -966,6 +987,7 @@
       <button class="tab-btn" id="tab-feedback-btn">💬 Feedback Inbox</button>
       <button class="tab-btn" id="tab-supporters-btn">💙 Supporters</button>
       <button class="tab-btn" id="tab-photos-btn">🖼 Upload Photos</button>
+      <button class="tab-btn" id="tab-news-btn">📰 News / 消息</button>
     </div>
 
     <!-- Analytics Dashboard View -->
@@ -1065,7 +1087,7 @@
         <div class="kpi-card">
           <span class="kpi-title">Total Support Clicks</span>
           <span class="kpi-value support-value" id="kpi-total-supports">0</span>
-          <span class="kpi-subtitle">All-time count shown on supportus.html</span>
+          <span class="kpi-subtitle">All-time count shown below Feedbacks / 意見反饋頁面下方顯示累計次數</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-title">Unique Supporters</span>
@@ -1153,6 +1175,53 @@
         </div>
       </div>
     </div>
+    <div id="news-section" class="hidden">
+          <div class="news-admin-header">
+            <h2 data-en="Aurora News" data-zh="Aurora 消息">Aurora News</h2>
+            <button class="news-admin-lang-toggle" id="news-admin-language" type="button">繁體中文</button>
+          </div>
+          <div class="news-admin-card news-admin-layout">
+            <div>
+              <div class="news-admin-actions">
+                <h3 data-en="Create or edit an announcement" data-zh="新增或編輯公告">Create or edit an announcement</h3>
+                <button class="nav-btn" id="news-new-btn" type="button" data-en="+ New announcement" data-zh="+ 新增公告">+ New announcement</button>
+              </div>
+              <p class="news-admin-message" id="news-admin-message" aria-live="polite"></p>
+              <form id="news-form" class="news-admin-form" hidden>
+                <div class="news-admin-field">
+                  <label for="news-title-en">English title / 英文標題</label>
+                  <input id="news-title-en" maxlength="180" required>
+                </div>
+                <div class="news-admin-field">
+                  <label for="news-title-zh">繁體中文標題 / Chinese title</label>
+                  <input id="news-title-zh" maxlength="180" required>
+                </div>
+                <div class="news-admin-field full">
+                  <label for="news-body-en">English news / 英文內容</label>
+                  <textarea id="news-body-en" maxlength="12000" required></textarea>
+                  <button class="nav-btn news-translate-btn" type="button" data-source="en" data-en="Translate English to Chinese" data-zh="將英文翻譯成中文">Translate English to Chinese</button>
+                </div>
+                <div class="news-admin-field full">
+                  <label for="news-body-zh">繁體中文內容 / Chinese news</label>
+                  <textarea id="news-body-zh" maxlength="12000" required></textarea>
+                  <button class="nav-btn news-translate-btn" type="button" data-source="zh" data-en="Translate Chinese to English" data-zh="將中文翻譯成英文">Translate Chinese to English</button>
+                </div>
+                <div class="news-admin-actions news-admin-field full">
+                  <button class="nav-btn" id="news-save-btn" type="submit" data-en="Publish announcement" data-zh="發布公告">Publish announcement</button>
+                  <button class="nav-btn" id="news-cancel-btn" type="button" data-en="Cancel" data-zh="取消">Cancel</button>
+                </div>
+              </form>
+            </div>
+            <div>
+              <h3 data-en="Announcements and archive" data-zh="公告與已刪除消息">Announcements and archive</h3>
+              <div id="news-admin-list"></div>
+            </div>
+            <div>
+              <h3 id="news-admin-logs-title" data-en="News activity log" data-zh="消息操作記錄">News activity log</h3>
+              <div id="news-admin-logs"><p data-en="Select a news item to view its history." data-zh="選擇消息以查看其操作記錄。">Select a news item to view its history.</p></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="ui-dialog" class="modal-overlay hidden" role="dialog" aria-modal="true">
@@ -1212,6 +1281,7 @@
     </div>
   </div>
 
+  <script type="module" src="js/news-admin.js"></script>
   <script type="module">
     import {
       collection,
@@ -1244,17 +1314,19 @@
     /*
      * Specified Sub Destinations Order:
      * 1. /                       -> Yellow (#ffd700)
-     * 2. /photos                 -> Orange (#ff9800)
-     * 3. /aboutus                -> Red (#ff4d4d)
-     * 4. /activities             -> Pink (#ff69b4)
-     * 5. /welfare                -> Violet (#a855f7)
-     * 6. /schedule               -> Purple (#7b1fa2)
-     * 7. /financial              -> Blue (#2196f3)
-     * 8. /feedbacks              -> Blue-Green / Turquoise (#00ced1)
-     * 9. /supportus              -> Green (#2ecc71)
+     * 2. /news                   -> Coral (#ff6b6b)
+     * 3. /photos                 -> Orange (#ff9800)
+     * 4. /aboutus                -> Red (#ff4d4d)
+     * 5. /activities             -> Pink (#ff69b4)
+     * 6. /welfare                -> Violet (#a855f7)
+     * 7. /schedule               -> Purple (#7b1fa2)
+     * 8. /financial              -> Blue (#2196f3)
+     * 9. /feedbacks              -> Blue-Green / Turquoise (#00ced1)
+     * 10. /supportus             -> Green (#2ecc71, legacy)
      */
     const DESTINATION_ORDER = [
       '/',
+      '/news',
       '/photos',
       '/aboutus',
       '/activities',
@@ -1270,6 +1342,7 @@
       '/admin': '#ffffff',
       '/': '#ffd700',          // Yellow
       '/index': '#ffd700',     // Yellow
+      '/news': '#ff6b6b',      // Coral
       '/photos': '#ff9800',     // Orange
       '/aboutus': '#ff4d4d',    // Red
       '/activities': '#ff69b4', // Pink
@@ -1279,7 +1352,7 @@
       '/financial': '#2196f3',  // Blue
       '/feedbacks': '#00ced1',  // Blue-green (turquoise)
       '/feedback': '#00ced1',   // Blue-green (turquoise)
-      '/supportus': '#2ecc71'   // Green
+      '/supportus': '#2ecc71'   // Green (legacy route)
     };
 
     const FALLBACK_PALETTE = ['#f77f00', '#06d6a0', '#ef476f', '#118ab2', '#ffd166', '#8338ec', '#3a86ff', '#fb5607'];
@@ -1341,17 +1414,20 @@
     const tabFeedbackBtn = document.getElementById('tab-feedback-btn');
     const tabSupportersBtn = document.getElementById('tab-supporters-btn');
     const tabPhotosBtn = document.getElementById('tab-photos-btn');
+    const tabNewsBtn = document.getElementById('tab-news-btn');
 
     const analyticsSection = document.getElementById('analytics-section');
     const feedbackSection = document.getElementById('feedback-section');
     const supportersSection = document.getElementById('supporters-section');
     const photosSection = document.getElementById('photos-section');
+    const newsSection = document.getElementById('news-section');
 
     const ALL_TABS = [
       { btn: tabAnalyticsBtn, section: analyticsSection, onShow: null },
       { btn: tabFeedbackBtn, section: feedbackSection, onShow: null },
       { btn: tabSupportersBtn, section: supportersSection, onShow: null },
-      { btn: tabPhotosBtn, section: photosSection, onShow: () => loadPhotosTabData() }
+      { btn: tabPhotosBtn, section: photosSection, onShow: () => loadPhotosTabData() },
+      { btn: tabNewsBtn, section: newsSection, onShow: () => window.dispatchEvent(new Event('aurora:admin-news-show')) }
     ];
 
     let photosTabLoaded = false;
@@ -1508,6 +1584,7 @@
 
     const ALLOWED_DESTINATIONS = new Set([
       '/',
+      '/news',
       '/photos',
       '/aboutus',
       '/activities',

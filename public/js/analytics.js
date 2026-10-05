@@ -17,6 +17,7 @@ const VALID_ROUTES = new Set([
   '/schedule',
   '/financial',
   '/feedbacks',
+  '/news',
   '/supportus',
   '/photos',
   '/admin'

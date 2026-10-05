@@ -1,5 +1,6 @@
 import { auth, isSchoolUser, ALLOWED_DOMAIN } from './firebase-config.js';
 import { initInfo, refreshInfo } from './info.js';
+import { API_BASE } from './api-config.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Start fetching shared components immediately; they are mounted once the DOM is ready.
@@ -117,6 +118,8 @@ function showSchoolEmailModal(attemptedEmail) {
 let currentUser = null;
 let authResolved = false;
 const authListeners = new Set();
+let newsStatusRequest = 0;
+let newsHasUnread = false;
 
 const siteProvider = new GoogleAuthProvider();
 siteProvider.setCustomParameters({ hd: ALLOWED_DOMAIN, prompt: 'select_account' });
@@ -126,6 +129,7 @@ onAuthStateChanged(auth, (user) => {
   authResolved = true;
   authListeners.forEach(cb => { try { cb(currentUser); } catch (e) { console.error(e); } });
   updateNavAuthUI(currentUser);
+  refreshNewsUnread(currentUser);
 });
 
 export const AuroraAuth = {
@@ -181,6 +185,55 @@ function updateNavAuthUI(user) {
   avatar.src = user.photoURL || initialsAvatar(name);
   document.getElementById('nav-user-name').textContent = name;
 }
+
+async function refreshNewsUnread(user = currentUser) {
+  const requestId = ++newsStatusRequest;
+  const dot = document.querySelector('#news-nav-link .news-unread-dot');
+  if (!dot) return;
+  if (!user) {
+    newsHasUnread = false;
+    dot.classList.remove('visible');
+    document.getElementById('news-nav-link')?.removeAttribute('aria-label');
+    return;
+  }
+  try {
+    const token = await user.getIdToken();
+    const response = await fetch(`${API_BASE}/api/news`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error(`News status request failed (${response.status})`);
+    const { unreadIds } = await response.json();
+    if (requestId !== newsStatusRequest || user !== currentUser) return;
+    newsHasUnread = Array.isArray(unreadIds) && unreadIds.length > 0;
+    dot.classList.toggle('visible', newsHasUnread);
+    updateNewsLinkLabel();
+  } catch (error) {
+    console.error('Could not refresh news unread status:', error);
+  }
+}
+
+function updateNewsLinkLabel() {
+  const link = document.getElementById('news-nav-link');
+  if (!link) return;
+  if (newsHasUnread) {
+    link.setAttribute(
+      'aria-label',
+      currentLang() === 'zh' ? '最新消息，有未讀公告' : 'Latest News, unread announcements'
+    );
+  } else {
+    link.removeAttribute('aria-label');
+  }
+}
+
+window.addEventListener('aurora:newsread', () => refreshNewsUnread());
+window.addEventListener('aurora:langchange', updateNewsLinkLabel);
+window.addEventListener('focus', () => refreshNewsUnread());
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshNewsUnread();
+});
+setInterval(() => {
+  if (document.visibilityState === 'visible') refreshNewsUnread();
+}, 60000);
 
 
 // ---------------------------------------------------------------------------
@@ -252,6 +305,7 @@ async function loadPanel() {
     const currentPath = window.location.pathname.split('/').pop() || 'index.html';
     const navLinks = mountPoint.querySelectorAll('.nav-links a[data-page]');
     navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('data-page') === currentPath));
+    refreshNewsUnread();
 
     // Mobile hamburger drawer
     const hamburger = mountPoint.querySelector('#hamburger-btn');
@@ -266,6 +320,47 @@ async function loadPanel() {
     hamburger?.addEventListener('click', () => setMenu(!drawer.classList.contains('active')));
     overlay?.addEventListener('click', () => setMenu(false));
     navLinks.forEach(link => link.addEventListener('click', () => setMenu(false)));
+    const infoDropdown = mountPoint.querySelector('#info-dropdown');
+    const infoDropdownToggle = mountPoint.querySelector('#info-dropdown-toggle');
+    infoDropdownToggle?.addEventListener('click', () => {
+      const open = infoDropdown.classList.toggle('open');
+      infoDropdownToggle.setAttribute('aria-expanded', String(open));
+    });
+    infoDropdown?.addEventListener('mouseenter', () => infoDropdownToggle?.setAttribute('aria-expanded', 'true'));
+    infoDropdown?.addEventListener('mouseleave', () => {
+      if (!infoDropdown.classList.contains('open')) infoDropdownToggle?.setAttribute('aria-expanded', 'false');
+    });
+    infoDropdown?.addEventListener('focusin', (event) => {
+      if (event.target !== infoDropdownToggle) infoDropdown.classList.add('open');
+      infoDropdownToggle?.setAttribute('aria-expanded', String(infoDropdown.classList.contains('open')));
+    });
+    infoDropdownToggle?.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        infoDropdown.classList.add('open');
+        infoDropdownToggle.setAttribute('aria-expanded', 'true');
+        mountPoint.querySelector('#info-dropdown-menu a')?.focus();
+      }
+    });
+    infoDropdown?.addEventListener('focusout', (event) => {
+      if (!infoDropdown.contains(event.relatedTarget)) {
+        infoDropdown.classList.remove('open');
+        infoDropdownToggle?.setAttribute('aria-expanded', String(infoDropdown.matches(':hover')));
+      }
+    });
+    document.addEventListener('click', (event) => {
+      if (infoDropdown && !infoDropdown.contains(event.target)) {
+        infoDropdown.classList.remove('open');
+        infoDropdownToggle?.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        infoDropdown?.classList.remove('open');
+        infoDropdownToggle?.setAttribute('aria-expanded', 'false');
+        if (infoDropdown?.contains(document.activeElement)) infoDropdownToggle?.focus();
+      }
+    });
 
     // Sign-in / sign-out
     document.getElementById('nav-signin-btn')?.addEventListener('click', () => AuroraAuth.signIn());

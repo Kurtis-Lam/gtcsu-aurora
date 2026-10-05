@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora - Latest News</title>
+<link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
+<script type="module" src="js/analytics.js"></script>
+<link rel="preload" href="panel.html" as="fetch" crossorigin>
+<script type="module" src="js/load-components.js"></script>
+<script type="module" src="js/news.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --void:#050b12; --ink:#dff6f2; --teal:#2fe6b8; --cyan:#7fe9f0; --glass:rgba(10,26,32,.72); }
+  * { box-sizing:border-box; }
+  html,body { min-height:100%; margin:0; background:var(--void); color:var(--ink); font-family:Manrope,sans-serif; }
+  body { overflow-x:hidden; }
+  #preloader { position:fixed; inset:0; z-index:9999; background:#000; transition:opacity .6s,visibility .6s; }
+  body.is-loaded #preloader { opacity:0; visibility:hidden; }
+  .navbar { position:fixed; inset:0 0 auto; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:1rem 4vw; background:rgba(6,13,22,.72); border-bottom:1px solid rgba(223,246,242,.12); backdrop-filter:blur(14px); }
+  .nav-brand { display:flex; align-items:center; gap:12px; text-decoration:none; }
+  .nav-logo { width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid rgba(127,233,240,.4); }
+  .nav-title { color:#eafffb; font:600 1.15rem Cinzel,serif; }
+  .nav-links { display:flex; align-items:center; gap:.8rem; }
+  .nav-btn { display:inline-block; padding:8px 12px; border:1px solid transparent; border-radius:999px; color:rgba(223,246,242,.88); text-decoration:none; font-size:.88rem; white-space:nowrap; }
+  .nav-btn:hover,.nav-btn.active { color:#fff; border-color:rgba(127,233,240,.4); background:rgba(127,233,240,.1); }
+  .nav-auth { display:flex; align-items:center; gap:8px; }
+  .hamburger-btn { display:none; background:transparent; border:0; cursor:pointer; flex-direction:column; justify-content:space-between; width:24px; height:18px; padding:0; z-index:102; }
+  .hamburger-btn span { display:block; width:100%; height:2px; border-radius:2px; background:var(--ink); }
+  .page-container { position:relative; z-index:1; width:min(900px,92vw); margin:0 auto; padding:140px 0 90px; }
+  .header-section { text-align:center; margin-bottom:36px; }
+  .page-subtitle { color:var(--cyan); font-size:.82rem; letter-spacing:.2em; text-transform:uppercase; }
+  .page-title { margin:8px 0 12px; color:#fff; font:600 clamp(2rem,6vw,3.5rem) Cinzel,serif; }
+  .page-desc { color:rgba(223,246,242,.72); line-height:1.7; }
+  .auth-card,.news-card,.state-card { padding:26px; border:1px solid rgba(127,233,240,.22); border-radius:16px; background:var(--glass); backdrop-filter:blur(12px); }
+  .auth-card { max-width:480px; margin:40px auto; text-align:center; }
+  .news-list { display:grid; gap:18px; }
+  .news-card { position:relative; }
+  .news-card.unread { border-color:rgba(255,77,94,.55); box-shadow:0 0 22px rgba(255,77,94,.08); }
+  .news-card h2 { color:#fff; font:600 1.45rem Cinzel,serif; margin:0 0 8px; }
+  .news-date { color:var(--cyan); font-size:.78rem; margin-bottom:16px; }
+  .news-content { white-space:pre-wrap; line-height:1.8; color:rgba(223,246,242,.9); }
+  .news-card-actions { display:flex; justify-content:flex-end; margin-top:20px; }
+  .news-button { border:1px solid rgba(127,233,240,.42); border-radius:999px; padding:10px 18px; color:#eafffb; background:rgba(127,233,240,.1); font:600 .88rem Manrope,sans-serif; cursor:pointer; }
+  .news-button:hover { background:rgba(47,230,184,.2); border-color:var(--teal); }
+  .news-button:disabled { opacity:.55; cursor:wait; }
+  .state-card { text-align:center; color:rgba(223,246,242,.75); }
+  .state-error { color:#ff9b9b; }
+  .hidden { display:none !important; }
+  @media (max-width:768px) {
+    .hamburger-btn { display:flex; }
+    .navbar { justify-content:flex-start; gap:16px; padding:.8rem 1rem; }
+    .nav-links { position:fixed; inset:0 auto 0 0; width:260px; height:100vh; height:100dvh; padding:80px 20px 24px; align-items:flex-start; flex-direction:column; gap:.45rem; overflow-y:auto; background:rgba(10,26,32,.97); border-right:1px solid rgba(127,233,240,.25); transform:translateX(-100%); transition:transform .3s ease; z-index:99; }
+    .nav-links.active { transform:translateX(0); }
+    .nav-btn { width:100%; text-align:left; }
+    .nav-overlay { position:fixed; inset:0; z-index:98; background:rgba(5,11,18,.7); opacity:0; visibility:hidden; }
+    .nav-overlay.active { opacity:1; visibility:visible; }
+    .nav-auth { width:100%; padding-top:12px; border-top:1px solid rgba(127,233,240,.15); }
+    .page-container { padding-top:110px; } .auth-card,.news-card,.state-card { padding:20px; }
+  }
+</style>
+</head>
+<body>
+  <div id="preloader"></div>
+  <div id="panel-container"></div>
+  <div id="background-container"></div>
+  <main class="page-container">
+    <header class="header-section">
+      <p class="page-subtitle i18n" data-en="Aurora Updates" data-zh="Aurora 最新消息">Aurora Updates</p>
+      <h1 class="page-title i18n" data-en="Latest News" data-zh="最新消息">Latest News</h1>
+      <p class="page-desc i18n" data-en="Official announcements and updates from Aurora." data-zh="Aurora 的官方公告與最新資訊。">Official announcements and updates from Aurora.</p>
+    </header>
+    <section id="news-auth-card" class="auth-card hidden">
+      <h2 class="i18n" data-en="School account required" data-zh="需要使用學校帳戶登入">School account required</h2>
+      <p class="i18n" data-en="Sign in with your verified school Google account to view Aurora news." data-zh="請使用已驗證的學校 Google 帳戶登入以瀏覽 Aurora 最新消息。">Sign in with your verified school Google account to view Aurora news.</p>
+      <button id="news-signin-btn" class="news-button i18n" type="button" data-en="Sign in with Google" data-zh="使用 Google 登入">Sign in with Google</button>
+    </section>
+    <section id="news-state" class="state-card hidden" aria-live="polite">Loading news…</section>
+    <section id="news-list" class="news-list" aria-live="polite"></section>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => setTimeout(() => document.body.classList.add('is-loaded'), 250));
+  </script>
+</body>
+</html>
