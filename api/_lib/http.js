@@ -7,7 +7,10 @@ const STATIC_ORIGINS = [
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const extraOrigins = () =>
-  (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+  (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
 
 function originAllowed(origin, host) {
   return (
@@ -18,24 +21,37 @@ function originAllowed(origin, host) {
   );
 }
 
+/**
+ * Sets CORS headers for an allowed origin. Returns false (and responds 403)
+ * when the origin is present but not allowed.
+ * Exported so handlers can call it before anything that might fail.
+ */
+export function applyCors(req, res, methods = ['GET', 'POST']) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Vary', 'Origin, Access-Control-Request-Headers');
+
+  const origin = req.headers.origin;
+  if (!origin) return true;
+
+  if (!originAllowed(origin, req.headers.host)) {
+    res.status(403).json({ error: 'Forbidden origin' });
+    return false;
+  }
+
+  const allowed = Array.from(new Set([...methods, 'OPTIONS']));
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', allowed.join(', '));
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '600');
+  return true;
+}
+
 export function guard(req, res, methods) {
   const allowedMethods = Array.isArray(methods) ? methods : [methods];
 
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Vary', 'Origin');
+  if (!applyCors(req, res, allowedMethods)) return false;
 
-  const origin = req.headers.origin;
-  if (origin) {
-    if (!originAllowed(origin, req.headers.host)) {
-      res.status(403).json({ error: 'Forbidden origin' });
-      return false;
-    }
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Max-Age', '600');
-  }
-
+  // Preflight: answer before any method or auth checks.
   if (req.method === 'OPTIONS') {
     res.status(204).end();
     return false;
@@ -71,5 +87,15 @@ export function bearerToken(req) {
 }
 
 export function body(req) {
-  return req.body && typeof req.body === 'object' ? req.body : {};
+  const raw = req.body;
+  if (raw && typeof raw === 'object' && !Buffer.isBuffer(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
 }

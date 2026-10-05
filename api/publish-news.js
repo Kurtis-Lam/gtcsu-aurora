@@ -1,10 +1,34 @@
 import crypto from 'node:crypto';
-import nodemailer from 'nodemailer';
-import { getServices } from './_lib/firebase.js';
-import { isAdminByRules } from './_lib/auth.js';
 import { bearerToken, body, guard } from './_lib/http.js';
 
 export const config = { maxDuration: 60 };
+
+// Stop starting new deliveries after this long so the function returns a normal
+// JSON response (with CORS headers) instead of being killed at maxDuration.
+// Remaining subscribers are reported as `deferred`; clicking retry resumes them
+// because already-sent deliveries are skipped.
+const TIME_BUDGET_MS = 45 * 1000;
+
+// Heavy / fragile modules are loaded lazily inside the handler. If one of them
+// fails to load (missing dependency, bad env, broken import), the function still
+// answers the preflight and returns a JSON error with CORS headers, instead of
+// crashing at import time, which the browser reports as a CORS failure.
+let deps;
+async function loadDeps() {
+  if (!deps) {
+    const [nodemailerModule, firebase, auth] = await Promise.all([
+      import('nodemailer'),
+      import('./_lib/firebase.js'),
+      import('./_lib/auth.js')
+    ]);
+    deps = {
+      nodemailer: nodemailerModule.default || nodemailerModule,
+      getServices: firebase.getServices,
+      isAdminByRules: auth.isAdminByRules
+    };
+  }
+  return deps;
+}
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -85,7 +109,17 @@ async function claimDelivery(db, deliveryRef, details) {
 }
 
 export default async function handler(req, res) {
+  // Handles the CORS preflight and sets CORS headers before anything can fail.
   if (!guard(req, res, 'POST')) return;
+
+  let services;
+  try {
+    services = await loadDeps();
+  } catch (error) {
+    console.error('publish-news could not load its dependencies:', error);
+    return res.status(500).json({ error: 'Server failed to start. Check the Vercel function logs.' });
+  }
+  const { nodemailer, getServices, isAdminByRules } = services;
 
   try {
     const token = bearerToken(req);
@@ -110,7 +144,9 @@ export default async function handler(req, res) {
     const subscribers = await db.collection('newsSubscriptions')
       .where('subscribed', '==', true)
       .get();
-    if (subscribers.empty) return res.status(200).json({ total: 0, sent: 0, failed: 0, skipped: 0 });
+    if (subscribers.empty) {
+      return res.status(200).json({ total: 0, sent: 0, failed: 0, skipped: 0, deferred: 0 });
+    }
 
     const gmailUser = process.env.GMAIL_USER?.trim();
     const appPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, '');
@@ -120,10 +156,17 @@ export default async function handler(req, res) {
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: gmailUser, pass: appPassword }
+      auth: { user: gmailUser, pass: appPassword },
+      pool: true,
+      maxConnections: 5,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000
     });
+
+    const startedAt = Date.now();
     const revision = Number(article.revision) || 1;
-    const counters = { total: subscribers.size, sent: 0, failed: 0, skipped: 0 };
+    const counters = { total: subscribers.size, sent: 0, failed: 0, skipped: 0, deferred: 0 };
     const pending = subscribers.docs.filter((subscriber) => (
       typeof subscriber.data().email === 'string' && subscriber.data().email.includes('@')
     ));
@@ -132,6 +175,7 @@ export default async function handler(req, res) {
     let nextIndex = 0;
     const worker = async () => {
       while (nextIndex < pending.length) {
+        if (Date.now() - startedAt > TIME_BUDGET_MS) break; // leave the rest for a retry
         const subscriber = pending[nextIndex++];
         const uid = subscriber.id;
         const email = subscriber.data().email;
@@ -161,14 +205,24 @@ export default async function handler(req, res) {
         } catch (error) {
           console.error(`Could not deliver news ${newsId} to subscriber ${uid}:`, error);
           if (claimed) {
-            await deliveryRef.set({ newsId, revision, uid, email, status: 'failed', failedAt: new Date() });
+            try {
+              await deliveryRef.set({ newsId, revision, uid, email, status: 'failed', failedAt: new Date() });
+            } catch (writeError) {
+              console.error(`Could not record failed delivery for ${uid}:`, writeError);
+            }
           }
           counters.failed++;
         }
       }
     };
-    await Promise.all(Array.from({ length: Math.min(5, pending.length) }, worker));
-    await transporter.close();
+
+    try {
+      await Promise.all(Array.from({ length: Math.min(5, pending.length) }, worker));
+    } finally {
+      counters.deferred = Math.max(0, pending.length - nextIndex);
+      try { transporter.close(); } catch { /* ignore */ }
+    }
+
     return res.status(200).json(counters);
   } catch (error) {
     console.error('News email delivery failed:', error);
