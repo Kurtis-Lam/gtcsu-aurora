@@ -12,12 +12,11 @@ const extraOrigins = () =>
     .map((s) => s.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
-function originAllowed(origin, host) {
+function originAllowed(origin) {
   return (
     STATIC_ORIGINS.includes(origin) ||
     extraOrigins().includes(origin) ||
-    LOCAL_ORIGIN.test(origin) ||
-    origin === `https://${host}`
+    LOCAL_ORIGIN.test(origin)
   );
 }
 
@@ -33,7 +32,7 @@ export function applyCors(req, res, methods = ['GET', 'POST']) {
   const origin = req.headers.origin;
   if (!origin) return true;
 
-  if (!originAllowed(origin, req.headers.host)) {
+  if (!originAllowed(origin)) {
     res.status(403).json({ error: 'Forbidden origin' });
     return false;
   }
@@ -83,10 +82,12 @@ export function hashIp(value) {
 
 export function bearerToken(req) {
   const header = req.headers.authorization || '';
-  return header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  return /^Bearer\\s+[^\\s]+$/i.test(header) ? header.replace(/^Bearer\\s+/i, '').trim() : null;
 }
 
 export function body(req) {
+  const contentLength = Number(req.headers['content-length'] || 0);
+  if (Number.isFinite(contentLength) && contentLength > 256 * 1024) return {};
   const raw = req.body;
   if (raw && typeof raw === 'object' && !Buffer.isBuffer(raw)) return raw;
   if (typeof raw === 'string') {
