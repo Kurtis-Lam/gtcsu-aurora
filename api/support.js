@@ -17,10 +17,11 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getServices } from './_lib/firebase.js';
-import { guard, hashIp } from './_lib/http.js';
+import { guard, hashIp, clientIp } from './_lib/http.js';
 
 const COOLDOWN_MS = 10 * 60 * 1000;
 const DEVICE_ID_RE = /^[A-Za-z0-9_-]{16,64}$/;
+const IP_COOLDOWN_KEY_PREFIX = 'ip_';
 
 const remainingMs = (data) => {
   const last = data?.lastClickAt?.toMillis?.() ?? 0;
@@ -69,15 +70,18 @@ export default async function handler(req, res) {
 
     const deviceRef = db.collection('supporters').doc(`device_${hashIp(`device:${deviceId}`)}`);
     const accountRef = user ? db.collection('supporters').doc(`user_${user.uid}`) : null;
+    const ipRef = db.collection('supporterIpCooldowns').doc(`${IP_COOLDOWN_KEY_PREFIX}${hashIp(clientIp(req))}`);
 
     if (req.method === 'GET') {
-      const [deviceSnap, accountSnap] = await Promise.all([
+      const [deviceSnap, accountSnap, ipSnap] = await Promise.all([
         deviceRef.get(),
         accountRef ? accountRef.get() : null,
+        ipRef.get(),
       ]);
       const remaining = Math.max(
         remainingMs(deviceSnap.data()),
-        accountSnap ? remainingMs(accountSnap.data()) : 0
+        accountSnap ? remainingMs(accountSnap.data()) : 0,
+        remainingMs(ipSnap.data())
       );
       return res.status(200).json({ ok: true, remainingMs: remaining });
     }
@@ -88,10 +92,12 @@ export default async function handler(req, res) {
       // All reads must come before any writes in a transaction.
       const deviceSnap = await tx.get(deviceRef);
       const accountSnap = accountRef ? await tx.get(accountRef) : null;
+      const ipSnap = await tx.get(ipRef);
 
       const remaining = Math.max(
         remainingMs(deviceSnap.data()),
-        accountSnap ? remainingMs(accountSnap.data()) : 0
+        accountSnap ? remainingMs(accountSnap.data()) : 0,
+        remainingMs(ipSnap.data())
       );
       if (remaining > 0) return { ok: false, remainingMs: remaining };
 
@@ -122,6 +128,15 @@ export default async function handler(req, res) {
           { merge: true }
         );
       }
+
+      tx.set(
+        ipRef,
+        {
+          type: 'ip-cooldown',
+          lastClickAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
 
       tx.set(counterRef, { count: FieldValue.increment(1) }, { merge: true });
       return { ok: true, remainingMs: COOLDOWN_MS };
