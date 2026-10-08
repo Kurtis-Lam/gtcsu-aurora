@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     const { publicId } = body(req);
-    if (typeof publicId !== 'string' || !/^aurora\/gallery\/[A-Za-z0-9_\-./]+$/.test(publicId)) {
+    if (typeof publicId !== 'string' || !/^aurora\/gallery\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(publicId)) {
       return res.status(400).json({ error: 'Invalid publicId.' });
     }
 
