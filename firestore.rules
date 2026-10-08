@@ -15,7 +15,7 @@ service cloud.firestore {
       return request.auth != null
         && request.auth.token.email_verified == true
         && request.auth.token.firebase.sign_in_provider == 'google.com'
-        && request.auth.token.email.matches('.*@gtcollege[.]edu[.]hk');
+        && request.auth.token.email.matches('^[^@]+@gtcollege[.]edu[.]hk$');
     }
 
     function isValidString(v, maxLen) {
@@ -28,37 +28,7 @@ service cloud.firestore {
     }
 
     match /pageviews/{pageviewId} {
-      allow read, delete: if isAdmin();
-      allow create: if isAdmin() || (
-        request.resource.data.keys().hasOnly(
-          ['path', 'durationSeconds', 'dateStr', 'timestamp', 'openedAt', 'lastActiveAt']
-        )
-        && isValidString(request.resource.data.path, 200)
-        && request.resource.data.path.matches('^/[A-Za-z0-9_./-]*$')
-        && request.resource.data.durationSeconds == 0
-        && isValidString(request.resource.data.dateStr, 10)
-        && request.resource.data.timestamp == request.time
-        && request.resource.data.openedAt == request.time
-        && request.resource.data.lastActiveAt == request.time
-      );
-      allow update: if isAdmin() || (
-        request.resource.data.path == resource.data.path
-        && request.resource.data.dateStr == resource.data.dateStr
-        && request.resource.data.timestamp == resource.data.timestamp
-        && request.resource.data.openedAt == resource.data.openedAt
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
-          ['durationSeconds', 'lastActiveAt', 'closedAt', 'userEmail', 'userName']
-        )
-        && request.resource.data.durationSeconds is number
-        && request.resource.data.durationSeconds >= 0
-        && request.resource.data.durationSeconds <= 86400
-        && request.resource.data.lastActiveAt is timestamp
-        && (!('closedAt' in request.resource.data) || request.resource.data.closedAt is timestamp)
-        && (!('userEmail' in request.resource.data) || (
-          request.auth != null && request.resource.data.userEmail == request.auth.token.email
-        ))
-        && (!('userName' in request.resource.data) || isValidString(request.resource.data.userName, 200))
-      );
+      allow read, write, delete: if isAdmin();
     }
 
     match /feedbacks/{feedbackId} {
@@ -83,6 +53,11 @@ service cloud.firestore {
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['note'])
         && isValidString(request.resource.data.note, 200);
+    }
+
+
+    match /supporterIpCooldowns/{id} {
+      allow read, write: if false;
     }
 
     match /galleryFolders/{id} {
@@ -116,7 +91,18 @@ service cloud.firestore {
     // Each school account can read and update only its own per-article receipt.
     match /newsReads/{receiptId} {
       allow read: if isAdmin() || (isSchoolUser() && resource.data.uid == request.auth.uid);
-      allow create, update: if isSchoolUser()
+      allow create: if isSchoolUser()
+        && request.resource.data.keys().hasOnly(['uid', 'newsId', 'revision', 'readAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.newsId is string
+        && request.resource.data.revision is int
+        && request.resource.data.readAt == request.time
+        && exists(/databases/$(database)/documents/news/$(request.resource.data.newsId))
+        && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.status == 'published'
+        && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.deleted == false
+        && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.revision == request.resource.data.revision;
+      allow update: if isSchoolUser()
+        && resource.data.uid == request.auth.uid
         && request.resource.data.keys().hasOnly(['uid', 'newsId', 'revision', 'readAt'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.newsId is string
