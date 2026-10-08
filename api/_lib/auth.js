@@ -3,7 +3,9 @@ import { getServices } from './firebase.js';
 export const SCHOOL_DOMAIN = 'gtcollege.edu.hk';
 
 function isSchoolEmail(email) {
-  return typeof email === 'string' && email.toLowerCase().endsWith('@' + SCHOOL_DOMAIN);
+  return typeof email === 'string'
+    && email.length <= 254
+    && /^[^@\s]+@gtcollege[.]edu[.]hk$/i.test(email);
 }
 
 // Verifies a Firebase ID token and returns the decoded token, but only when it
