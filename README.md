@@ -43,7 +43,7 @@ The webpage is hosted on:
 - **Firebase Hosting**: Frontend
 - **Vercel**: Backend and Cloud Functions
 
-Deploy Firestore access-control changes from the repository root with `firebase deploy --only firestore:rules`. News translation uses the existing `OPENROUTER_API_KEY` server environment variable; the key is never sent to the browser.
+Deploy Firestore access-control changes from the repository root with `firebase deploy --only firestore:rules`. Backend secrets must be configured only as Vercel environment variables; use `.env.example` as the variable-name reference and never commit `.env.local`, service-account JSON, API keys, or other credentials. Analytics additionally requires `ANALYTICS_HMAC_SECRET`, a random value of at least 32 characters. News translation uses the existing `OPENROUTER_API_KEY` server environment variable; the key is never sent to the browser.
 
 To send announcement emails, enable 2-Step Verification on the `gtcsu2627aurora@gmail.com` account and create a Google App Password. In Vercel, open the project’s **Settings → Environment Variables** and add `GMAIL_USER` (the sender address), `GMAIL_APP_PASSWORD` (the App Password), and `NEWS_UNSUBSCRIBE_SECRET` (a long random signing secret). Generate the signing secret locally with `openssl rand -hex 32`; paste the generated value into Vercel and never commit it or put it in frontend code. Redeploy after adding the variables. Email delivery is sent by the authenticated admin publish action and can be retried from a past announcement.
 
@@ -70,6 +70,15 @@ Licensed under MIT.
 For any enquiries, please reach out via Aurora's Official Instagram: [@gteyc_aurora2627](https://www.instagram.com/gteyc_aurora2627/) or me at: `kurtislam100@gmail.com`
 
 If you are looking forward to contributing, please see CONTRIBUTING.md
+
+
+### 🔐 Security
+
+- Firestore authorization is enforced server-side and by Firestore Security Rules; client-side checks are not treated as authorization.
+- Analytics writes are mediated by the backend and throttled instead of allowing anonymous direct Firestore writes.
+- Gallery identifiers are validated before Cloudinary URLs are signed or assets are deleted.
+- Production security headers, including HSTS, CSP, clickjacking protection, and MIME-sniffing protection, are configured in `vercel.json`.
+- If credentials were ever committed or shared, rotate them at the provider immediately. Removing a secret from the repository does not invalidate an already-issued credential.
 
 ---
 
