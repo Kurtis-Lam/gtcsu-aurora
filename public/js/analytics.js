@@ -1,93 +1,36 @@
-import {
-  collection,
-  doc,
-  setDoc,
-  updateDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { db, auth, firebaseConfig } from './firebase-config.js';
+import { auth } from './firebase-config.js';
+import { API_BASE } from './api-config.js';
 
-// List of allowed page routes
 const VALID_ROUTES = new Set([
-  '/',
-  '/aboutus',
-  '/news',
-  '/activities',
-  '/financial',
-  '/schedule',
-  '/welfare',
-  '/photos',
-  '/feedbacks',
-  '/admin'
+  '/', '/aboutus', '/news', '/activities', '/financial', '/schedule',
+  '/welfare', '/photos', '/feedbacks', '/admin'
 ]);
 
-function getHKTDateString(date = new Date()) {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(date);
+function normalisePath() {
+  let path = (window.location.pathname || '/').toLowerCase().replace(/\.html$/, '');
+  if (path === '/index' || path === '') path = '/';
+  if (path === '/supportus' || path === '/feedback') path = '/feedbacks';
+  return VALID_ROUTES.has(path) ? path : null;
 }
 
-let path = (window.location.pathname || '/').toLowerCase().replace(/\.html$/, '');
-if (path === '/index' || path === '') path = '/';
-if (path === '/supportus' || path === '/feedback') path = '/feedbacks';
+function randomId() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
 
-// Only initiate pageview tracking if the route is valid
-if (VALID_ROUTES.has(path)) {
-  const pageviewRef = doc(collection(db, "pageviews"));
-
-  const FIRESTORE_COMMIT_URL =
-    `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}` +
-    `/databases/(default)/documents:commit?key=${firebaseConfig.apiKey}`;
-
-  const PAGEVIEW_DOC_PATH =
-    `projects/${firebaseConfig.projectId}/databases/(default)/documents/pageviews/${pageviewRef.id}`;
-
-  function toFirestoreValue(value) {
-    if (value === null) return { nullValue: "NULL_VALUE" };
-    if (value instanceof Date) return { timestampValue: value.toISOString() };
-    if (typeof value === "number") {
-      return Number.isInteger(value) ? { integerValue: value } : { doubleValue: value };
-    }
-    return { stringValue: String(value) };
-  }
-
-  function sendExitUpdate(fields) {
-    const fieldPaths = Object.keys(fields);
-    const fieldsPayload = {};
-    fieldPaths.forEach((key) => {
-      fieldsPayload[key] = toFirestoreValue(fields[key]);
-    });
-
-    const body = JSON.stringify({
-      writes: [
-        {
-          updateMask: { fieldPaths },
-          update: { name: PAGEVIEW_DOC_PATH, fields: fieldsPayload }
-        }
-      ]
-    });
-
-    let sent = false;
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: "application/json" });
-      sent = navigator.sendBeacon(FIRESTORE_COMMIT_URL, blob);
-    }
-
-    if (!sent) {
-      fetch(FIRESTORE_COMMIT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true
-      }).catch((err) => console.error("Analytics exit beacon fallback failed:", err));
-    }
-  }
+const path = normalisePath();
+if (path) {
+  const pageviewId = randomId();
+  let sessionToken = null;
+  let accumulatedMs = 0;
+  let engagedSince = document.visibilityState === 'visible' && document.hasFocus() ? Date.now() : null;
+  let opened = false;
 
   function isEngaged() {
-    return document.visibilityState === "visible" && document.hasFocus();
+    return document.visibilityState === 'visible' && document.hasFocus();
   }
-
-  let accumulatedMs = 0;
-  let engagedSince = isEngaged() ? Date.now() : null;
 
   function flushEngagedTime() {
     if (engagedSince !== null) {
@@ -98,11 +41,8 @@ if (VALID_ROUTES.has(path)) {
 
   function refreshEngagementState() {
     const engaged = isEngaged();
-    if (engaged && engagedSince === null) {
-      engagedSince = Date.now();
-    } else if (!engaged && engagedSince !== null) {
-      flushEngagedTime();
-    }
+    if (engaged && engagedSince === null) engagedSince = Date.now();
+    else if (!engaged && engagedSince !== null) flushEngagedTime();
   }
 
   function currentDurationSeconds() {
@@ -110,52 +50,92 @@ if (VALID_ROUTES.has(path)) {
     return Math.max(1, Math.round(liveMs / 1000));
   }
 
-  function updateDuration() {
-    return updateDoc(pageviewRef, {
-      durationSeconds: currentDurationSeconds(),
-      lastActiveAt: serverTimestamp()
-    }).catch(err => console.error("Analytics duration update failed:", err));
+  async function send(action, useBeacon = false) {
+    if (!opened || !sessionToken) return false;
+    const body = JSON.stringify({
+      action,
+      pageviewId,
+      path,
+      token: sessionToken,
+      durationSeconds: currentDurationSeconds()
+    });
+
+    if (useBeacon && navigator.sendBeacon) {
+      return navigator.sendBeacon(
+        `${API_BASE}/api/pageview`,
+        new Blob([body], { type: 'application/json' })
+      );
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/pageview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 
-  document.addEventListener("visibilitychange", () => {
+  async function openSession() {
+    try {
+      const response = await fetch(`${API_BASE}/api/pageview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'open', pageviewId, path }),
+        keepalive: true
+      });
+      if (!response.ok) return;
+      const result = await response.json();
+      sessionToken = typeof result.token === 'string' ? result.token : null;
+      opened = !!sessionToken;
+    } catch {}
+  }
+
+  function updateDuration() {
+    if (isEngaged()) return;
+    send('update');
+  }
+
+  document.addEventListener('visibilitychange', () => {
     refreshEngagementState();
     if (!isEngaged()) updateDuration();
   });
-
-  window.addEventListener("focus", refreshEngagementState);
-  window.addEventListener("blur", () => {
+  window.addEventListener('focus', refreshEngagementState);
+  window.addEventListener('blur', () => {
     refreshEngagementState();
     updateDuration();
   });
 
-  setDoc(pageviewRef, {
-    path: path,
-    durationSeconds: 0,
-    dateStr: getHKTDateString(),
-    timestamp: serverTimestamp(),
-    openedAt: serverTimestamp(),
-    lastActiveAt: serverTimestamp()
-  }).catch(err => console.error("Analytics open logging failed:", err));
+  setInterval(() => {
+    if (isEngaged()) send('update');
+  }, 15000);
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      updateDoc(pageviewRef, {
-        userEmail: user.email || "",
-        userName: user.displayName || user.email || ""
-      }).catch(err => console.error("Analytics user update failed:", err));
-    }
+  window.addEventListener('pagehide', () => {
+    refreshEngagementState();
+    send('exit', true);
   });
 
-  const HEARTBEAT_INTERVAL_MS = 15000;
-  setInterval(() => {
-    if (isEngaged()) updateDuration();
-  }, HEARTBEAT_INTERVAL_MS);
+  openSession();
 
-  window.addEventListener("pagehide", () => {
-    sendExitUpdate({
-      durationSeconds: currentDurationSeconds(),
-      lastActiveAt: new Date(),
-      closedAt: new Date()
-    });
+  onAuthStateChanged(auth, async user => {
+    if (!opened || !user) return;
+    try {
+      // The API endpoint only accepts controlled analytics fields; identity is
+      // attached through Firebase Admin after server-side token verification.
+      const token = await user.getIdToken();
+      await fetch(`${API_BASE}/api/pageview-identity`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ pageviewId, sessionToken }),
+        keepalive: true
+      });
+    } catch {}
   });
 }
