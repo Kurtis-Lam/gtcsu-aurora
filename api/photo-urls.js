@@ -17,7 +17,7 @@ cloudinary.config({
   secure: true
 });
 
-const ID_PATTERN = /^aurora\/gallery\/[A-Za-z0-9_\-./]+$/;
+const ID_PATTERN = /^aurora\/gallery\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/;
 const MAX_IDS = 200;
 
 const sign = (publicId, transformation) =>
