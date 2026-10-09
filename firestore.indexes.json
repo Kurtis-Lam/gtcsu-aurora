@@ -1,0 +1,17 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "photoDownloadLogs",
+      "fieldPath": "deleteAfter",
+      "indexes": [],
+      "ttl": true
+    },
+    {
+      "collectionGroup": "photoDownloadRateLimits",
+      "fieldPath": "expiresAt",
+      "indexes": [],
+      "ttl": true
+    }
+  ]
+}
