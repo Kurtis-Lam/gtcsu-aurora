@@ -995,6 +995,7 @@
       <button class="tab-btn" id="tab-supporters-btn">💙 Supporters</button>
       <button class="tab-btn" id="tab-photos-btn">🖼 Upload Photos</button>
       <button class="tab-btn" id="tab-photo-audit-btn">📥 Photo Downloads</button>
+      <button class="tab-btn" id="tab-admins-btn">🛡 Admins</button>
       <button class="tab-btn news-i18n" id="tab-news-btn" data-en="📰 News" data-zh="📰 消息">📰 News</button>
     </div>
 
@@ -1214,6 +1215,22 @@
             <tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Admins (read-only list of accounts holding the admin claim) -->
+    <div id="admins-section" class="hidden">
+      <div class="card" style="padding:20px;">
+        <div class="news-admin-toolbar">
+          <div>
+            <h3 style="color:var(--aurora-teal);margin-bottom:4px;">Current admins</h3>
+            <p style="font-size:0.8rem;color:rgba(223,246,242,0.7);">Accounts with the <code>admin</code> claim. Any verified Google account can be an admin; it does not need to be on the school domain.</p>
+          </div>
+          <button class="nav-btn" id="admins-refresh-btn" type="button">Refresh</button>
+        </div>
+        <p id="admins-status" style="font-size:0.85rem;margin:14px 0;color:rgba(223,246,242,0.7);">Loading…</p>
+        <div class="audit-table-wrap"><table class="audit-table" style="min-width:760px;"><thead><tr><th>Account</th><th>Name</th><th>Status</th><th>Created</th><th>Last sign-in</th><th>UID</th></tr></thead><tbody id="admins-table-body"><tr><td colspan="6">Loading…</td></tr></tbody></table></div>
+        <p style="font-size:0.78rem;color:rgba(223,246,242,0.6);margin-top:14px;">To add or remove an admin, run <code>node scripts/set-admin-claims.js &lt;email&gt;</code> (add <code>--revoke</code> to remove). The person must sign out and back in afterwards.</p>
       </div>
     </div>
 
@@ -1482,6 +1499,7 @@
     const tabSupportersBtn = document.getElementById('tab-supporters-btn');
     const tabPhotosBtn = document.getElementById('tab-photos-btn');
     const tabPhotoAuditBtn = document.getElementById('tab-photo-audit-btn');
+    const tabAdminsBtn = document.getElementById('tab-admins-btn');
     const tabNewsBtn = document.getElementById('tab-news-btn');
 
     const analyticsSection = document.getElementById('analytics-section');
@@ -1489,6 +1507,7 @@
     const supportersSection = document.getElementById('supporters-section');
     const photosSection = document.getElementById('photos-section');
     const photoAuditSection = document.getElementById('photo-audit-section');
+    const adminsSection = document.getElementById('admins-section');
     const newsSection = document.getElementById('news-section');
 
     const ALL_TABS = [
@@ -1497,8 +1516,42 @@
       { btn: tabSupportersBtn, section: supportersSection, onShow: null },
       { btn: tabPhotosBtn, section: photosSection, onShow: () => loadPhotosTabData() },
       { btn: tabPhotoAuditBtn, section: photoAuditSection, onShow: () => loadPhotoDownloadAudit() },
+      { btn: tabAdminsBtn, section: adminsSection, onShow: () => loadAdminsList() },
       { btn: tabNewsBtn, section: newsSection, onShow: () => initAdminNews({ db, auth, apiBase: API_BASE }) }
     ];
+
+    // ---------- Admins tab ----------
+    async function loadAdminsList() {
+      const body = document.getElementById('admins-table-body');
+      const status = document.getElementById('admins-status');
+      status.textContent = 'Loading…';
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(`${API_BASE}/api/list-admins`, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+        const admins = data.admins || [];
+        const fmt = v => v ? new Date(v).toLocaleString('en-HK', { timeZone: 'Asia/Hong_Kong', hour12: false }) : '—';
+        const me = auth.currentUser?.uid;
+        status.textContent = `${admins.length} admin account${admins.length === 1 ? '' : 's'}`;
+        body.innerHTML = admins.length ? admins.map(a => {
+          const state = a.disabled ? 'Disabled' : (a.emailVerified ? 'Active' : 'Email not verified (no access)');
+          return `<tr>
+            <td>${escapeHtml(a.email || '(no email)')}${a.uid === me ? ' <strong style="color:var(--aurora-teal);">(you)</strong>' : ''}</td>
+            <td>${escapeHtml(a.displayName || '—')}</td>
+            <td>${escapeHtml(state)}</td>
+            <td>${escapeHtml(fmt(a.createdAt))}</td>
+            <td>${escapeHtml(fmt(a.lastSignInAt))}</td>
+            <td>${escapeHtml(a.uid)}</td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="6">No admin accounts found.</td></tr>';
+      } catch (err) {
+        console.error('Could not load admins:', err);
+        status.textContent = 'Could not load admins: ' + err.message;
+        body.innerHTML = '<tr><td colspan="6">Unavailable.</td></tr>';
+      }
+    }
+    document.getElementById('admins-refresh-btn').addEventListener('click', loadAdminsList);
 
     let photosTabLoaded = false;
     function activateTab(target) {
