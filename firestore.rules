@@ -4,11 +4,7 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email in [
-          "kurtislam100@gmail.com",
-          "xtshh524@gmail.com",
-          "namwingso@gmail.com"
-        ];
+        && request.auth.token.admin == true;
     }
 
     function isSchoolUser() {
@@ -66,8 +62,30 @@ service cloud.firestore {
     }
 
     match /galleryImages/{id} {
-      allow read: if isSchoolUser() || isAdmin();
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
+    }
+
+    match /photoDownloadLogs/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /photoDownloadStats/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /photoDownloadUsers/{uid} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /photoDerivativeCache/{id} {
+      allow read, write: if false;
+    }
+
+    match /photoDownloadRateLimits/{id} {
+      allow read, write: if false;
     }
 
     // Published announcements are public; read receipts remain account-private.
