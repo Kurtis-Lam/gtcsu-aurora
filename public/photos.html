@@ -315,6 +315,7 @@
           📥 Download Selected (ZIP)
         </button>
       </div>
+      <p class="page-desc i18n" data-en="Downloads are personalized with a visible watermark and recorded against the verified school account, photo, time, and limited device/network metadata. Audit records are retained for up to 365 days." data-zh="下載的相片會加上個人化可見水印，並記錄已驗證的學校帳戶、相片、時間及有限的裝置／網絡資料。詳細紀錄最多保留 365 日。" style="font-size:0.78rem;margin:-10px auto 24px;">Downloads are personalized with a visible watermark and recorded against the verified school account, photo, time, and limited device/network metadata. Audit records are retained for up to 365 days.</p>
 
       <!-- Gallery Grid -->
       <div class="photos-grid" id="photos-grid">
@@ -395,7 +396,7 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
-    // ---- Access: school accounts only (also enforced by Firestore rules + /api/photo-urls) ----
+    // ---- Access is enforced by Firestore rules and the authenticated photo APIs. ----
     document.getElementById('google-signin-btn').addEventListener('click', () => AuroraAuth.signIn());
 
     AuroraAuth.onChange((user) => {
@@ -412,6 +413,7 @@
         allFolders = [];
         selectedImageIds.clear();
         lightbox.classList.remove('active');
+        revokeImageObjectUrls();
       }
     });
 
@@ -421,37 +423,82 @@
       gridEl.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:${isError ? '#ff6b6b' : 'rgba(223,246,242,0.5)'}; padding:40px;">${escapeHtml(text)}</p>`;
     }
 
-    // Gallery files are private on Cloudinary: ask the server for signed URLs.
-    async function fetchSignedUrls(publicIds) {
+    const imageObjectUrls = new Set();
+    let lightboxObjectUrl = null;
+    let lightboxFetchSequence = 0;
+
+    function revokeImageObjectUrls() {
+      for (const url of imageObjectUrls) URL.revokeObjectURL(url);
+      imageObjectUrls.clear();
+      if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
+      lightboxObjectUrl = null;
+      lightboxImg.removeAttribute('src');
+    }
+
+    async function fetchProtectedImage(imageId, variant) {
       const token = await AuroraAuth.getIdToken();
-      const urls = {};
-      for (let i = 0; i < publicIds.length; i += 200) {
-        const res = await fetch(`${API_BASE}/api/photo-urls`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ publicIds: publicIds.slice(i, i + 200) })
-        });
-        if (!res.ok) throw new Error(`Could not load photo links (${res.status})`);
-        Object.assign(urls, (await res.json()).urls);
+      const response = await fetch(`${API_BASE}/api/photo-image?imageId=${encodeURIComponent(imageId)}&variant=${encodeURIComponent(variant)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store'
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `Could not load photo (${response.status})`);
       }
-      return urls;
+      return response.blob();
+    }
+
+    async function loadThumbnail(imageEl) {
+      if (imageEl.dataset.loading === 'true' || imageEl.dataset.loaded === 'true') return;
+      imageEl.dataset.loading = 'true';
+      try {
+        const blob = await fetchProtectedImage(imageEl.dataset.photoImage, 'thumb');
+        const objectUrl = URL.createObjectURL(blob);
+        if (!imageEl.isConnected) { URL.revokeObjectURL(objectUrl); return; }
+        imageObjectUrls.add(objectUrl);
+        imageEl.src = objectUrl;
+        imageEl.dataset.loaded = 'true';
+      } catch {
+        imageEl.alt = `${imageEl.alt} (unavailable)`;
+      } finally {
+        imageEl.dataset.loading = 'false';
+      }
+    }
+
+    const thumbnailObserver = 'IntersectionObserver' in window
+      ? new IntersectionObserver(entries => entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            thumbnailObserver.unobserve(entry.target);
+            loadThumbnail(entry.target);
+          }
+        }), { rootMargin: '400px' })
+      : null;
+
+    function observeThumbnails() {
+      gridEl.querySelectorAll('img[data-photo-image]').forEach(imageEl => {
+        if (thumbnailObserver) thumbnailObserver.observe(imageEl);
+        else loadThumbnail(imageEl);
+      });
     }
 
     async function initGallery() {
       galleryLoaded = true;
       showMessage('loading', false);
       try {
-        const [imagesSnap, foldersSnap] = await Promise.all([
-          getDocs(collection(db, "galleryImages")),
+        const token = await AuroraAuth.getIdToken();
+        const [photosResponse, foldersSnap] = await Promise.all([
+          fetch(`${API_BASE}/api/list-photos`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store'
+          }),
           getDocs(collection(db, "galleryFolders"))
         ]);
-
-        const images = imagesSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(img => img.publicId);
-        const urls = await fetchSignedUrls(images.map(img => img.publicId));
-
-        allImages = images
-          .filter(img => urls[img.publicId])
-          .map(img => ({ ...img, urls: urls[img.publicId] }));
+        if (!photosResponse.ok) {
+          const data = await photosResponse.json().catch(() => ({}));
+          throw new Error(data.error || `Could not load photos (${photosResponse.status})`);
+        }
+        const photoData = await photosResponse.json();
+        allImages = Array.isArray(photoData.images) ? photoData.images : [];
         allFolders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         renderFilters();
@@ -481,6 +528,7 @@
     }
 
     function renderGallery() {
+      revokeImageObjectUrls();
       const filtered = activeFolderId === 'all'
         ? allImages
         : allImages.filter(img => img.folderId === activeFolderId);
@@ -493,13 +541,15 @@
       gridEl.innerHTML = filtered.map(img => `
         <div class="photo-card" data-img-id="${escapeHtml(img.id)}">
           <input type="checkbox" class="photo-select-checkbox" data-id="${escapeHtml(img.id)}" ${selectedImageIds.has(img.id) ? 'checked' : ''}>
-          <img src="${escapeHtml(img.urls.thumb)}" alt="${escapeHtml(img.title || img.name || t().photo)}" loading="lazy">
+          <img data-photo-image="${escapeHtml(img.id)}" alt="${escapeHtml(img.title || img.name || t().photo)}" loading="lazy">
           <div class="photo-overlay">
             <span class="photo-title">${escapeHtml(img.title || img.name || t().untitled)}</span>
             <span class="photo-folder">${escapeHtml(img.folderPath || t().gallery)}</span>
           </div>
         </div>
       `).join('');
+
+      observeThumbnails();
 
       gridEl.querySelectorAll('.photo-select-checkbox').forEach(cb => {
         cb.addEventListener('click', (e) => {
@@ -526,13 +576,30 @@
       }
     }
 
-    function openLightbox(img) {
-      lightboxImg.src = img.urls.view;
+    async function openLightbox(img) {
+      const sequence = ++lightboxFetchSequence;
+      if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
+      lightboxObjectUrl = null;
+      lightboxImg.removeAttribute('src');
       lightboxTitle.textContent = img.title || img.name || '';
       lightbox.classList.add('active');
+      try {
+        const blob = await fetchProtectedImage(img.id, 'view');
+        if (sequence !== lightboxFetchSequence) return;
+        lightboxObjectUrl = URL.createObjectURL(blob);
+        lightboxImg.src = lightboxObjectUrl;
+      } catch {
+        if (sequence === lightboxFetchSequence) lightboxTitle.textContent = `${img.title || img.name || t().photo} — unavailable`;
+      }
     }
 
-    const closeLightbox = () => lightbox.classList.remove('active');
+    const closeLightbox = () => {
+      lightboxFetchSequence++;
+      lightbox.classList.remove('active');
+      if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
+      lightboxObjectUrl = null;
+      lightboxImg.removeAttribute('src');
+    };
     document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
     lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
@@ -545,14 +612,24 @@
 
       const zip = new JSZip();
       const selected = allImages.filter(img => selectedImageIds.has(img.id));
+      const batchId = crypto.randomUUID();
 
       try {
         for (let i = 0; i < selected.length; i++) {
           const img = selected[i];
-          const response = await fetch(img.urls.original);
-          if (!response.ok) throw new Error(`Could not fetch ${img.name || 'photo'} (${response.status})`);
-          // Index prefix keeps identically named files from overwriting each other.
-          zip.file(`${String(i + 1).padStart(3, '0')}-${img.name || 'photo.jpg'}`, await response.blob());
+          const token = await AuroraAuth.getIdToken();
+          const response = await fetch(`${API_BASE}/api/photo-download`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ imageId: img.id, batchId }),
+            cache: 'no-store'
+          });
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || `Could not download ${img.name || 'photo'} (${response.status})`);
+          }
+          const safeName = String(img.name || 'photo.jpg').replace(/[\\/:*?"<>|]/g, '_');
+          zip.file(`${String(i + 1).padStart(3, '0')}-${safeName.replace(/\.[^.]+$/, '')}-watermarked.jpg`, await response.blob());
         }
 
         const zipBlob = await zip.generateAsync({ type: 'blob' });
