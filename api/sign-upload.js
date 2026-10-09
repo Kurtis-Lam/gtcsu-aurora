@@ -1,7 +1,7 @@
 // POST /api/sign-upload  (admins only)
 // Returns a signed Cloudinary upload payload. Uploads are stored with
 // type=authenticated, so they can only be displayed through signed URLs that
-// /api/photo-urls hands out to signed-in school accounts.
+// Browsers receive images only through the authenticated server-side photo proxy.
 import { v2 as cloudinary } from 'cloudinary';
 import { guard, bearerToken } from './_lib/http.js';
 import { isAdminByRules } from './_lib/auth.js';
