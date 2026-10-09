@@ -82,7 +82,7 @@ export function hashIp(value) {
 
 export function bearerToken(req) {
   const header = req.headers.authorization || '';
-  return /^Bearer\\s+[^\\s]+$/i.test(header) ? header.replace(/^Bearer\\s+/i, '').trim() : null;
+  return /^Bearer\s+[^\s]+$/i.test(header) ? header.replace(/^Bearer\s+/i, '').trim() : null;
 }
 
 export function body(req) {
