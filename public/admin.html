@@ -207,6 +207,13 @@
     flex-direction: column;
   }
 
+  .audit-table-wrap { width:100%; overflow:auto; }
+  .audit-table { width:100%; min-width:1100px; border-collapse:collapse; font-size:0.78rem; }
+  .audit-table th,.audit-table td { padding:10px 12px; border-bottom:1px solid var(--card-border); text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+  .audit-table th { color:var(--aurora-cyan); font-weight:700; white-space:nowrap; }
+  .audit-table td { color:rgba(223,246,242,0.85); }
+  .audit-table tr:hover td { background:rgba(127,233,240,0.04); }
+
   /* ---------- Upload Photos tab ---------- */
   .photos-manager-grid {
     display: grid;
@@ -987,6 +994,7 @@
       <button class="tab-btn" id="tab-feedback-btn">💬 Feedback Inbox</button>
       <button class="tab-btn" id="tab-supporters-btn">💙 Supporters</button>
       <button class="tab-btn" id="tab-photos-btn">🖼 Upload Photos</button>
+      <button class="tab-btn" id="tab-photo-audit-btn">📥 Photo Downloads</button>
       <button class="tab-btn news-i18n" id="tab-news-btn" data-en="📰 News" data-zh="📰 消息">📰 News</button>
     </div>
 
@@ -1209,6 +1217,36 @@
       </div>
     </div>
 
+    <div id="photo-audit-section" class="hidden">
+      <div class="chart-card" style="margin-bottom:20px;">
+        <div class="chart-header">
+          <div>
+            <h2 class="chart-title">Photo Download Audit</h2>
+            <p style="font-size:0.8rem;color:rgba(223,246,242,0.65);margin-top:6px;">Watermarked download responses prepared by the server. This does not prove the browser saved a file or that a recipient did not re-share a copy.</p>
+          </div>
+          <button class="nav-btn" id="photo-audit-export-btn" type="button">Export CSV</button>
+        </div>
+        <div class="kpi-grid" style="margin-top:18px;">
+          <div class="kpi-card"><span class="kpi-title">All-time download responses</span><span class="kpi-value" id="photo-audit-total">0</span><span class="kpi-subtitle">One per photo response, including each file in a ZIP</span></div>
+          <div class="kpi-card"><span class="kpi-title">Unique accounts</span><span class="kpi-value" id="photo-audit-people">0</span><span class="kpi-subtitle">Distinct verified Firebase accounts ever recorded</span></div>
+          <div class="kpi-card"><span class="kpi-title">Recent audit records</span><span class="kpi-value" id="photo-audit-recent-count">0</span><span class="kpi-subtitle">Latest 500 records; use CSV export for this loaded window</span></div>
+          <div class="kpi-card"><span class="kpi-title">Last recorded download</span><span class="kpi-value" id="photo-audit-last" style="font-size:1rem;">None yet</span><span class="kpi-subtitle">Hong Kong time (HKT)</span></div>
+        </div>
+        <label for="photo-audit-search" style="display:block;font-size:0.8rem;color:var(--aurora-cyan);margin:8px 0;">Search account, UID, photo, folder, or reference</label>
+        <input id="photo-audit-search" class="input-text" type="search" placeholder="Search download records…" style="width:100%;max-width:520px;">
+      </div>
+      <div class="chart-card" style="margin-bottom:20px;">
+        <h3 class="chart-title">Most downloaded photos</h3>
+        <div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Photo</th><th>Folder</th><th>Download responses</th><th>Last download (HKT)</th></tr></thead><tbody id="photo-audit-popular-body"><tr><td colspan="4">Loading…</td></tr></tbody></table></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="chart-title">Download history</h3>
+        <p style="font-size:0.78rem;color:rgba(223,246,242,0.6);margin:8px 0 16px;">Network addresses are not stored in raw form. When IP_HASH_SECRET is configured, the record contains a keyed, non-reversible IP hash to correlate repeated requests. Device and browser are broad classifications derived from the user-agent string.</p>
+        <div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Time (HKT)</th><th>Account</th><th>UID</th><th>Photo / folder</th><th>Ref / batch</th><th>Device / browser</th><th>Network hash</th><th>Output</th></tr></thead><tbody id="photo-audit-logs-body"><tr><td colspan="8">Loading…</td></tr></tbody></table></div>
+        <p id="photo-audit-caption" style="font-size:0.78rem;color:rgba(223,246,242,0.55);margin-top:12px;"></p>
+      </div>
+    </div>
+
     <!-- Upload Photos View -->
     <div id="photos-section" class="hidden">
       <div class="photos-manager-grid">
@@ -1318,7 +1356,10 @@
       addDoc,
       writeBatch,
       setDoc,
-      serverTimestamp
+      serverTimestamp,
+      query,
+      orderBy,
+      limit
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import {
       signInWithPopup,
@@ -1332,6 +1373,10 @@
     const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000;
     let currentUser = null;
     let analyticsUnsub = null;
+    let photoAuditUnsubs = [];
+    let photoAuditLoaded = false;
+    let photoAuditLogs = [];
+    let photoAuditPhotoStats = [];
     let pageViewsChartInstance = null;
     let timeSpentChartInstance = null;
     let dailyViewsChartInstance = null;
@@ -1436,12 +1481,14 @@
     const tabFeedbackBtn = document.getElementById('tab-feedback-btn');
     const tabSupportersBtn = document.getElementById('tab-supporters-btn');
     const tabPhotosBtn = document.getElementById('tab-photos-btn');
+    const tabPhotoAuditBtn = document.getElementById('tab-photo-audit-btn');
     const tabNewsBtn = document.getElementById('tab-news-btn');
 
     const analyticsSection = document.getElementById('analytics-section');
     const feedbackSection = document.getElementById('feedback-section');
     const supportersSection = document.getElementById('supporters-section');
     const photosSection = document.getElementById('photos-section');
+    const photoAuditSection = document.getElementById('photo-audit-section');
     const newsSection = document.getElementById('news-section');
 
     const ALL_TABS = [
@@ -1449,6 +1496,7 @@
       { btn: tabFeedbackBtn, section: feedbackSection, onShow: null },
       { btn: tabSupportersBtn, section: supportersSection, onShow: null },
       { btn: tabPhotosBtn, section: photosSection, onShow: () => loadPhotosTabData() },
+      { btn: tabPhotoAuditBtn, section: photoAuditSection, onShow: () => loadPhotoDownloadAudit() },
       { btn: tabNewsBtn, section: newsSection, onShow: () => initAdminNews({ db, auth, apiBase: API_BASE }) }
     ];
 
@@ -1554,6 +1602,13 @@
       if (analyticsUnsub) { analyticsUnsub(); analyticsUnsub = null; }
       if (supportersUnsubCounter) { supportersUnsubCounter(); supportersUnsubCounter = null; }
       if (supportersUnsubList) { supportersUnsubList(); supportersUnsubList = null; }
+      photoAuditUnsubs.forEach(unsubscribe => unsubscribe());
+      photoAuditUnsubs = [];
+      photoAuditLoaded = false;
+      photoAuditLogs = [];
+      photoAuditPhotoStats = [];
+      for (const url of adminPhotoObjectUrls) URL.revokeObjectURL(url);
+      adminPhotoObjectUrls.clear();
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -2233,8 +2288,79 @@
       } catch (err) { uiError(err.message, "Couldn't reset votes"); }
     });
 
+    function auditHkt(value) {
+      if (!value) return '—';
+      const date = value.toDate ? value.toDate() : new Date(value);
+      if (Number.isNaN(date.getTime())) return '—';
+      return date.toLocaleString('en-GB', { timeZone: 'Asia/Hong_Kong', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    }
+
+    function auditEsc(value) { return escapeHtml(value ?? ''); }
+
+    function renderPhotoDownloadAudit() {
+      const queryText = (document.getElementById('photo-audit-search').value || '').trim().toLowerCase();
+      const logs = photoAuditLogs.filter(item => [item.email, item.uid, item.photoTitle, item.folderPath, item.downloadId, item.watermarkRef, item.batchId]
+        .some(value => String(value || '').toLowerCase().includes(queryText)));
+      document.getElementById('photo-audit-recent-count').textContent = String(photoAuditLogs.length);
+      document.getElementById('photo-audit-caption').textContent = `Showing ${logs.length} matching rows from ${photoAuditLogs.length} recent records. Audit log retention is 365 days; aggregate totals may outlive individual logs.`;
+      const logBody = document.getElementById('photo-audit-logs-body');
+      logBody.innerHTML = logs.length ? logs.map(item => `
+        <tr>
+          <td>${auditEsc(auditHkt(item.eventTime || item.downloadedAt))}</td>
+          <td>${auditEsc(item.email || '—')}<br><span style="color:rgba(223,246,242,.5);">${auditEsc(item.displayName || '')}</span></td>
+          <td title="${auditEsc(item.uid || '')}">${auditEsc(item.uid || '—')}</td>
+          <td>${auditEsc(item.photoTitle || item.photoDocId || '—')}<br><span style="color:rgba(223,246,242,.5);">${auditEsc(item.folderPath || 'Uncategorized')}</span></td>
+          <td title="${auditEsc(item.downloadId || '')}">${auditEsc(item.watermarkRef || item.downloadId || '—')}<br><span style="color:rgba(223,246,242,.5);">Batch: ${auditEsc(item.batchId || 'single')}</span></td>
+          <td>${auditEsc(item.device || 'Unknown')} / ${auditEsc(item.browser || 'Unknown')}</td>
+          <td title="Keyed IP hash; not a raw IP">${auditEsc(item.networkHash || 'Not configured')}</td>
+          <td>${auditEsc(item.outputFormat || 'jpg')}<br>${Number(item.outputBytes || 0).toLocaleString()} bytes</td>
+        </tr>`).join('') : '<tr><td colspan="8">No matching download records.</td></tr>';
+
+      const popularBody = document.getElementById('photo-audit-popular-body');
+      const popular = photoAuditPhotoStats.filter(item => item.photoDocId).sort((a, b) => Number(b.totalDownloads || 0) - Number(a.totalDownloads || 0)).slice(0, 20);
+      popularBody.innerHTML = popular.length ? popular.map(item => `
+        <tr><td>${auditEsc(item.photoTitle || item.photoDocId)}</td><td>${auditEsc(item.folderPath || 'Uncategorized')}</td><td>${Number(item.totalDownloads || 0).toLocaleString()}</td><td>${auditEsc(auditHkt(item.lastDownloadedAt))}</td></tr>`).join('') : '<tr><td colspan="4">No photo downloads recorded yet.</td></tr>';
+    }
+
+    function loadPhotoDownloadAudit() {
+      if (photoAuditLoaded) return;
+      photoAuditLoaded = true;
+      photoAuditUnsubs.push(onSnapshot(doc(db, 'photoDownloadStats', 'summary'), snap => {
+        const data = snap.exists() ? snap.data() : {};
+        document.getElementById('photo-audit-total').textContent = Number(data.totalDownloads || 0).toLocaleString();
+        document.getElementById('photo-audit-people').textContent = Number(data.uniqueAccounts ?? data.uniquePeople ?? 0).toLocaleString();
+        document.getElementById('photo-audit-last').textContent = auditHkt(data.lastDownloadAt);
+      }, err => console.error('Could not load download summary:', err)));
+      photoAuditUnsubs.push(onSnapshot(query(collection(db, 'photoDownloadLogs'), orderBy('eventTime', 'desc'), limit(500)), snap => {
+        photoAuditLogs = snap.docs.map(item => ({ id: item.id, ...item.data() }));
+        renderPhotoDownloadAudit();
+      }, err => console.error('Could not load download records:', err)));
+      photoAuditUnsubs.push(onSnapshot(collection(db, 'photoDownloadStats'), snap => {
+        photoAuditPhotoStats = snap.docs.filter(item => item.id !== 'summary').map(item => ({ id: item.id, ...item.data() }));
+        renderPhotoDownloadAudit();
+      }, err => console.error('Could not load photo statistics:', err)));
+    }
+
+    document.getElementById('photo-audit-search').addEventListener('input', renderPhotoDownloadAudit);
+    document.getElementById('photo-audit-export-btn').addEventListener('click', () => {
+      const fields = ['downloadedAtHKT', 'eventTimeHkt', 'email', 'displayName', 'uid', 'photoTitle', 'folderPath', 'photoDocId', 'downloadId', 'watermarkRef', 'batchId', 'action', 'device', 'browser', 'networkHash', 'outputFormat', 'outputBytes', 'maxWidth', 'status'];
+      const csvCell = value => {
+        let text = String(value ?? '');
+        if (/^[=+@\-\t\r]/.test(text)) text = `'${text}`;
+        return `"${text.replace(/"/g, '""')}"`;
+      };
+      const rows = photoAuditLogs.map(item => ({ ...item, downloadedAtHKT: auditHkt(item.eventTime || item.downloadedAt) }));
+      const csv = [fields.join(','), ...rows.map(item => fields.map(field => csvCell(item[field])).join(','))].join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `aurora-photo-download-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    });
+
     /* =========================================================================
-       PHOTOS TAB — private Cloudinary uploads (signed by /api/sign-upload)
+       PHOTOS TAB — private Cloudinary uploads and server-proxied previews
        ========================================================================= */
     const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
     let allFolders = [];
@@ -2262,6 +2388,38 @@
       return data;
     }
 
+    const adminPhotoObjectUrls = new Set();
+    async function loadAdminPhotoImage(imageEl) {
+      if (imageEl.dataset.loading === 'true' || imageEl.dataset.loaded === 'true') return;
+      imageEl.dataset.loading = 'true';
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(`${API_BASE}/api/photo-image?imageId=${encodeURIComponent(imageEl.dataset.adminPhotoImage)}&variant=thumb`, {
+          headers: { Authorization: `Bearer ${token}` }, cache: 'no-store'
+        });
+        if (!res.ok) throw new Error(`Photo preview unavailable (${res.status})`);
+        const objectUrl = URL.createObjectURL(await res.blob());
+        if (!imageEl.isConnected) { URL.revokeObjectURL(objectUrl); return; }
+        adminPhotoObjectUrls.add(objectUrl);
+        imageEl.src = objectUrl;
+        imageEl.dataset.loaded = 'true';
+      } catch {
+        imageEl.alt = `${imageEl.alt} (preview unavailable)`;
+      } finally {
+        imageEl.dataset.loading = 'false';
+      }
+    }
+
+    function observeAdminPhotoImages() {
+      const images = photosGridAdminEl.querySelectorAll('img[data-admin-photo-image]');
+      if ('IntersectionObserver' in window) {
+        adminPhotoObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+          if (entry.isIntersecting) { adminPhotoObserver.unobserve(entry.target); loadAdminPhotoImage(entry.target); }
+        }), { rootMargin: '300px' });
+        images.forEach(image => adminPhotoObserver.observe(image));
+      } else images.forEach(loadAdminPhotoImage);
+    }
+
     async function loadPhotosTabData() {
       folderTreeEl.innerHTML = '<p style="color:rgba(223,246,242,0.5); padding:10px;">Loading folders…</p>';
       try {
@@ -2272,12 +2430,6 @@
         allFolders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         allImages = imagesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        const publicIds = allImages.map(img => img.publicId).filter(Boolean);
-        const urls = {};
-        for (let i = 0; i < publicIds.length; i += 200) {
-          Object.assign(urls, (await apiPost('/api/photo-urls', { publicIds: publicIds.slice(i, i + 200) })).urls);
-        }
-        allImages.forEach(img => { img.thumb = urls[img.publicId]?.thumb || null; });
       } catch (err) {
         folderTreeEl.innerHTML = `<p style="color:var(--aurora-red); padding:10px;">Failed to load: ${escapeHtml(err.message)}</p>`;
         return;
@@ -2358,7 +2510,11 @@
     newRootFolderBtn.addEventListener('click', () => createFolder(null));
     newSubfolderBtn.addEventListener('click', () => { if (selectedFolderId) createFolder(selectedFolderId); });
 
+    let adminPhotoObserver = null;
     function renderPhotosGridAdmin() {
+      if (adminPhotoObserver) { adminPhotoObserver.disconnect(); adminPhotoObserver = null; }
+      for (const url of adminPhotoObjectUrls) URL.revokeObjectURL(url);
+      adminPhotoObjectUrls.clear();
       const imgs = selectedFolderId === null
         ? allImages
         : allImages.filter(img => img.folderId === selectedFolderId);
@@ -2370,21 +2526,22 @@
 
       photosGridAdminEl.innerHTML = imgs.map(img => `
         <div class="photo-admin-card">
-          ${img.thumb
-            ? `<img src="${escapeHtml(img.thumb)}" alt="${escapeHtml(img.title || img.name || '')}" loading="lazy">`
+          ${img.publicId
+            ? `<img data-admin-photo-image="${escapeHtml(img.id)}" alt="${escapeHtml(img.title || img.name || '')}" loading="lazy">`
             : `<div style="padding:10px; font-size:0.75rem; color:#ffb3b3; overflow-wrap:anywhere;" title="Old record without a private file. Remove it and re-upload.">⚠ ${escapeHtml(img.name || 'Old photo')}</div>`}
           <div class="photo-admin-cap">${escapeHtml(img.title || img.name || '')}</div>
           <button class="photo-admin-delete" data-img-id="${escapeHtml(img.id)}" title="Delete photo">✕</button>
         </div>
       `).join('');
 
+      observeAdminPhotoImages();
+
       photosGridAdminEl.querySelectorAll('.photo-admin-delete').forEach(btn => {
         btn.addEventListener('click', async () => {
           const img = allImages.find(x => x.id === btn.getAttribute('data-img-id'));
           if (!img || !await uiConfirm('This photo will be permanently deleted.', { title: 'Delete photo?', okText: 'Delete' })) return;
           try {
-            if (img.publicId) await apiPost('/api/delete-photo', { publicId: img.publicId });
-            await deleteDoc(doc(db, "galleryImages", img.id));
+            await apiPost('/api/delete-photo', { imageId: img.id });
             await loadPhotosTabData();
           } catch (err) { uiError(err.message, "Couldn't delete photo"); }
         });
