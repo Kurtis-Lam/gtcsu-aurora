@@ -127,13 +127,13 @@ if (path) {
       // The API endpoint only accepts controlled analytics fields; identity is
       // attached through Firebase Admin after server-side token verification.
       const token = await user.getIdToken();
-      await fetch(`${API_BASE}/api/pageview-identity`, {
+      await fetch(`${API_BASE}/api/pageview`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ pageviewId, sessionToken }),
+        body: JSON.stringify({ action: 'identity', pageviewId, sessionToken }),
         keepalive: true
       });
     } catch {}

@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
-import { body, clientIp, guard, hashIp } from './_lib/http.js';
+import { bearerToken, body, clientIp, guard, hashIp } from './_lib/http.js';
+import { verifySchoolUser } from './_lib/auth.js';
 
 const VALID_ROUTES = new Set([
   '/', '/aboutus', '/news', '/activities', '/financial', '/schedule',
@@ -58,12 +59,37 @@ async function takeRateLimitSlot(db, ip) {
   });
 }
 
+// action "identity": attaches the signed-in school account to an existing
+// pageview. Merged in from the former api/pageview-identity.js to stay under
+// the Hobby plan's 12-function limit.
+async function attachIdentity(req, res, payload) {
+  const user = await verifySchoolUser(bearerToken(req));
+  if (!user) return res.status(403).json({ error: 'School account required.' });
+
+  const { pageviewId, sessionToken } = payload;
+  if (!validToken(String(pageviewId || ''), String(sessionToken || ''))) {
+    return res.status(403).json({ error: 'Invalid analytics session.' });
+  }
+
+  const { db } = getServices();
+  const ref = db.collection('pageviews').doc(pageviewId);
+  const snap = await ref.get();
+  if (!snap.exists) return res.status(404).json({ error: 'Analytics session not found.' });
+
+  await ref.update({
+    userEmail: user.email || '',
+    userName: user.name || user.email || ''
+  });
+  return res.status(200).json({ ok: true });
+}
+
 export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
 
   try {
     const payload = body(req);
     const action = payload.action;
+    if (action === 'identity') return await attachIdentity(req, res, payload);
     const pageviewId = payload.pageviewId;
     const path = normalisePath(payload.path);
 
