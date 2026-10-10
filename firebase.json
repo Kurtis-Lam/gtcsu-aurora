@@ -20,6 +20,10 @@
     ],
     "rewrites": [
       {
+        "source": "/53cur17y_r3p0r7",
+        "destination": "/security_report.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
