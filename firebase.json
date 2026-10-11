@@ -20,7 +20,7 @@
     ],
     "rewrites": [
       {
-        "source": "/53cur17y_r3p0r7",
+        "source": "/report",
         "destination": "/security_report.html"
       },
       {
