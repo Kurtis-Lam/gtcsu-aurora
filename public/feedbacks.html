@@ -400,14 +400,9 @@
           </label>
           <textarea id="fb-desc" class="form-textarea" placeholder="Provide detailed feedback..." data-ph-en="Provide detailed feedback..." data-ph-zh="請詳細描述你的意見..."></textarea>
         </div>
-        <div class="form-group" id="fb-identity-row" style="display:none;">
-          <div class="identity-control">
-            <span id="fb-identity-preview" class="identity-preview"></span>
-            <button type="button" id="fb-anon-toggle" class="identity-toggle" role="switch" aria-checked="true"></button>
-          </div>
-        </div>
         <div class="form-group" id="fb-signin-row">
-          <p class="i18n" style="font-size:0.8rem; color:rgba(223,246,242,0.6); margin-bottom:8px;" data-en="You are submitting anonymously. Optionally sign in with your school account to attach your name." data-zh="你正以匿名方式提交。你亦可使用學校帳戶登入以附上姓名。">You are submitting anonymously. Optionally sign in with your school account to attach your name.</p>
+          <p class="i18n" style="font-size:0.8rem; color:rgba(223,246,242,0.6); margin-bottom:8px;" data-en="Feedback can only be submitted with your school account (@gtcollege.edu.hk). Your name and school email will be attached and visible to Student Union administrators only." data-zh="只有使用學校帳戶 (@gtcollege.edu.hk) 登入才可提交意見。你的姓名及學校電郵將會附上，並只有學生會管理員可以查看。">Feedback can only be submitted with your school account (@gtcollege.edu.hk). Your name and school email will be attached and visible to Student Union administrators only.</p>
+          <button type="button" id="fb-signin-btn" class="identity-toggle i18n" data-en="Sign in with school account" data-zh="使用學校帳戶登入">Sign in with school account</button>
         </div>
         <button id="fb-submit-btn" class="submit-btn i18n" data-en="Submit Feedback" data-zh="提交反饋" disabled>Submit Feedback</button>
       </div>
@@ -416,12 +411,12 @@
         <h2 class="panel-title i18n" data-en="Frequently Asked Questions (FAQ)" data-zh="常見問題 (FAQ)">Frequently Asked Questions (FAQ)</h2>
         <div class="faq-list">
           <div class="faq-item">
-            <div class="faq-item-title i18n" data-en="Q: How can I submit anonymous feedback?" data-zh="問：如何提交匿名意見？">Q: How can I submit anonymous feedback?</div>
-            <div class="faq-item-desc i18n" data-en="Fill in the title (at least 3 words) and description (at least 20 words) in the form above and click Submit Feedback." data-zh="只需在上方的表單中填寫標題（最少 3 個字詞）和詳細內容（最少 20 個字詞），然後點擊提交反饋即可。">Fill in the title (at least 3 words) and description (at least 20 words) in the form above and click Submit Feedback.</div>
+            <div class="faq-item-title i18n" data-en="Q: How can I submit feedback?" data-zh="問：如何提交意見？">Q: How can I submit feedback?</div>
+            <div class="faq-item-desc i18n" data-en="Sign in with your school account, fill in the title (at least 3 words) and description (at least 20 words) in the form above, then click Submit Feedback." data-zh="請先使用學校帳戶登入，然後在上方的表單中填寫標題（最少 3 個字詞）和詳細內容（最少 20 個字詞），再點擊提交反饋。">Sign in with your school account, fill in the title (at least 3 words) and description (at least 20 words) in the form above, then click Submit Feedback.</div>
           </div>
           <div class="faq-item">
-            <div class="faq-item-title i18n" data-en="Q: Is my submission completely anonymous?" data-zh="問：我的提交是完全匿名的嗎？">Q: Is my submission completely anonymous?</div>
-            <div class="faq-item-desc i18n" data-en="By default, yes — your feedback is stored without your name or email. If you sign in with your school account, use the identity toggle to attach your name or stay anonymous. Only Student Union administrators can see submissions." data-zh="預設情況下是匿名的，意見不會附上你的姓名或電郵。如果你使用學校帳戶登入，可使用身份切換按鈕選擇附上姓名或保持匿名。只有學生會管理員可以查看提交內容。">By default, yes — your feedback is stored without your name or email. If you sign in with your school account, use the identity toggle to attach your name or stay anonymous. Only Student Union administrators can see submissions.</div>
+            <div class="faq-item-title i18n" data-en="Q: Is my submission anonymous?" data-zh="問：我的提交是匿名的嗎？">Q: Is my submission anonymous?</div>
+            <div class="faq-item-desc i18n" data-en="No. Feedback requires a verified school account, and your name and school email are stored with your submission. Only Student Union administrators can see submissions." data-zh="不是。提交意見須使用已驗證的學校帳戶，你的姓名及學校電郵會連同意見一併儲存。只有學生會管理員可以查看提交內容。">No. Feedback requires a verified school account, and your name and school email are stored with your submission. Only Student Union administrators can see submissions.</div>
           </div>
           <div class="faq-item">
             <div class="faq-item-title i18n" data-en="Q: How will the Student Union handle my feedback?" data-zh="問：學生會將如何處理我的意見？">Q: How will the Student Union handle my feedback?</div>
@@ -445,6 +440,7 @@
       <div id="support-count" class="support-count" aria-live="polite">0</div>
       <button id="support-btn" class="support-button" disabled data-en="Checking…" data-zh="正在檢查……">Checking…</button>
       <p id="support-status" class="support-status" aria-live="polite"></p>
+      <p class="support-local-count i18n" data-en="Privacy notice: when you support Aurora, we record your IP address and device details (browser, model, platform) in encrypted form to prevent abuse of this feature. They are kept for 90 days, used only for that purpose, and can be accessed only by authorised administrators." data-zh="私隱聲明：當你支持 Aurora 時，我們會以加密形式記錄你的 IP 位址及裝置資料（瀏覽器、型號、平台），以防止此功能被濫用。資料只會保留 90 日，只用於上述目的，並只有獲授權的管理員可以查閱。">Privacy notice: when you support Aurora, we record your IP address and device details (browser, model, platform) in encrypted form to prevent abuse of this feature. They are kept for 90 days, used only for that purpose, and can be accessed only by authorised administrators.</p>
       <p class="support-local-count"><span class="i18n" data-en="Your supports:" data-zh="你的支持次數：">Your supports:</span> <strong id="bar-clicks">0</strong></p>
     </section>
   </main>
@@ -481,11 +477,7 @@
     const titleCounter = $('title-counter');
     const descCounter = $('desc-counter');
     const submitBtn = $('fb-submit-btn');
-    const fbIdentityRow = $('fb-identity-row');
     const fbSigninRow = $('fb-signin-row');
-    const fbAnonToggle = $('fb-anon-toggle');
-    const fbIdentityPreview = $('fb-identity-preview');
-    let anonymous = true;
 
     const T = {
       en: {
@@ -498,11 +490,7 @@
         errGeneric: 'Something went wrong. Please try again in a moment.',
         errRate: 'You have submitted several times recently. Please try again later.',
         errInvalid: 'Please check that your title and description meet the minimum word counts.',
-        words: 'words',
-        anon: 'You will be displayed as: Anonymous',
-        named: (n) => `You will be displayed as: ${n}`,
-        toggleToNamed: 'Use my name',
-        toggleToAnon: 'Use anonymously'
+        words: 'words'
       },
       zh: {
         checking: '正在審核反饋', checkingMsg: '我們正在檢查您的反饋...',
@@ -514,11 +502,7 @@
         errGeneric: '發生錯誤，請稍後再試。',
         errRate: '您最近提交次數過多，請稍後再試。',
         errInvalid: '請確認標題及內容已達最低字數要求。',
-        words: '個字詞',
-        anon: '你將會以匿名方式顯示。',
-        named: (n) => `你將會顯示為：${n}`,
-        toggleToNamed: '使用我的姓名',
-        toggleToAnon: '匿名提交'
+        words: '個字詞'
       }
     };
     const t = () => T[currentLang];
@@ -546,11 +530,30 @@
       }
     }
 
+    async function collectDeviceInfo() {
+      const info = {};
+      const uad = navigator.userAgentData;
+      if (!uad) return info;
+      info.mobile = !!uad.mobile;
+      info.platform = uad.platform || '';
+      try {
+        const high = await uad.getHighEntropyValues(['model', 'platformVersion']);
+        info.model = high.model || '';
+        info.platformVersion = high.platformVersion || '';
+      } catch {}
+      return info;
+    }
+
     async function supportRequest(method) {
       const device = getSupportDeviceId();
       const headers = {};
       if (auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
-      return fetch(`${API_BASE}/api/support?device=${encodeURIComponent(device)}`, { method, headers });
+      const init = { method, headers };
+      if (method === 'POST') {
+        headers['Content-Type'] = 'application/json';
+        init.body = JSON.stringify({ deviceInfo: await collectDeviceInfo() });
+      }
+      return fetch(`${API_BASE}/api/support?device=${encodeURIComponent(device)}`, init);
     }
 
     function getSupportDeviceId() {
@@ -677,7 +680,7 @@
       titleCounter.classList.toggle('valid', titleWords >= 3);
       descCounter.textContent = `${descWords} / 20 ${t().words}`;
       descCounter.classList.toggle('valid', descWords >= 20);
-      submitBtn.disabled = !(titleWords >= 3 && descWords >= 20);
+      submitBtn.disabled = !(signedInUser && titleWords >= 3 && descWords >= 20);
     }
     titleInput.addEventListener('input', validateForm);
     descInput.addEventListener('input', validateForm);
@@ -718,20 +721,13 @@
       }, 500);
     }
 
-    // ---- Identity (sign-in itself happens via the nav button / AuroraAuth) ----
+    // ---- Identity (school sign-in is mandatory) ----
     function refreshIdentityUI() {
-      fbIdentityRow.style.display = signedInUser ? 'block' : 'none';
       fbSigninRow.style.display = signedInUser ? 'none' : 'block';
-      if (!signedInUser) return;
-      const name = signedInUser.displayName || signedInUser.email;
-      fbIdentityPreview.textContent = anonymous ? t().anon : t().named(name);
-      fbAnonToggle.textContent = anonymous ? t().toggleToNamed : t().toggleToAnon;
-      fbAnonToggle.setAttribute('aria-checked', String(anonymous));
+      validateForm();
     }
-    fbAnonToggle.addEventListener('click', () => { anonymous = !anonymous; refreshIdentityUI(); });
     $('fb-signin-btn')?.addEventListener('click', () => AuroraAuth.signIn());
     AuroraAuth.onChange((user) => {
-      if (signedInUser?.uid !== user?.uid) anonymous = true;
       signedInUser = user;
       refreshIdentityUI();
     });
@@ -740,20 +736,25 @@
     submitBtn.addEventListener('click', async () => {
       const title = titleInput.value.trim();
       const description = descInput.value.trim();
-      const attachIdentity = !!signedInUser && !anonymous;
+      if (!signedInUser) {
+        AuroraAuth.signIn();
+        return;
+      }
 
       setStatus(t().checking, t().checkingMsg, false);
       startProgressBar(4);
       openModal('modal-status');
 
       try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (attachIdentity) headers.Authorization = `Bearer ${await AuroraAuth.getIdToken()}`;
+        const headers = {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${await AuroraAuth.getIdToken()}`
+        };
 
         const response = await fetch(`${API_BASE}/api/feedback`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ title, description, anonymous: !attachIdentity })
+          body: JSON.stringify({ title, description })
         });
         const result = await response.json().catch(() => ({}));
         completeProgressBar();

@@ -1,11 +1,11 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
-import { guard, body, bearerToken, clientIp, hashIp } from './_lib/http.js';
+import { guard, body, bearerToken, hashIp } from './_lib/http.js';
 import { verifySchoolUser } from './_lib/auth.js';
 
 // Change this string every time you edit the file. It is printed on every request,
 // so you can confirm in Vercel logs which version is actually deployed.
-const BUILD = 'debug-2026-09-28-a';
+const BUILD = 'school-only-2026-10-12-a';
 
 // Give the function enough time for up to 3 moderation attempts.
 // (If this is ignored on your setup, put "functions": {"api/feedback.js": {"maxDuration": 30}} in vercel.json)
@@ -17,7 +17,6 @@ const MAX_TITLE_CHARS = 150;
 const MAX_DESC_CHARS = 3000;
 
 const RATE_LIMIT_MAX_USER = 5;
-const RATE_LIMIT_MAX_IP = 30;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 const MODERATION_TIMEOUT_MS = 8000;
@@ -271,7 +270,7 @@ export default async function handler(req, res) {
 
   try {
     const { db } = getServices();
-    const { title: rawTitle, description: rawDesc, anonymous } = body(req);
+    const { title: rawTitle, description: rawDesc } = body(req);
 
     const title = typeof rawTitle === 'string' ? rawTitle.trim() : '';
     const description = typeof rawDesc === 'string' ? rawDesc.trim() : '';
@@ -280,8 +279,7 @@ export default async function handler(req, res) {
       titleWords: countWords(title),
       titleChars: title.length,
       descWords: countWords(description),
-      descChars: description.length,
-      anonymous
+      descChars: description.length
     });
 
     if (
@@ -300,20 +298,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid title or description.', code: 'INVALID_INPUT' });
     }
 
-    const wantsIdentity = anonymous === false;
-    let user = null;
-    if (wantsIdentity) {
-      user = await verifySchoolUser(bearerToken(req));
-      log.info('auth:result', { verified: !!user, email: user?.email });
-      if (!user) {
-        return res.status(403).json({ error: 'A school email is required.', code: 'NOT_SCHOOL_EMAIL' });
-      }
+    const user = await verifySchoolUser(bearerToken(req));
+    log.info('auth:result', { verified: !!user, email: user?.email });
+    if (!user) {
+      return res.status(403).json({ error: 'A school email is required.', code: 'NOT_SCHOOL_EMAIL' });
     }
 
-    const allowed = user
-      ? await takeRateLimitSlot(db, `feedback_u_${hashIp(user.uid)}`, RATE_LIMIT_MAX_USER)
-      : await takeRateLimitSlot(db, `feedback_ip_${hashIp(clientIp(req))}`, RATE_LIMIT_MAX_IP);
-    log.info('ratelimit:result', { allowed, kind: user ? 'user' : 'ip' });
+    const allowed = await takeRateLimitSlot(db, `feedback_u_${hashIp(user.uid)}`, RATE_LIMIT_MAX_USER);
+    log.info('ratelimit:result', { allowed });
     if (!allowed) {
       return res.status(429).json({ error: 'Too many submissions. Please try again later.', code: 'RATE_LIMITED' });
     }
@@ -343,8 +335,9 @@ export default async function handler(req, res) {
     await db.collection('feedbacks').add({
       title,
       description,
-      isAnonymous: !user,
-      ...(user && { userEmail: user.email, userName: user.name || user.email }),
+      isAnonymous: false,
+      userEmail: user.email,
+      userName: user.name || user.email,
       moderation: verdict.checked ? 'passed' : 'unchecked',
       ...(verdict.checked && verdict.model && { moderationModel: verdict.model }),
       // Shows WHY the check was skipped. Display this next to the "SPAM CHECK SKIPPED" badge.
