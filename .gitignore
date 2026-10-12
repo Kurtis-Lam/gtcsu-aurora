@@ -6,14 +6,10 @@
 node_modules/
 firebase-debug.log
 
-keys.txt
-serviceAccounts.json
-misc.txt
+credentials/
 
 public/assets/unused-profiles
 public/assets/aurora-legacy-logo.png
 public/assets/promo_vid.mp4
-
-public/ob.js
 
 aurora.zip
