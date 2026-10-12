@@ -43,7 +43,7 @@ async function getUser(req) {
   const match = /^Bearer (.+)$/i.exec(header);
   if (!match) return { error: true };
   try {
-    const decoded = await getAuth().verifyIdToken(match[1]);
+    const decoded = await getAuth().verifyIdToken(match[1], true);
     return { user: { uid: decoded.uid, email: decoded.email ?? null } };
   } catch {
     return { error: true };
