@@ -28,6 +28,7 @@
     .news-meta { font-size:.78rem; color:rgba(223,246,242,.58); margin-bottom:14px; }
     .read-btn { border:1px solid rgba(127,233,240,.42); border-radius:999px; background:rgba(47,230,184,.12); color:white; padding:9px 16px; font:inherit; cursor:pointer; }
     .read-btn:disabled { opacity:.65; cursor:default; }
+    .sync-note { margin:12px 0 0; font-size:.78rem; color:rgba(255,209,102,.9); }
     .notice { text-align:center; color:rgba(223,246,242,.78); }
     @media (max-width:600px) { .news-card,.notice { padding:18px; } }
 
@@ -104,115 +105,7 @@
     </header>
     <section id="news-content" class="notice i18n" data-en="Loading news…" data-zh="正在載入消息……">Loading news…</section>
   </main>
-  <script type="module">
-    import { collection, doc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { AuroraAuth } from './js/load-components.js';
-    import { db } from './js/firebase-config.js';
-
-    const content = document.getElementById('news-content');
-    const lang = () => localStorage.getItem('aurora_lang') === 'zh' ? 'zh' : 'en';
-    let activeUser = null;
-    let articles = null;
-    let readReceipts = new Map();
-    let newsUnsubscribers = [];
-    const revealedIds = new Set();
-    const text = {
-      en: { loading:'Loading news…', empty:'There are no announcements yet.', fail:'Could not load news. Please refresh and try again.', mark:'Mark as read', read:'Read', markFailed:'Could not mark as read. Try again.', date:'Published' },
-      zh: { loading:'正在載入消息……', empty:'暫時沒有公告。', fail:'無法載入消息，請重新整理再試。', mark:'標記為已讀', read:'已讀', markFailed:'無法標記為已讀，請再試一次。', date:'發布時間' }
-    };
-    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-    const millis = value => value?.toMillis?.() || 0;
-    const updateLanguage = language => {
-      document.documentElement.lang = language === 'zh' ? 'zh-Hant' : 'en';
-      document.querySelectorAll('.i18n').forEach(el => {
-        const translated = el.getAttribute(`data-${language}`);
-        if (translated) el.textContent = translated;
-      });
-      render();
-    };
-    window.setLanguage = updateLanguage;
-
-    function render() {
-      const t = text[lang()];
-      if (!articles) {
-        content.className = 'notice';
-        content.textContent = t.loading;
-        return;
-      }
-      if (!articles.length) {
-        content.className = 'notice';
-        content.textContent = t.empty;
-        return;
-      }
-      content.className = 'news-list';
-      content.innerHTML = articles.map((article, index) => {
-        const isRead = (Number(readReceipts.get(article.id)?.revision) || 0) >= (Number(article.revision) || 1);
-        const title = lang() === 'zh' ? article.titleZh : article.titleEn;
-        const body = lang() === 'zh' ? article.bodyZh : article.bodyEn;
-        const publishedAt = article.publishedAt?.toDate?.();
-        const date = publishedAt ? new Intl.DateTimeFormat(lang() === 'zh' ? 'zh-HK' : 'en-GB', { dateStyle:'medium', timeStyle:'short', timeZone:'Asia/Hong_Kong' }).format(publishedAt) : '';
-        const seen = revealedIds.has(article.id);
-        revealedIds.add(article.id);
-        const readButton = activeUser
-          ? `<button class="read-btn" data-news-id="${escapeHtml(article.id)}" ${isRead ? 'disabled' : ''}>${isRead ? escapeHtml(t.read) : escapeHtml(t.mark)}</button>`
-          : '';
-        return `<article class="news-card fade-in${seen ? ' is-visible' : ''}"${seen ? '' : ` style="transition-delay:${Math.min(index, 4) * 0.05}s"`}><div class="news-meta">${escapeHtml(t.date)}${date ? ` · ${escapeHtml(date)}` : ''}</div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(body)}</p>${readButton}</article>`;
-      }).join('');
-      content.querySelectorAll('.news-card.fade-in:not(.is-visible)').forEach(card => window.auroraFade?.(card));
-      content.querySelectorAll('[data-news-id]').forEach(button => button.addEventListener('click', () => markRead(button.dataset.newsId, button)));
-    }
-
-    async function loadNews(user) {
-      newsUnsubscribers.forEach(unsubscribe => unsubscribe());
-      newsUnsubscribers = [];
-      activeUser = user;
-      content.className = 'notice';
-      content.textContent = text[lang()].loading;
-      articles = null;
-      readReceipts = new Map();
-      newsUnsubscribers = [
-        onSnapshot(query(collection(db, 'news'), where('status', '==', 'published'), where('deleted', '==', false)), snapshot => {
-          if (activeUser?.uid !== user?.uid) return;
-          articles = snapshot.docs.map(item => ({ id:item.id, ...item.data() }))
-            .sort((a,b) => millis(b.updatedAt) - millis(a.updatedAt));
-          render();
-        }, error => showLoadError(error))
-      ];
-      if (user) {
-        newsUnsubscribers.push(onSnapshot(query(collection(db, 'newsReads'), where('uid', '==', user.uid)), snapshot => {
-          if (activeUser?.uid !== user.uid) return;
-          readReceipts = new Map(snapshot.docs.map(item => [item.data().newsId, item.data()]));
-          render();
-        }, error => showLoadError(error)));
-      }
-    }
-
-    function showLoadError(error) {
-      console.error('Could not load news:', error);
-      content.className = 'notice';
-      content.textContent = text[lang()].fail;
-    }
-
-    async function markRead(newsId, button) {
-      if (!activeUser) return;
-      button.disabled = true;
-      try {
-        const receiptId = `${activeUser.uid}_${newsId}`;
-        const article = articles.find(item => item.id === newsId);
-        await setDoc(doc(db, 'newsReads', receiptId), { uid:activeUser.uid, newsId, revision:Number(article?.revision) || 1, readAt:serverTimestamp() });
-        readReceipts.set(newsId, { uid:activeUser.uid, newsId, revision:Number(article?.revision) || 1, readAt:{ toMillis:() => Date.now() } });
-        render();
-      } catch (error) {
-        console.error('Could not mark news as read:', error);
-        button.disabled = false;
-        button.textContent = text[lang()].markFailed;
-      }
-    }
-
-    updateLanguage(lang());
-    AuroraAuth.onChange(loadNews);
-    window.addEventListener('aurora:langchange', event => updateLanguage(event.detail.lang));
-  </script>
+  <script type="module" src="js/news-page.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const video = document.getElementById('bg-video');
