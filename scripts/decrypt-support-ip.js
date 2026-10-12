@@ -1,9 +1,12 @@
 import { getServices } from '../api/_lib/firebase.js';
 import { decryptField } from '../api/_lib/crypto.js';
+import { loadVercelEnv } from './_vercel-env.js';
 
 const USAGE =
   'Usage: node scripts/decrypt-support-ip.js <supportLogId | ciphertext> --reason "why this lookup is needed"\n' +
-  'Env:   SUPPORT_ENCRYPTION_KEY (same value as on Vercel), FIREBASE_SERVICE_ACCOUNT (only needed for a supportLogId)';
+  '       [--local-env]\n' +
+  'Env:   VERCEL_TOKEN (the script fetches SUPPORT_ENCRYPTION_KEY and, for a supportLogId, FIREBASE_SERVICE_ACCOUNT from Vercel).\n' +
+  '       Optional: VERCEL_PROJECT_ID, VERCEL_TEAM_ID. With --local-env both values are read from the local environment instead.';
 
 const args = process.argv.slice(2);
 const reasonIndex = args.indexOf('--reason');
@@ -25,6 +28,11 @@ function tryDecrypt(token) {
 }
 
 async function main() {
+  const needsDatabase = !target.startsWith('v1.');
+  await loadVercelEnv(['SUPPORT_ENCRYPTION_KEY', 'FIREBASE_SERVICE_ACCOUNT'], {
+    required: needsDatabase ? ['SUPPORT_ENCRYPTION_KEY', 'FIREBASE_SERVICE_ACCOUNT'] : ['SUPPORT_ENCRYPTION_KEY']
+  });
+
   let ipEnc;
   let deviceEnc = null;
   let meta = {};
