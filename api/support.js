@@ -12,23 +12,22 @@
 //
 // Each successful vote also writes one short-lived record to `supportLogs`
 // containing the visitor's IP address and device details, AES-256-GCM
-// encrypted with SUPPORT_ENCRYPTION_KEY (Vercel env). Records expire after
-// LOG_RETENTION_DAYS. scripts/decrypt-support-ip.js is the only way to read them.
+// encrypted with SUPPORT_ENCRYPTION_KEY (Vercel env). Records are kept
+// permanently and are never expired or purged by this code.
+// scripts/decrypt-support-ip.js is the only way to read them.
 //
 // The device id used for the cooldown is only ever stored as a keyed hash.
 // A signed-in vote also stores the account's email so admins can see who
 // supported.
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getServices } from './_lib/firebase.js';
 import { guard, body, hashIp, clientIp } from './_lib/http.js';
 import { encryptField } from './_lib/crypto.js';
-import { purgeExpired } from './_lib/ratelimit.js';
 
 const COOLDOWN_MS = 10 * 60 * 1000;
 const DEVICE_ID_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const IP_COOLDOWN_KEY_PREFIX = 'ip_';
-const LOG_RETENTION_DAYS = 90;
 
 const remainingMs = (data) => {
   const last = data?.lastClickAt?.toMillis?.() ?? 0;
@@ -180,16 +179,13 @@ export default async function handler(req, res) {
           deviceEnc,
           uid: user ? user.uid : null,
           email: user ? user.email : null,
-          createdAt: FieldValue.serverTimestamp(),
-          expiresAt: Timestamp.fromMillis(Date.now() + LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000)
+          createdAt: FieldValue.serverTimestamp()
         });
       }
 
       tx.set(counterRef, { count: FieldValue.increment(1) }, { merge: true });
       return { ok: true, remainingMs: COOLDOWN_MS };
     });
-
-    if (result.ok) await purgeExpired(db, 'supportLogs', 'expiresAt');
 
     return res.status(result.ok ? 200 : 429).json(result);
   } catch (err) {
