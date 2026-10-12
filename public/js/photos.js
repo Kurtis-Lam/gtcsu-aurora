@@ -1,7 +1,6 @@
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { db } from './firebase-config.js';
 import { AuroraAuth } from './load-components.js';
 import { API_BASE } from './api-config.js';
+import { readPhotoCache, readCachedThumb, storeCachedThumb, preloadPhotos } from './preload.js';
 
 const CONSENT_VERSION = '2026-10-v1';
 
@@ -184,7 +183,12 @@ async function loadThumbnail(imageEl) {
   if (imageEl.dataset.loading === 'true' || imageEl.dataset.loaded === 'true') return;
   imageEl.dataset.loading = 'true';
   try {
-    const blob = await fetchProtectedImage(imageEl.dataset.photoImage, 'thumb');
+    const imageId = imageEl.dataset.photoImage;
+    let blob = await readCachedThumb(imageId);
+    if (!blob) {
+      blob = await fetchProtectedImage(imageId, 'thumb');
+      storeCachedThumb(imageId, blob);
+    }
     const objectUrl = URL.createObjectURL(blob);
     if (!imageEl.isConnected) { URL.revokeObjectURL(objectUrl); return; }
     imageObjectUrls.add(objectUrl);
@@ -215,32 +219,33 @@ function observeThumbnails() {
 
 async function initGallery() {
   galleryLoaded = true;
-  showMessage('loading', false);
-  try {
-    const token = await AuroraAuth.getIdToken();
-    const [photosResponse, foldersSnap] = await Promise.all([
-      fetch(`${API_BASE}/api/list-photos`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store',
-        credentials: 'omit',
-        referrerPolicy: 'no-referrer'
-      }),
-      getDocs(collection(db, "galleryFolders"))
-    ]);
-    if (!photosResponse.ok) {
-      const data = await photosResponse.json().catch(() => ({}));
-      throw new Error(data.error || `Could not load photos (${photosResponse.status})`);
-    }
-    const photoData = await photosResponse.json();
-    allImages = Array.isArray(photoData.images) ? photoData.images : [];
-    allFolders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
+  const user = AuroraAuth.getUser();
+  const cached = user ? readPhotoCache(user.uid) : null;
+  if (cached) {
+    allImages = cached.images;
+    allFolders = cached.folders;
     renderFilters();
     renderGallery();
+  } else {
+    showMessage('loading', false);
+  }
+  try {
+    const fresh = await preloadPhotos(user);
+    if (!fresh) throw new Error('Could not load photos');
+    const changed = !cached || JSON.stringify(cached.images) !== JSON.stringify(fresh.images)
+      || JSON.stringify(cached.folders) !== JSON.stringify(fresh.folders);
+    allImages = fresh.images;
+    allFolders = fresh.folders;
+    if (changed) {
+      renderFilters();
+      renderGallery();
+    }
   } catch (err) {
     console.error("Failed to load gallery:", err);
-    galleryLoaded = false;
-    showMessage('loadFail', true);
+    if (!cached) {
+      galleryLoaded = false;
+      showMessage('loadFail', true);
+    }
   }
 }
 
