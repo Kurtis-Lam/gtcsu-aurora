@@ -1,6 +1,5 @@
 import { guard, bearerToken } from './_lib/http.js';
 import { authenticateGalleryUser } from './_lib/auth.js';
-import { enforceRateLimit } from './_lib/ratelimit.js';
 import { getServices } from './_lib/firebase.js';
 import { GALLERY_ID_PATTERN, IMAGE_DOC_ID_PATTERN } from './_lib/photos.js';
 
@@ -16,7 +15,6 @@ export default async function handler(req, res) {
     if (!session) return res.status(403).json({ error: 'A verified school account is required.' });
 
     const { db } = getServices();
-    if (!(await enforceRateLimit(db, res, 'list-photos', session.decoded.uid, { limit: 120, windowMs: 60 * 60 * 1000 }))) return;
 
     const snapshot = await db.collection('galleryImages').get();
     const images = snapshot.docs.flatMap((document) => {
