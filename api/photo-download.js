@@ -1,9 +1,12 @@
 import crypto from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { guard, body, bearerToken, clientIp, hashIp } from './_lib/http.js';
-import { verifySchoolUser, isAdminByRules } from './_lib/auth.js';
+import { authenticateGalleryUser } from './_lib/auth.js';
 import { getServices } from './_lib/firebase.js';
-import { getGalleryImage, createWatermarkedDownload } from './_lib/photos.js';
+import { getGalleryImage, fetchDownloadSource } from './_lib/photos.js';
+import { embedWatermark, isWatermarkConfigured, WATERMARK_METHOD } from './_lib/watermark.js';
+
+const CONSENT_VERSION = '2026-10-v1';
 
 function getClientDetails(userAgent = '') {
   const value = String(userAgent).slice(0, 1000);
@@ -16,14 +19,6 @@ function getClientDetails(userAgent = '') {
     : /Mobi|Android|iPhone|iPod/i.test(value) ? 'Mobile'
     : value ? 'Desktop or unknown' : 'Unknown';
   return { browser, device };
-}
-
-function maskedWatermarkEmail(email) {
-  const [local, domain] = String(email || '').split('@');
-  if (!local || !domain) return 'verified school account';
-  const visibleStart = local.slice(0, 1);
-  const visibleEnd = local.length > 2 ? local.slice(-1) : '';
-  return `${visibleStart}${'*'.repeat(Math.min(6, Math.max(2, local.length - visibleStart.length - visibleEnd.length)))}${visibleEnd}@${domain}`;
 }
 
 function escapeFilename(value) {
@@ -70,23 +65,25 @@ export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
 
   try {
-    const token = bearerToken(req);
-    const user = await verifySchoolUser(token);
-    const admin = user ? false : await isAdminByRules(token);
-    const decoded = user || (admin ? await (async () => {
-      const { auth } = getServices();
-      return auth.verifyIdToken(token);
-    })() : null);
-    if (!decoded) return res.status(403).json({ error: 'A verified school account is required.' });
+    const session = await authenticateGalleryUser(bearerToken(req));
+    if (!session) return res.status(403).json({ error: 'A verified school account is required.' });
+    const decoded = session.decoded;
 
-    const { imageId, batchId } = body(req);
+    const { imageId, batchId, consent, consentVersion } = body(req);
     if (typeof imageId !== 'string' || (batchId !== undefined && (typeof batchId !== 'string' || !/^[A-Za-z0-9_-]{1,80}$/.test(batchId)))) {
       return res.status(400).json({ error: 'Invalid photo request.' });
+    }
+    if (consent !== true || consentVersion !== CONSENT_VERSION) {
+      return res.status(400).json({ error: 'The download audit notice must be accepted before downloading.', code: 'CONSENT_REQUIRED' });
     }
 
     const accountHashSecret = process.env.ANALYTICS_HMAC_SECRET;
     if (!accountHashSecret || Buffer.byteLength(accountHashSecret) < 32) {
       return res.status(503).json({ error: 'Photo audit service is not configured.' });
+    }
+
+    if (!isWatermarkConfigured()) {
+      return res.status(503).json({ error: 'Photo protection service is not configured.' });
     }
 
     const image = await getGalleryImage(imageId);
@@ -100,9 +97,10 @@ export default async function handler(req, res) {
     const downloadId = crypto.randomUUID();
     const timeHkt = hongKongTime(now);
     const email = String(decoded.email || 'verified-user').slice(0, 254);
-    const watermarkEmail = maskedWatermarkEmail(email);
-    const watermark = `AURORA | ${watermarkEmail} | ${timeHkt} HKT | REF ${downloadId.slice(0, 8).toUpperCase()}`;
-    const delivered = await createWatermarkedDownload(image, watermark, downloadId);
+    const watermarkId = downloadId.replace(/-/g, '').slice(0, 16).toLowerCase();
+    const watermarkRef = watermarkId.slice(0, 8).toUpperCase();
+    const source = await fetchDownloadSource(image);
+    const delivered = await embedWatermark(source.buffer, watermarkId);
     const { browser, device } = getClientDetails(req.headers['user-agent']);
     let networkHash;
     if (process.env.IP_HASH_SECRET) {
@@ -130,13 +128,18 @@ export default async function handler(req, res) {
       eventTime: Timestamp.fromDate(now),
       eventTimeHkt: `${timeHkt} HKT`,
       status: 'response-generated',
-      action: 'watermarked-download-generated',
+      action: 'invisible-watermarked-download-generated',
+      consentAccepted: true,
+      consentVersion: CONSENT_VERSION,
+      consentRecordedAt: Timestamp.fromDate(now),
+      watermarkMethod: WATERMARK_METHOD,
+      watermarkId,
       outputFormat: 'jpg',
       outputBytes: delivered.buffer.length,
       maxWidth: 3000,
       browser,
       device,
-      watermarkRef: downloadId.slice(0, 8).toUpperCase(),
+      watermarkRef,
       ...(networkHash ? { networkHash } : {}),
       deleteAfter
     };
@@ -167,18 +170,18 @@ export default async function handler(req, res) {
       }, { merge: true });
     });
 
-    const filename = `${escapeFilename(image.name || image.title || 'aurora-photo').replace(/\.[^.]+$/, '')}-watermarked.jpg`;
+    const filename = `${escapeFilename(image.name || image.title || 'aurora-photo').replace(/\.[^.]+$/, '')}-aurora.jpg`;
     res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Content-Length', String(delivered.buffer.length));
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Cache-Control', 'private, no-store, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Download-Id', downloadId);
+    res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
     return res.status(200).send(delivered.buffer);
   } catch (err) {
     if (err.statusCode === 429) return res.status(429).json({ error: err.message });
     console.error('photo-download error:', err.message);
-    return res.status(502).json({ error: 'Could not generate a watermarked download.' });
+    return res.status(502).json({ error: 'Could not prepare the protected download.' });
   }
 }
