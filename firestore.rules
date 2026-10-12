@@ -88,6 +88,26 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /apiRateLimits/{id} {
+      allow read, write: if false;
+    }
+
+    match /rateLimits/{id} {
+      allow read, write: if false;
+    }
+
+    match /analyticsRateLimits/{id} {
+      allow read, write: if false;
+    }
+
+    match /newsDeliveries/{id} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     // Published announcements are public; read receipts remain account-private.
     match /news/{newsId} {
       allow get, list: if isAdmin() || (
