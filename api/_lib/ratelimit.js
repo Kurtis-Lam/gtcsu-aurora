@@ -1,32 +1,36 @@
 import crypto from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+
+export const RATE_LIMITS = {
+  photoDownload: { scope: 'photo-download', limit: 10, windowMs: HOUR_MS },
+  feedback: { scope: 'feedback', limit: 3, windowMs: DAY_MS }
+};
+
 function rateKey(scope, identity) {
   const secret = process.env.ANALYTICS_HMAC_SECRET || process.env.IP_HASH_SECRET || 'aurora-rate-limit';
   return crypto.createHmac('sha256', secret).update(`${scope}:${identity}`).digest('hex').slice(0, 40);
 }
 
-export async function purgeExpired(db, collectionName, field, { batchSize = 100, probability = 0.05 } = {}) {
-  if (Math.random() >= probability) return 0;
+async function purgeExpiredWindows(db) {
+  if (Math.random() >= 0.05) return;
   try {
-    const snapshot = await db.collection(collectionName)
-      .where(field, '<', Timestamp.now())
-      .limit(batchSize)
+    const snapshot = await db.collection('apiRateLimits')
+      .where('expiresAt', '<', Timestamp.now())
+      .limit(100)
       .get();
-    if (snapshot.empty) return 0;
+    if (snapshot.empty) return;
     const batch = db.batch();
     snapshot.docs.forEach((document) => batch.delete(document.ref));
     await batch.commit();
-    return snapshot.size;
   } catch (err) {
-    console.error(`purgeExpired(${collectionName}) failed:`, err.message);
-    return 0;
+    console.error('rate limit cleanup failed:', err.message);
   }
 }
 
-// Fixed-window limiter backed by Firestore (shared across serverless instances).
-// Returns { allowed, retryAfterSeconds }.
-export async function takeRateLimit(db, scope, identity, { limit, windowMs }) {
+export async function takeRateLimit(db, { scope, limit, windowMs }, identity) {
   const ref = db.collection('apiRateLimits').doc(`${scope}_${rateKey(scope, identity)}`);
   const result = await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
@@ -46,18 +50,10 @@ export async function takeRateLimit(db, scope, identity, { limit, windowMs }) {
       windowStart,
       count: count + 1,
       updatedAt: FieldValue.serverTimestamp(),
-      expiresAt: Timestamp.fromMillis(windowStart + windowMs + 24 * 60 * 60 * 1000)
+      expiresAt: Timestamp.fromMillis(windowStart + windowMs + DAY_MS)
     });
     return { allowed: true, retryAfterSeconds: 0 };
   });
-  await purgeExpired(db, 'apiRateLimits', 'expiresAt');
+  await purgeExpiredWindows(db);
   return result;
-}
-
-export async function enforceRateLimit(db, res, scope, identity, options) {
-  const result = await takeRateLimit(db, scope, identity, options);
-  if (result.allowed) return true;
-  res.setHeader('Retry-After', String(result.retryAfterSeconds));
-  res.status(429).json({ error: 'Too many requests. Please try again later.', code: 'RATE_LIMITED' });
-  return false;
 }
