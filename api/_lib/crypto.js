@@ -4,10 +4,28 @@ const VERSION = 'v1';
 
 function loadKey() {
   const raw = process.env.SUPPORT_ENCRYPTION_KEY;
-  if (!raw) throw new Error('SUPPORT_ENCRYPTION_KEY is not set');
-  const key = Buffer.from(raw.trim(), 'base64');
-  if (key.length !== 32) throw new Error('SUPPORT_ENCRYPTION_KEY must be 32 bytes, base64-encoded');
+  if (!raw || !raw.trim()) throw new Error('SUPPORT_ENCRYPTION_KEY is not set');
+  const value = raw.trim().replace(/^["']|["']$/g, '');
+
+  // Accept the formats people commonly generate: 64 hex characters
+  // (openssl rand -hex 32) or 32 bytes as base64 / base64url
+  // (openssl rand -base64 32).
+  if (/^[0-9a-fA-F]{64}$/.test(value)) return Buffer.from(value, 'hex');
+
+  const key = Buffer.from(value.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+  if (key.length !== 32) {
+    throw new Error('SUPPORT_ENCRYPTION_KEY must be 32 bytes, base64-encoded (or 64 hex characters)');
+  }
   return key;
+}
+
+export function isEncryptionConfigured() {
+  try {
+    loadKey();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function encryptField(plaintext) {
