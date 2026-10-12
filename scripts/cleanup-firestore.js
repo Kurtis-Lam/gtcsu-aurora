@@ -20,6 +20,9 @@ const USAGE = `Usage: node scripts/cleanup-firestore.js [options]
 Finds unused, expired and legacy Firestore data. By default it only REPORTS
 what it would delete. Nothing is removed until you pass --execute.
 
+supportLogs and photoDownloadLogs are permanent records and are never touched
+by this script.
+
 Options:
   --execute                       Delete what the report lists (asks you to confirm)
   --yes                           Skip the confirmation prompt (use with --execute)
@@ -31,12 +34,10 @@ Options:
   --help                          Show this message
 
 Categories (all on by default):
-  expired               Documents whose expiry timestamp has passed
-  legacy-support-logs   Support logs not in the encrypted format, or missing an expiry
+  expired               Rate-limit windows whose expiry timestamp has passed
   stale-rate-limits     Old rate-limit windows and supporter IP cooldowns
   news-orphans          Deliveries, read receipts and logs of news that no longer exists
   photo-orphans         Cached photo variants of deleted or replaced photos
-  legacy-download-logs  Photo download logs without a retention date, older than 1 year
 
 Opt-in categories: pageviews, photo-stats, unknown-collections
 
@@ -115,34 +116,14 @@ function makeContext(db, now) {
 const categories = [
   {
     key: 'expired',
-    title: 'Expired documents',
+    title: 'Expired rate-limit windows',
     async run({ db, now }) {
       const targets = [
-        ['supportLogs', 'expiresAt'],
-        ['photoDownloadLogs', 'deleteAfter'],
         ['photoDownloadRateLimits', 'expiresAt'],
         ['apiRateLimits', 'expiresAt']
       ];
       const found = [];
       for (const [name, field] of targets) found.push(...await expiredBy(db, name, field, now));
-      return found;
-    }
-  },
-  {
-    key: 'legacy-support-logs',
-    title: 'Legacy support logs',
-    async run({ db, now }) {
-      const snapshot = await db.collection('supportLogs').get();
-      const found = [];
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const encrypted = typeof data.ipEnc === 'string' && data.ipEnc.startsWith('v1.');
-        if (!encrypted || 'ip' in data || 'ipAddress' in data) {
-          found.push(item(doc.ref, 'not stored in the encrypted v1 format (may hold a plaintext IP)'));
-        } else if (!data.expiresAt && (millis(data.createdAt) ?? 0) < now - 90 * DAY) {
-          found.push(item(doc.ref, 'no expiry date and older than 90 days'));
-        }
-      }
       return found;
     }
   },
@@ -233,20 +214,6 @@ const categories = [
         if (!images.has(imageId)) found.push(item(doc.ref, `photo ${imageId} no longer exists`));
         else if (data.publicId !== images.get(imageId)) found.push(item(doc.ref, `photo ${imageId} was replaced`));
         else if (typeof data.secureUrl !== 'string') found.push(item(doc.ref, 'cache entry has no URL'));
-      }
-      return found;
-    }
-  },
-  {
-    key: 'legacy-download-logs',
-    title: 'Photo download logs without a retention date',
-    async run({ db, now }) {
-      const snapshot = await db.collection('photoDownloadLogs').select('deleteAfter', 'eventTime', 'downloadedAt').get();
-      const found = [];
-      for (const doc of snapshot.docs) {
-        if (doc.get('deleteAfter')) continue;
-        const when = millis(doc.get('eventTime')) ?? millis(doc.get('downloadedAt'));
-        if (when !== null && when < now - 365 * DAY) found.push(item(doc.ref, 'no retention date and older than 1 year'));
       }
       return found;
     }
