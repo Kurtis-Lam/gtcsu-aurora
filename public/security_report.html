@@ -473,7 +473,6 @@
 
   <ul>
     <li><strong>Pre-Launch System Audit:</strong> Comprehensive verification of Vercel environment variables, Firebase security rules deployment, and active TTL execution policies.</li>
-    <li><strong>Access Control Maintenance:</strong> Monthly review of admin lists via <code>/api/list-admins</code>. Any individual leaving the team has their claims and active tokens revoked immediately using automated service account scripts (<code>scripts/set-admin-claims.js --revoke</code>).</li>
     <li><strong>Secret Management &amp; Hygiene:</strong> All sensitive API keys, service account credentials, and SMTP passwords are stored securely in Vercel environment variables, completely excluded from source code repositories.</li>
     <li><strong>Administrative Code of Conduct:</strong> All platform administrators must enforce mandatory 2-Step Verification (2SV) on their Google accounts, conduct administrative duties exclusively on secured devices, and adhere to strict data protection standards regarding log exports.</li>
   </ul>
@@ -571,12 +570,12 @@
   <table class="compact">
     <thead><tr><th>Page</th><th>Purpose</th><th>Who can view</th><th>Maintained by</th><th>Update frequency</th></tr></thead>
     <tbody>
-      <tr><td><strong>7.1 Home</strong></td><td>Identity, announcements, Instagram shortcut</td><td><span class="badge pub">Public</span></td><td>Content team, reviewed by PIC</td><td>Immediate / weekly</td></tr>
-      <tr><td><strong>7.2 About Us &amp; Cabinet</strong></td><td>Mission, structure, member roles</td><td><span class="badge pub">Public</span></td><td>Content team</td><td>As needed</td></tr>
-      <tr><td><strong>7.3 Events &amp; Proposals</strong></td><td>Annual calendar; proposal preview for teachers</td><td><span class="badge pub">Public</span> calendar; proposals for reviewers</td><td>Content team + PIC</td><td>Weekly / monthly</td></tr>
-      <tr><td><strong>7.4 Photo Gallery</strong></td><td>Event photos, results review, downloads</td><td><span class="badge login">School account</span></td><td>Content team (upload); IT (system)</td><td>Monthly</td></tr>
-      <tr><td><strong>7.5 Welfare &amp; Merchant Discounts</strong></td><td>Student discount directory</td><td><span class="badge pub">Public</span></td><td>Content team</td><td>Monthly check</td></tr>
-      <tr><td><strong>7.6 Contact &amp; Feedback</strong></td><td>Enquiries and suggestions</td><td>Open to submit; <span class="badge admin">Admin</span> to read</td><td>Cabinet (replies); IT (system)</td><td>Replies summarised monthly</td></tr>
+      <tr><td><strong>7.1 Home</strong></td><td>Identity, announcements, Instagram shortcut</td><td><span class="badge pub">Public</span></td><td>Content team, reviewed by PIC</td><td>-</td></tr>
+      <tr><td><strong>7.2 About Us &amp; Cabinet</strong></td><td>Mission, structure, member roles</td><td><span class="badge pub">Public</span></td><td>Content team</td><td>-</td></tr>
+      <tr><td><strong>7.3 Events &amp; Proposals</strong></td><td>Annual calendar; proposal preview for teachers</td><td><span class="badge pub">Public</span> calendar; proposals for reviewers</td><td>Content team + PIC</td><td>As needed</td></tr>
+      <tr><td><strong>7.4 Photo Gallery</strong></td><td>Event photos, results review, downloads</td><td><span class="badge login">School account</span></td><td>Content team (upload); IT (system)</td><td>As needed; after events</td></tr>
+      <tr><td><strong>7.5 Welfare &amp; Merchant Discounts</strong></td><td>Student discount directory</td><td><span class="badge pub">Public</span></td><td>Content team</td><td>As needed</td></tr>
+      <tr><td><strong>7.6 Contact &amp; Feedback</strong></td><td>Enquiries and suggestions</td><td>Open to submit; <span class="badge admin">Admin</span> to read</td><td>Cabinet; IT</td><td>-</td></tr>
       <tr><td><strong>7.7 Admin Area</strong></td><td>Photo-download audit, admin management</td><td><span class="badge admin">Admin only</span></td><td>IT team; school oversight</td><td>Per routine (Section 9)</td></tr>
     </tbody>
   </table>
@@ -621,7 +620,7 @@
   <h3>7.6 Contact &amp; Feedback</h3>
   <ul>
     <li><strong>Feedback form:</strong> an online channel for enquiries, suggestions and campus-life concerns from students and teachers.</li>
-    <li><strong>Protection built in:</strong> submissions go through the server (never directly to the database); rate limits (3 per day per account); 256 KB payload cap; automated AI spam filtering that treats all text as untrusted; only administrators can read submissions; IP addresses are stored only as keyed hashes.</li>
+    <li><strong>Protection built in:</strong> submissions go through the server (never directly to the database); rate limits (3 per day per account); 256 KB payload cap; automated AI spam filtering that treats all text as untrusted; only administrators can read submissions; sign in is required so accounts are stored.</li>
   </ul>
 
   <h3>7.7 Admin Area (Internal — Not Public)</h3>
@@ -678,6 +677,9 @@
 [School / Teacher Advisor approval]    (Teacher Review &amp; Sign-off)
           │
           ▼
+[Publish to preview domain for checking]
+          │
+          ▼
 [Published to the public site]</code></pre>
 
   <ul>
@@ -691,7 +693,6 @@
   <h3>9.1 The School Holds Final Authority</h3>
   <ul>
     <li><strong>Shared top-level access:</strong> management of the domain and the hosting back-end is shared with the school / Teacher Advisors, so the school can review and take down any inappropriate content at any time. The project does not depend on any single student.</li>
-    <li><strong>Kill switches:</strong> a page, an album, gallery access or the whole site can be switched off immediately by those with hosting access, without needing the developer.</li>
     <li><strong>Sensitive-content access control:</strong> pages involving student portraits or internal forms are restricted to verified school accounts to prevent leakage outside the school.</li>
   </ul>
 
@@ -725,7 +726,7 @@
   <h3>10.1 Standard Incident Response</h3>
   <ol>
     <li><strong>Detect:</strong> via audit logs, routine checks, a user report or a teacher's report.</li>
-    <li><strong>Contain:</strong> immediately unpublish the content, disable the affected feature, or revoke affected tokens/admin claims.</li>
+    <li><strong>Contain:</strong> immediately unpublish the content, disable the affected feature, or revoke/rotate tokens if compromised.</li>
     <li><strong>Assess:</strong> identify what happened, which data or accounts were involved, and whether personal data is affected.</li>
     <li><strong>Notify:</strong> inform the Teacher-in-Charge and School IT, and affected persons where appropriate; the school decides on any disciplinary or external reporting.</li>
     <li><strong>Recover &amp; learn:</strong> restore service, rotate secrets if needed, record the incident, and fix the root cause.</li>
@@ -748,57 +749,37 @@
         <td>Contact the student; revoke the session; review that account's download log; ask School IT to reset the account.</td>
       </tr>
       <tr>
-        <td><strong>3. Admin account misused, or an admin leaves</strong></td>
+        <td><strong>3. Admin account misused, compromised</strong></td>
         <td>Admin rights only via signed claims granted offline; mandatory 2SV; monthly admin-list review.</td>
-        <td>Revoke claims and tokens immediately with <code>scripts/set-admin-claims.js --revoke</code>; review the audit log for that period.</td>
+        <td>Revoke tokens immediately with <code>scripts/set-admin-claims.js --revoke</code>; review the audit log for that period.</td>
       </tr>
       <tr>
-        <td><strong>4. Attempts to access the system from outside the school</strong></td>
-        <td>Domain-locked authentication; default-deny database; strict CORS; private storage.</td>
-        <td>Check logs for the source pattern; tighten rate limits; block the origin; escalate to School IT if persistent.</td>
-      </tr>
-      <tr>
-        <td><strong>5. Abusive, bullying or defamatory feedback</strong></td>
-        <td>AI spam filter; rate limits; admin-only reading; all text treated as untrusted.</td>
-        <td>Do not reply or publish; preserve the entry; escalate to the Teacher-in-Charge; handle under school policy.</td>
-      </tr>
-      <tr>
-        <td><strong>6. Inappropriate or wrong content gets published</strong></td>
-        <td>Two-stage review plus teacher sign-off; separation of duties.</td>
-        <td>Unpublish first, correct afterwards; record the cause and tighten the checkpoint that missed it.</td>
-      </tr>
-      <tr>
-        <td><strong>7. Traffic surge, spam flood or denial-of-service attempt</strong></td>
+        <td><strong>4. Traffic surge, spam flood or denial-of-service attempt</strong></td>
         <td>Rate limiting on every sensitive endpoint; managed cloud platforms for static content.</td>
         <td>Throttle or temporarily disable the affected feature; keep the static pages online; announce through the official Instagram.</td>
       </tr>
       <tr>
-        <td><strong>8. Third-party service outage (hosting, API, storage)</strong></td>
+        <td><strong>5. Third-party service outage (hosting, API, storage)</strong></td>
         <td>Static content separated from the API; originals kept in managed private storage.</td>
         <td>Post a notice on Instagram and the homepage where possible; wait for or fail over service; verify no data loss on recovery.</td>
       </tr>
       <tr>
-        <td><strong>9. Suspected personal-data leak</strong></td>
+        <td><strong>6. Suspected personal-data leak</strong></td>
         <td>Data minimisation; IP stored only as keyed hash; TTL purges; access limited to admins.</td>
         <td>Contain; revoke tokens and rotate secrets; assess affected data; notify the school immediately; follow the school's PDPO (Hong Kong Personal Data (Privacy) Ordinance) procedures.</td>
       </tr>
       <tr>
-        <td><strong>10. API key or secret leak</strong></td>
+        <td><strong>7. API key or secret leak</strong></td>
         <td>Secrets only in Vercel environment variables; none in repositories.</td>
         <td>Rotate the key at the provider and in the environment; redeploy; review recent logs.</td>
       </tr>
       <tr>
-        <td><strong>11. Key people graduate or leave (handover failure)</strong></td>
-        <td>Documentation; school-shared ownership of hosting and domain; written handover each term.</td>
-        <td>School-held access ensures continuity; transfer admin claims to the incoming team and revoke the outgoing one.</td>
-      </tr>
-      <tr>
-        <td><strong>12. Copyright or consent problems with images, logos or music</strong></td>
+        <td><strong>8. Copyright or consent problems with images, logos or music</strong></td>
         <td>Content review step checks sources and permissions before publishing.</td>
         <td>Remove the item promptly and replace it with a licensed or original alternative.</td>
       </tr>
       <tr>
-        <td><strong>13. Outdated or wrong information (e.g. expired discounts)</strong></td>
+        <td><strong>9. Outdated or wrong information (e.g. expired discounts)</strong></td>
         <td>Monthly validity check; "last updated" dates.</td>
         <td>Correct or remove the item and notify students if the error caused inconvenience.</td>
       </tr>
@@ -1085,7 +1066,6 @@
 
   <ul>
     <li><strong>上線前系統審核：</strong> 全面核實 Vercel 環境變數、Firebase 保安規則部署，以及有效的 TTL 執行政策。</li>
-    <li><strong>存取控制維護：</strong> 每月透過 <code>/api/list-admins</code> 檢視管理員名單。任何離隊成員的權限聲明及有效權杖，均會即時透過自動化服務帳戶腳本（<code>scripts/set-admin-claims.js --revoke</code>）撤銷。</li>
     <li><strong>密鑰管理與衛生：</strong> 所有敏感 API 金鑰、服務帳戶憑證及 SMTP 密碼均安全存放於 Vercel 環境變數中，完全排除於原始碼儲存庫之外。</li>
     <li><strong>管理員行為守則：</strong> 所有平台管理員必須在其 Google 帳戶上強制啟用兩步驗證（2SV），僅在安全裝置上執行管理職務，並在匯出紀錄方面遵守嚴格的資料保護標準。</li>
   </ul>
@@ -1183,12 +1163,12 @@
   <table class="compact">
     <thead><tr><th>頁面</th><th>用途</th><th>可瀏覽者</th><th>負責維護</th><th>更新頻率</th></tr></thead>
     <tbody>
-      <tr><td><strong>7.1 首頁</strong></td><td>標識、公告、Instagram 捷徑</td><td><span class="badge pub">公開</span></td><td>內容組，由 PIC 審閱</td><td>即時／每週</td></tr>
-      <tr><td><strong>7.2 關於我們與內閣架構</strong></td><td>宗旨、組織、成員分工</td><td><span class="badge pub">公開</span></td><td>內容組</td><td>按需要</td></tr>
-      <tr><td><strong>7.3 活動資訊與計劃書</strong></td><td>年度行事曆；供老師查閱的提案預覽</td><td>行事曆<span class="badge pub">公開</span>；提案供審閱人員</td><td>內容組 + PIC</td><td>每週／每月</td></tr>
-      <tr><td><strong>7.4 活動花絮與成果回顧</strong></td><td>活動相片、成效回顧、下載</td><td><span class="badge login">學校帳戶</span></td><td>內容組（上載）；IT 組（系統）</td><td>每月</td></tr>
-      <tr><td><strong>7.5 福利與合作商戶</strong></td><td>學生優惠名單</td><td><span class="badge pub">公開</span></td><td>內容組</td><td>每月核對</td></tr>
-      <tr><td><strong>7.6 聯絡與意見收集</strong></td><td>查詢及建議</td><td>任何人可提交；<span class="badge admin">管理員</span>可讀取</td><td>內閣（回覆）；IT 組（系統）</td><td>每月整理回覆</td></tr>
+      <tr><td><strong>7.1 首頁</strong></td><td>標識、公告、Instagram 捷徑</td><td><span class="badge pub">公開</span></td><td>內容組，由 PIC 審閱</td><td>-</td></tr>
+      <tr><td><strong>7.2 關於我們與內閣架構</strong></td><td>宗旨、組織、成員分工</td><td><span class="badge pub">公開</span></td><td>內容組</td><td>-</td></tr>
+      <tr><td><strong>7.3 活動資訊與計劃書</strong></td><td>年度行事曆；供老師查閱的提案預覽</td><td>行事曆<span class="badge pub">公開</span>；提案供審閱人員</td><td>內容組 + PIC</td><td>按需要</td></tr>
+      <tr><td><strong>7.4 活動花絮與成果回顧</strong></td><td>活動相片、成效回顧、下載</td><td><span class="badge login">學校帳戶</span></td><td>內容組（上載）；IT 組（系統）</td><td>按需要；活動後</td></tr>
+      <tr><td><strong>7.5 福利與合作商戶</strong></td><td>學生優惠名單</td><td><span class="badge pub">公開</span></td><td>內容組</td><td>按需要</td></tr>
+      <tr><td><strong>7.6 聯絡與意見收集</strong></td><td>查詢及建議</td><td>任何人可提交；<span class="badge admin">管理員</span>可讀取</td><td>內閣；IT 組</td><td>-</td></tr>
       <tr><td><strong>7.7 管理區</strong></td><td>相片下載稽核、管理員管理</td><td><span class="badge admin">僅管理員</span></td><td>IT 組；校方監督</td><td>按程序（第 9 節）</td></tr>
     </tbody>
   </table>
@@ -1233,7 +1213,7 @@
   <h3>7.6 聯絡與意見收集區 (Contact &amp; Feedback)</h3>
   <ul>
     <li><strong>意見反映表單：</strong>設置線上諮詢與意見收集渠道，供師生提交查詢或校園生活訴求。</li>
-    <li><strong>內建保護：</strong>提交一律經伺服器處理（絕不直接寫入資料庫）；速率限制（每帳戶每日 3 次）；256 KB 載荷上限；自動 AI 垃圾訊息過濾，並將所有文字視為不可信資料；僅管理員可讀取提交內容；IP 位址只以鍵控雜湊形式儲存。</li>
+    <li><strong>內建保護：</strong>提交一律經伺服器處理（絕不直接寫入資料庫）；速率限制（每帳戶每日 3 次）；256 KB 載荷上限；自動 AI 垃圾訊息過濾，並將所有文字視為不可信資料；僅管理員可讀取提交內容；須登入，故會儲存帳戶。</li>
   </ul>
 
   <h3>7.7 管理區（內部 — 不公開）</h3>
@@ -1290,7 +1270,10 @@
 [校方／指導老師審批]        （Teacher Review &amp; Sign-off）
           │
           ▼
-[正式公開上線]</code></pre>
+[發佈至預覽網域供檢查]
+          │
+          ▼
+[正式發佈至公開網站]</code></pre>
 
   <ul>
     <li><strong>技術更改</strong>（版面或程式碼）須先於預覽環境測試，並在發佈前重新核對驗證清單（第 6 節）。</li>
@@ -1303,7 +1286,6 @@
   <h3>9.1 校方擁有最終權限</h3>
   <ul>
     <li><strong>共享最高權限：</strong>網域及託管後台管理權限與校方／指導老師共享，確保校方隨時可查閱及下架任何不當內容；項目不依賴任何單一學生。</li>
-    <li><strong>緊急關閉：</strong>持有託管權限者可立即關閉單一頁面、相簿、相簿存取，甚至整個網站，無須依賴開發者。</li>
     <li><strong>敏感內容存取控制：</strong>涉及學生肖像或內部表格的頁面，限於已驗證學校帳戶存取，防止校外流出。</li>
   </ul>
 
@@ -1337,7 +1319,7 @@
   <h3>10.1 標準事故應變流程</h3>
   <ol>
     <li><strong>偵測：</strong>透過稽核紀錄、恆常檢查、用戶舉報或老師通報。</li>
-    <li><strong>遏止：</strong>立即下架內容、停用受影響功能，或撤銷受影響的權杖／管理員聲明。</li>
+    <li><strong>遏止：</strong>立即下架內容、停用受影響功能，或在遭入侵時撤銷／更換權杖。</li>
     <li><strong>評估：</strong>確定事件經過、涉及的資料或帳戶，以及是否影響個人資料。</li>
     <li><strong>通報：</strong>通知負責老師及學校 IT，並在適當時通知受影響人士；是否作出處分或對外通報，由校方決定。</li>
     <li><strong>復原與檢討：</strong>恢復服務，需要時更換密鑰，記錄事件，並修正根本原因。</li>
@@ -1360,57 +1342,37 @@
         <td>聯絡該學生；撤銷登入工作階段；檢視該帳戶的下載紀錄；請學校 IT 重設帳戶。</td>
       </tr>
       <tr>
-        <td><strong>3. 管理員帳戶被濫用，或管理員離隊</strong></td>
+        <td><strong>3. 管理員帳戶被濫用或被盜用</strong></td>
         <td>管理權限僅可經離線授予的簽署聲明取得；強制兩步驗證；每月檢視管理員名單。</td>
-        <td>即時以 <code>scripts/set-admin-claims.js --revoke</code> 撤銷聲明及權杖；檢視該期間的稽核紀錄。</td>
+        <td>即時以 <code>scripts/set-admin-claims.js --revoke</code> 撤銷權杖；檢視該期間的稽核紀錄。</td>
       </tr>
       <tr>
-        <td><strong>4. 校外人士嘗試存取系統</strong></td>
-        <td>網域鎖定驗證；預設拒絕資料庫；嚴格 CORS；私人儲存。</td>
-        <td>檢查紀錄找出來源模式；收緊速率限制；封鎖來源；持續發生時上報學校 IT。</td>
-      </tr>
-      <tr>
-        <td><strong>5. 辱罵、欺凌或誹謗性意見</strong></td>
-        <td>AI 垃圾訊息過濾；速率限制；僅管理員可讀取；所有文字視為不可信資料。</td>
-        <td>不回覆、不發佈；保留該提交紀錄；上報負責老師；按校規處理。</td>
-      </tr>
-      <tr>
-        <td><strong>6. 不當或錯誤內容被發佈</strong></td>
-        <td>兩階段審閱加老師簽核；職責分離。</td>
-        <td>先下架，再更正；記錄原因，並加強未能攔截的關卡。</td>
-      </tr>
-      <tr>
-        <td><strong>7. 流量暴增、垃圾訊息灌爆或阻斷服務攻擊</strong></td>
+        <td><strong>4. 流量暴增、垃圾訊息灌爆或阻斷服務攻擊</strong></td>
         <td>所有敏感端點設速率限制；靜態內容放於受管理雲端平台。</td>
         <td>限流或暫時停用受影響功能；保持靜態頁面上線；透過官方 Instagram 發出通知。</td>
       </tr>
       <tr>
-        <td><strong>8. 第三方服務中斷（託管、API、儲存）</strong></td>
+        <td><strong>5. 第三方服務中斷（託管、API、儲存）</strong></td>
         <td>靜態內容與 API 分離；原檔存放於受管理私人儲存。</td>
         <td>於 Instagram 及可行時於首頁張貼通知；等待或切換服務；復原後核實無資料損失。</td>
       </tr>
       <tr>
-        <td><strong>9. 懷疑個人資料外洩</strong></td>
+        <td><strong>6. 懷疑個人資料外洩</strong></td>
         <td>資料最小化；IP 只以鍵控雜湊儲存；TTL 自動清除；僅管理員可存取。</td>
         <td>遏止；撤銷權杖及更換密鑰；評估受影響資料；即時通知校方；跟從學校按《個人資料（私隱）條例》（PDPO）的處理程序。</td>
       </tr>
       <tr>
-        <td><strong>10. API 金鑰或密鑰外洩</strong></td>
+        <td><strong>7. API 金鑰或密鑰外洩</strong></td>
         <td>密鑰只存放於 Vercel 環境變數；原始碼庫內沒有。</td>
         <td>於服務供應商及環境中更換金鑰；重新部署；檢視近期紀錄。</td>
       </tr>
       <tr>
-        <td><strong>11. 關鍵成員畢業或離開（交接失敗）</strong></td>
-        <td>文件記錄；託管及網域由校方共享擁有；每學期書面交接。</td>
-        <td>校方持有的權限確保運作延續；將管理員權限轉予新任團隊並撤銷離任者。</td>
-      </tr>
-      <tr>
-        <td><strong>12. 圖片、標誌或音樂的版權／同意問題</strong></td>
+        <td><strong>8. 圖片、標誌或音樂的版權／同意問題</strong></td>
         <td>內容審閱步驟於發佈前核對來源及授權。</td>
         <td>盡快移除該項目，改用已獲授權或原創的替代品。</td>
       </tr>
       <tr>
-        <td><strong>13. 資訊過時或錯誤（例如優惠已過期）</strong></td>
+        <td><strong>9. 資訊過時或錯誤（例如優惠已過期）</strong></td>
         <td>每月有效期核對；註明「最後更新」日期。</td>
         <td>更正或移除該項目；如錯誤造成不便，通知同學。</td>
       </tr>
