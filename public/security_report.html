@@ -368,7 +368,7 @@
       </tr>
       <tr>
         <td><strong>Abuse &amp; Rate Limiting</strong></td>
-        <td>Multi-layer rate limits across endpoints (Feedback: 5/hr/account, 30/hr/IP; Support Cooldowns: 10 min multi-factor check; Downloads: strict quota limits; gallery listing and every administrator endpoint: hourly per-account limits).</td>
+        <td>Targeted rate limits (Feedback: 3 per day per account; Photo downloads: 10 per hour per account; Support Cooldowns: 10 min multi-factor check).</td>
         <td>Limits Denial of Service (DoS) attempts, voting automation, spam flooding, and automated scraping.</td>
       </tr>
       <tr>
@@ -483,7 +483,7 @@
 
   <h2>5. System Data Inventory &amp; Security Controls</h2>
 
-  <p>I have structured the database to ensure maximum privacy, implementing automated retention lifetimes (TTL) across log collections:</p>
+  <p>I have structured the database to ensure maximum privacy, retaining audit logs permanently while expiring only short-lived rate-limit data:</p>
 
   <div class="table-wrap">
   <table>
@@ -500,7 +500,7 @@
         <td><code>photoDownloadLogs</code></td>
         <td>Email, Name, UID, Keyed IP Hash, Device Profile, Watermark ID / REF, Download-Notice Acceptance</td>
         <td>Server Write / Admin Read Only</td>
-        <td>Secured behind strict rules; automated 365-day TTL purge.</td>
+        <td>Secured behind strict rules; retained permanently for the school's records.</td>
       </tr>
       <tr>
         <td><code>photoDownloadStats</code> / <code>Users</code></td>
@@ -512,7 +512,7 @@
         <td><code>photoDownloadRateLimits</code></td>
         <td>Keyed Account Hashes, Timestamps</td>
         <td>Server Only</td>
-        <td>Automated 90-day TTL purge.</td>
+        <td>Legacy collection; no longer written. Download quota windows now expire automatically.</td>
       </tr>
       <tr>
         <td><code>feedbacks</code></td>
@@ -621,7 +621,7 @@
   <h3>7.6 Contact &amp; Feedback</h3>
   <ul>
     <li><strong>Feedback form:</strong> an online channel for enquiries, suggestions and campus-life concerns from students and teachers.</li>
-    <li><strong>Protection built in:</strong> submissions go through the server (never directly to the database); rate limits (5 per hour per account, 30 per hour per IP); 256 KB payload cap; automated AI spam filtering that treats all text as untrusted; only administrators can read submissions; IP addresses are stored only as keyed hashes.</li>
+    <li><strong>Protection built in:</strong> submissions go through the server (never directly to the database); rate limits (3 per day per account); 256 KB payload cap; automated AI spam filtering that treats all text as untrusted; only administrators can read submissions; IP addresses are stored only as keyed hashes.</li>
   </ul>
 
   <h3>7.7 Admin Area (Internal — Not Public)</h3>
@@ -980,7 +980,7 @@
       </tr>
       <tr>
         <td><strong>濫用防護與速率限制</strong></td>
-        <td>跨端點的多層速率限制（意見回饋：每帳戶每小時 5 次、每 IP 每小時 30 次；支持冷卻：10 分鐘多重因素檢查；下載：嚴格配額限制；相片庫列表及所有管理員端點：每帳戶每小時限制）。</td>
+        <td>針對性速率限制（意見回饋：每帳戶每日 3 次；相片下載：每帳戶每小時 10 次；支持冷卻：10 分鐘多重因素檢查）。</td>
         <td>限制阻斷服務（DoS）、投票自動化、垃圾訊息灌水及自動化爬取。</td>
       </tr>
       <tr>
@@ -1112,7 +1112,7 @@
         <td><code>photoDownloadLogs</code></td>
         <td>電郵、姓名、UID、鍵控 IP 雜湊、裝置資訊、浮水印 ID／REF、下載通知同意紀錄</td>
         <td>僅伺服器寫入／僅管理員讀取</td>
-        <td>受嚴格規則保護；自動 365 天 TTL 清除。</td>
+        <td>受嚴格規則保護；為校方記錄而永久保存。</td>
       </tr>
       <tr>
         <td><code>photoDownloadStats</code> / <code>Users</code></td>
@@ -1124,7 +1124,7 @@
         <td><code>photoDownloadRateLimits</code></td>
         <td>鍵控帳戶雜湊、時間戳</td>
         <td>僅伺服器</td>
-        <td>自動 90 天 TTL 清除。</td>
+        <td>舊有集合，不再寫入。下載配額記錄會自動過期。</td>
       </tr>
       <tr>
         <td><code>feedbacks</code></td>
@@ -1233,7 +1233,7 @@
   <h3>7.6 聯絡與意見收集區 (Contact &amp; Feedback)</h3>
   <ul>
     <li><strong>意見反映表單：</strong>設置線上諮詢與意見收集渠道，供師生提交查詢或校園生活訴求。</li>
-    <li><strong>內建保護：</strong>提交一律經伺服器處理（絕不直接寫入資料庫）；速率限制（每帳戶每小時 5 次、每 IP 每小時 30 次）；256 KB 載荷上限；自動 AI 垃圾訊息過濾，並將所有文字視為不可信資料；僅管理員可讀取提交內容；IP 位址只以鍵控雜湊形式儲存。</li>
+    <li><strong>內建保護：</strong>提交一律經伺服器處理（絕不直接寫入資料庫）；速率限制（每帳戶每日 3 次）；256 KB 載荷上限；自動 AI 垃圾訊息過濾，並將所有文字視為不可信資料；僅管理員可讀取提交內容；IP 位址只以鍵控雜湊形式儲存。</li>
   </ul>
 
   <h3>7.7 管理區（內部 — 不公開）</h3>
