@@ -8,20 +8,26 @@ function isSchoolEmail(email) {
     && /^[^@\s]+@gtcollege[.]edu[.]hk$/i.test(email);
 }
 
-// Verifies a Firebase ID token and returns the decoded token, but only when it
-// belongs to a verified Google account on the school domain. Otherwise null.
-export async function verifySchoolUser(idToken) {
-  if (!idToken) return null;
+async function verifyActiveToken(idToken) {
+  if (typeof idToken !== 'string' || idToken.length < 20 || idToken.length > 4096) return null;
   try {
-    const decoded = await getServices().auth.verifyIdToken(idToken);
-    const ok =
-      decoded.email_verified === true &&
-      decoded.firebase?.sign_in_provider === 'google.com' &&
-      isSchoolEmail(decoded.email);
-    return ok ? decoded : null;
+    return await getServices().auth.verifyIdToken(idToken, true);
   } catch {
     return null;
   }
+}
+
+// Verifies a Firebase ID token (including revocation and disabled-account
+// checks) and returns the decoded token, but only when it belongs to a
+// verified Google account on the school domain. Otherwise null.
+export async function verifySchoolUser(idToken) {
+  const decoded = await verifyActiveToken(idToken);
+  if (!decoded) return null;
+  const ok =
+    decoded.email_verified === true &&
+    decoded.firebase?.sign_in_provider === 'google.com' &&
+    isSchoolEmail(decoded.email);
+  return ok ? decoded : null;
 }
 
 // Admins are defined ONLY in firestore.rules (isAdmin()). To ask "is this
@@ -30,8 +36,10 @@ export async function verifySchoolUser(idToken) {
 // evaluates the rules for that user:
 //   200 / 404 (doc simply doesn't exist) -> rules allowed the read -> admin
 //   403                                  -> rules denied           -> not admin
-export async function isAdminByRules(idToken) {
-  if (!idToken) return false;
+// The token must also be unrevoked and carry the signed admin claim.
+export async function verifiedAdmin(idToken) {
+  const decoded = await verifyActiveToken(idToken);
+  if (!decoded || decoded.admin !== true || decoded.email_verified !== true) return null;
   const { projectId } = getServices();
   const url =
     `https://firestore.googleapis.com/v1/projects/${projectId}` +
@@ -41,8 +49,23 @@ export async function isAdminByRules(idToken) {
       headers: { Authorization: `Bearer ${idToken}` },
       signal: AbortSignal.timeout(6000)
     });
-    return res.status === 200 || res.status === 404;
+    return res.status === 200 || res.status === 404 ? decoded : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export async function isAdminByRules(idToken) {
+  return (await verifiedAdmin(idToken)) !== null;
+}
+
+// School accounts and administrators may use the gallery.
+export async function authenticateGalleryUser(idToken) {
+  const school = await verifySchoolUser(idToken);
+  if (school) {
+    const admin = school.admin === true ? await isAdminByRules(idToken) : false;
+    return { decoded: school, admin };
+  }
+  const adminDecoded = await verifiedAdmin(idToken);
+  return adminDecoded ? { decoded: adminDecoded, admin: true } : null;
 }
