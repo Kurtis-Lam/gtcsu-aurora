@@ -27,6 +27,8 @@ if (path) {
   let accumulatedMs = 0;
   let engagedSince = document.visibilityState === 'visible' && document.hasFocus() ? Date.now() : null;
   let opened = false;
+  let knownUser = null;
+  let identitySentFor = null;
 
   function isEngaged() {
     return document.visibilityState === 'visible' && document.hasFocus();
@@ -92,7 +94,31 @@ if (path) {
       const result = await response.json();
       sessionToken = typeof result.token === 'string' ? result.token : null;
       opened = !!sessionToken;
+      if (opened) sendIdentity();
     } catch {}
+  }
+
+  // The signed-in account is attached to this pageview as soon as BOTH the
+  // session is open and the account is known, whichever happens last.
+  async function sendIdentity() {
+    const user = knownUser;
+    if (!opened || !user || identitySentFor === user.uid) return;
+    identitySentFor = user.uid;
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`${API_BASE}/api/pageview`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ action: 'identity', pageviewId, sessionToken }),
+        keepalive: true
+      });
+      if (!response.ok) identitySentFor = null;
+    } catch {
+      identitySentFor = null;
+    }
   }
 
   function updateDuration() {
@@ -121,21 +147,9 @@ if (path) {
 
   openSession();
 
-  onAuthStateChanged(auth, async user => {
-    if (!opened || !user) return;
-    try {
-      // The API endpoint only accepts controlled analytics fields; identity is
-      // attached through Firebase Admin after server-side token verification.
-      const token = await user.getIdToken();
-      await fetch(`${API_BASE}/api/pageview`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ action: 'identity', pageviewId, sessionToken }),
-        keepalive: true
-      });
-    } catch {}
+  onAuthStateChanged(auth, user => {
+    knownUser = user || null;
+    if (!user) identitySentFor = null;
+    sendIdentity();
   });
 }
