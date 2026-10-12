@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
-import { bearerToken, body, clientIp, guard, hashIp } from './_lib/http.js';
-import { verifySchoolUser } from './_lib/auth.js';
+import { bearerToken, body, guard } from './_lib/http.js';
+import { verifySchoolUser, verifiedAdmin } from './_lib/auth.js';
 
 const VALID_ROUTES = new Set([
   '/', '/aboutus', '/news', '/activities', '/financial', '/schedule',
@@ -11,8 +11,6 @@ const VALID_ROUTES = new Set([
 const ID_RE = /^[A-Za-z0-9_-]{20,64}$/;
 const TOKEN_RE = /^[a-f0-9]{64}$/;
 const MAX_DURATION = 86400;
-const RATE_LIMIT_MAX = 240;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 function analyticsSecret() {
   const secret = process.env.ANALYTICS_HMAC_SECRET;
@@ -41,30 +39,16 @@ function hktDateString(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Hong_Kong' }).format(date);
 }
 
-async function takeRateLimitSlot(db, ip) {
-  const ref = db.collection('analyticsRateLimits').doc(hashIp(`analytics:${ip}`));
-  return db.runTransaction(async tx => {
-    const snap = await tx.get(ref);
-    const data = snap.exists ? snap.data() : {};
-    const now = Date.now();
-    let windowStart = Number(data.windowStart) || now;
-    let count = Number(data.count) || 0;
-    if (now - windowStart >= RATE_LIMIT_WINDOW_MS) {
-      windowStart = now;
-      count = 0;
-    }
-    if (count >= RATE_LIMIT_MAX) return false;
-    tx.set(ref, { windowStart, count: count + 1, updatedAt: FieldValue.serverTimestamp() });
-    return true;
-  });
-}
-
-// action "identity": attaches the signed-in school account to an existing
-// pageview. Merged in from the former api/pageview-identity.js to stay under
-// the Hobby plan's 12-function limit.
+// action "identity": attaches the signed-in account to an existing pageview.
+// School accounts are accepted everywhere; verified administrators (who may
+// sign in with a non-school Google account) are accepted too, so the admin
+// activity log can always show who opened the admin panel.
+// Merged in from the former api/pageview-identity.js to stay under the
+// Hobby plan's 12-function limit.
 async function attachIdentity(req, res, payload) {
-  const user = await verifySchoolUser(bearerToken(req));
-  if (!user) return res.status(403).json({ error: 'School account required.' });
+  const token = bearerToken(req);
+  const user = (await verifySchoolUser(token)) || (await verifiedAdmin(token));
+  if (!user) return res.status(403).json({ error: 'Signed-in account required.' });
 
   const { pageviewId, sessionToken } = payload;
   if (!validToken(String(pageviewId || ''), String(sessionToken || ''))) {
@@ -98,10 +82,6 @@ export default async function handler(req, res) {
     }
 
     const { db } = getServices();
-    if (!(await takeRateLimitSlot(db, clientIp(req)))) {
-      return res.status(429).json({ error: 'Too many analytics requests.' });
-    }
-
     const ref = db.collection('pageviews').doc(pageviewId);
 
     if (action === 'open') {
