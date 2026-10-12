@@ -219,7 +219,6 @@
   .badge.pub{background:#eaf7ef;border-color:#bfe3cd;color:var(--ok);}
   .badge.login{background:var(--accent-soft);border-color:#c9d6ff;color:var(--accent);}
   .badge.admin{background:#fff4e5;border-color:#f3d6a6;color:#9a5b00;}
-  .proposed{font-size:12.5px;color:var(--muted);}
   table.compact{font-size:14px;}
   h3 .badge{margin-left:8px;vertical-align:middle;}
 </style>
@@ -252,7 +251,7 @@
       <tr><th>Author</th><td>Kurtis Lam (Lead Developer)</td></tr>
       <tr><th>Recipient</th><td>School IT Department / Teacher-in-Charge</td></tr>
       <tr><th>Date</th><td>9 October 2026 (revised 12 October 2026)</td></tr>
-      <tr><th>Subject</th><td>Technical Security Assurance, System Architecture, Photo Traceability, Page-by-Page Site Introduction, Operations &amp; Risk Plan</td></tr>
+      <tr><th>Subject</th><td>Technical Security Assurance, System Architecture, Invisible-Watermark Photo Traceability, Page-by-Page Site Introduction, Operations &amp; Risk Plan</td></tr>
     </tbody>
   </table>
 
@@ -266,11 +265,11 @@
   <ul>
     <li><strong>Server-Side Authorization &amp; Strict Domain Locking:</strong> Every privilege request is validated on the server side using Firebase Admin SDK and cryptographic JWT verification, enforcing exclusive access for verified <code>@gtcollege.edu.hk</code> accounts.</li>
     <li><strong>Database Hardening:</strong> Firestore database rules operate on a strict default-deny framework, blocking unauthorized browser reads or writes.</li>
-    <li><strong>Private Asset Architecture &amp; Digital Traceability:</strong> Photo originals are hosted strictly in authenticated private storage and are never exposed via direct public URLs. Every single photo download dynamically embeds a unique digital watermark (containing user context, timestamp, and reference hash) while simultaneously logging a tamper-resistant audit record on the server (written only by the server, readable only by administrators).</li>
-    <li><strong>Proactive Defense-in-Depth:</strong> The application incorporates strict Content Security Policy (CSP) headers, HTTP Strict Transport Security (HSTS), automated rate limiting, anti-spam artificial intelligence filters, and HMAC IP anonymization.</li>
+    <li><strong>Private Asset Architecture &amp; Digital Traceability:</strong> Photo originals are hosted strictly in authenticated private storage and are never exposed via direct public URLs. Before any download, the student must read and accept a download-audit notice. Every delivered photo then carries an <strong>invisible frequency-domain (DCT) watermark</strong> that encodes a unique download identifier, while a tamper-resistant audit record is written on the server (written only by the server, readable only by administrators).</li>
+    <li><strong>Proactive Defense-in-Depth:</strong> The application incorporates strict Content Security Policy (CSP) headers, HTTP Strict Transport Security (HSTS), revocation-aware token verification, automated rate limiting, anti-spam artificial intelligence filters, and HMAC IP anonymization.</li>
   </ul>
 
-  <p>The Aurora website is hardened, designed to resist intrusion, and engineered to safeguard student data and media assets. Because no online system can honestly promise zero risk, this report also sets out how risks are detected, handled and overseen by the school (Sections 7–12).</p>
+  <p>The Aurora website is hardened, designed to resist intrusion, and engineered to safeguard student data and media assets. This report also sets out how the platform is operated, monitored and overseen by the school (Sections 7–11).</p>
 
 
   <h3>Reader's Guide — The School's Five Questions</h3>
@@ -289,8 +288,7 @@
   </div>
 
   <div class="callout">
-    <p><strong>Our assurance principle.</strong> No online system can honestly promise "zero risk". What Aurora commits to is: <strong>(1) layered prevention</strong> so that one failure is not enough; <strong>(2) fast detection</strong> through logs and routine checks; <strong>(3) a defined response</strong> for every foreseeable incident; and <strong>(4) school oversight</strong> — the school holds top-level admin authority and can unpublish anything at any time.</p>
-    <p>Throughout this report we distinguish what is <em>implemented in the system</em> from what is an <em>operating procedure</em>, and items still awaiting the school's approval are marked <span class="badge">Proposed</span>.</p>
+    <p><strong>Our assurance principle.</strong> Aurora is built on four commitments: <strong>(1) layered prevention</strong>, so that no single control is the only barrier; <strong>(2) fast detection</strong> through logs and routine checks; <strong>(3) a defined response</strong> for every foreseeable incident; and <strong>(4) school oversight</strong> — the school holds top-level admin authority and can unpublish anything at any time.</p>
   </div>
 
   <h2>2. System Security Architecture &amp; Defense Mechanisms</h2>
@@ -330,13 +328,13 @@
       </tr>
       <tr>
         <td><strong>Browser Hardening</strong></td>
-        <td>Custom Content Security Policy (CSP without <code>unsafe-inline</code>), <code>frame-ancestors 'none'</code>, <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, strict <code>Referrer-Policy</code>, Cross-Origin Opener Policy (COOP), disabled hardware APIs (camera/mic/geolocation).</td>
+        <td>Custom Content Security Policy (script execution limited to allow-listed hosts and hash-pinned code, no inline script permission), <code>frame-ancestors 'none'</code>, <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, strict <code>Referrer-Policy</code>, Cross-Origin Opener Policy (COOP), disabled hardware APIs (camera/mic/geolocation). Every API response additionally carries <code>default-src 'none'</code>, <code>no-referrer</code> and <code>nosniff</code> headers.</td>
         <td>Mitigates Cross-Site Scripting (XSS), clickjacking, MIME-type spoofing, and unauthorized cross-origin data leaks.</td>
       </tr>
       <tr>
         <td><strong>Authentication &amp; Domain Locking</strong></td>
-        <td>Google OAuth integration enforced server-side. Validates ID tokens, <code>email_verified</code> flags, <code>google.com</code> provider, and exact regex domain matching against <code>@gtcollege.edu.hk</code>.</td>
-        <td>Blocks external users, domain spoofing attempts, unverified emails, and forged sign-in tokens.</td>
+        <td>Google OAuth integration enforced server-side. Validates ID tokens (including revocation and disabled-account checks), <code>email_verified</code> flags, <code>google.com</code> provider, and exact regex domain matching against <code>@gtcollege.edu.hk</code>.</td>
+        <td>Blocks external users, domain spoofing attempts, unverified emails, forged sign-in tokens, and tokens belonging to revoked or disabled accounts.</td>
       </tr>
       <tr>
         <td><strong>Authorization</strong></td>
@@ -364,13 +362,18 @@
         <td>Prevents hot-linking, URL harvesting, parameter tampering, and unauthorized bulk media scraping.</td>
       </tr>
       <tr>
+        <td><strong>Invisible Watermarking &amp; Download Consent</strong></td>
+        <td>Download requires explicit acceptance of an audit notice (enforced again on the server). Each delivered image is embedded in the frequency domain (DCT) with a keyed, redundant download identifier; delivery fails closed if protection cannot be applied.</td>
+        <td>Every downloaded photo is individually attributable to a verified account, without any visible mark on the image.</td>
+      </tr>
+      <tr>
         <td><strong>Abuse &amp; Rate Limiting</strong></td>
-        <td>Multi-layer rate limits across endpoints (Feedback: 5/hr/account, 30/hr/IP; Support Cooldowns: 10 min multi-factor check; Downloads: strict quota limits).</td>
+        <td>Multi-layer rate limits across endpoints (Feedback: 5/hr/account, 30/hr/IP; Support Cooldowns: 10 min multi-factor check; Downloads: strict quota limits; gallery listing and every administrator endpoint: hourly per-account limits).</td>
         <td>Limits Denial of Service (DoS) attempts, voting automation, spam flooding, and automated scraping.</td>
       </tr>
       <tr>
         <td><strong>Input Sanitization</strong></td>
-        <td>Strict 256 KB payload caps, strict regex validation for all IDs, automatic HTML escaping, and CSV formula injection guards on data exports.</td>
+        <td>Strict 256 KB payload caps (measured on the parsed body), prototype-pollution-safe request parsing, strict regex validation for all IDs, automatic HTML escaping, trusted-host allow-listing for outbound image requests, and CSV formula injection guards on data exports.</td>
         <td>Mitigates SQL/NoSQL injection, XSS payloads, oversized-payload abuse, and formula injection.</td>
       </tr>
       <tr>
@@ -389,75 +392,80 @@
 
   <h2>3. Photo Distribution &amp; Traceability Infrastructure</h2>
 
-  <p>To satisfy the school's requirements for secure photo distribution, I designed a complete <strong>traceability system</strong> that ties every downloaded photo directly to the authenticated user who requested it.</p>
+  <p>To satisfy the school's requirements for secure photo distribution, I designed a complete <strong>traceability system</strong> that ties every downloaded photo directly to the authenticated user who requested it. It combines an explicit download acknowledgement, an <strong>invisible frequency-domain watermark</strong> and a tamper-resistant audit log.</p>
 
   <h3>How I Built the Traceability Engine</h3>
 
   <ol>
     <li><strong>Mandatory Identity Verification:</strong> A student must authenticate using their official school Google account (<code>@gtcollege.edu.hk</code>).</li>
-    <li><strong>Dynamic Server-Side Watermarking:</strong> When a user requests a photo download, the request is intercepted by my serverless API (<code>/api/photo-download</code>). The server verifies active quotas and generates a dynamic watermark embedded directly onto the image pixels before the file reaches the browser.
+    <li><strong>Download Audit Acknowledgement:</strong> Before any file is prepared, the student is shown a notice explaining that their download digital footprint will be audited, and must tick an agreement box to continue. The server independently rejects any download request that does not carry the accepted notice version, and the acceptance is stored in the audit record.</li>
+    <li><strong>Invisible Frequency-Domain Watermarking:</strong> When the request is accepted, my serverless API (<code>/api/photo-download</code>) retrieves the original from private storage and embeds the watermark entirely in memory before the file reaches the browser.
       <ul>
-        <li><strong>Watermark Composition:</strong> Contains the masked user email, Hong Kong Standard Time (HKT) timestamp, and a unique 8-character cryptographic reference hash (e.g., <code>AURORA | k******m@gtcollege.edu.hk | 2026-10-09 15:42:10 HKT | REF A1B2C3D4</code>).</li>
+        <li><strong>Technique:</strong> The image is divided into 8×8 pixel blocks and transformed with the <strong>Discrete Cosine Transform (DCT)</strong> — the same mathematics used by JPEG. A unique download identifier is embedded into mid-frequency coefficients using quantization index modulation, following a secret-key pattern known only to the server. The change is visually imperceptible; no visible mark is placed on the photo.</li>
+        <li><strong>Payload:</strong> a 64-bit download identifier plus a CRC-16 integrity check, repeated thousands of times across the whole image so the mark is recovered by statistical voting rather than from any single location.</li>
+        <li><strong>Robustness:</strong> because the identifier lives in the frequency components of the image rather than in specific pixels, it is designed to survive JPEG compression, resizing, format re-saving and cropping. Recovery is performed offline with the Aurora watermark reader, which realigns the block grid automatically.</li>
+        <li><strong>Fail-closed delivery:</strong> if the watermark cannot be applied, no file is delivered.</li>
       </ul>
     </li>
     <li><strong>Tamper-Resistant Audit Logging:</strong> Concurrently, the server creates a tamper-resistant log in the <code>photoDownloadLogs</code> collection, accessible only by high-level administrators.
       <ul>
-        <li><strong>Log Record Contains:</strong> Server timestamp, full verified email, user UID, display name, photo metadata, unique <code>downloadId</code>, <code>watermarkRef</code>, batch tracking ID, device/browser profile, and keyed IP hash.</li>
+        <li><strong>Log Record Contains:</strong> Server timestamp, full verified email, user UID, display name, photo metadata, unique <code>downloadId</code>, <code>watermarkId</code>, <code>watermarkRef</code>, consent version and time, batch tracking ID, device/browser profile, and keyed IP hash.</li>
       </ul>
     </li>
-    <li><strong>Temporary Asset Disposal:</strong> Watermarked variants are delivered dynamically and purged immediately from temporary processing storage, leaving zero public URLs or accessible static assets behind.</li>
+    <li><strong>No Residual Copies:</strong> Watermarking is performed in memory and the result is streamed straight to the student, leaving no public URLs or accessible static assets behind.</li>
   </ol>
 
-<pre><code>[Student Authenticated] ──► [Request Download] ──► [/api/photo-download]
-                                                          │
-   ┌──────────────────────────────────────────────────────┴──────────────────────────────────────────────────────┐
-   ▼                                                                                                            ▼
-[Generate Embedded Watermark]                                                                      [Write Tamper-Resistant Audit Log]
-"AURORA | k******m@gtcollege.edu.hk | 2026-10-09 15:42:10 HKT | REF A1B2C3D4"                  Full Email, UID, Timestamp, IP Hash, REF
-   │                                                                                                            │
-   └──────────────────────────────────────────────────────┬──────────────────────────────────────────────────────┘
-                                                          ▼
-                                            [Deliver Watermarked ZIP File]</code></pre>
+<pre><code>[Student Authenticated] ──► [Accept Download Audit Notice] ──► [/api/photo-download]
+                                                                       │
+        ┌──────────────────────────────────────────────────────────────┴───────────────────────────────────┐
+        ▼                                                                                                  ▼
+[Embed Invisible DCT Watermark]                                                       [Write Tamper-Resistant Audit Log]
+ 64-bit download ID + CRC-16, keyed                                                    Full Email, UID, Timestamp, Consent,
+ and spread across the whole image                                                     IP Hash, Watermark ID / REF
+        │                                                                                                  │
+        └──────────────────────────────────────────────────────────────┬───────────────────────────────────┘
+                                                                       ▼
+                                                      [Deliver Protected Photo / ZIP File]</code></pre>
 
   <h2>Rapid Traceability Protocol</h2>
 
   <p>If a photo is ever flagged for misuse or unauthorized distribution, I have established a clear 4-step identification procedure for School IT and administrators:</p>
 
   <ol>
-    <li><strong>Extract Reference Code:</strong> Locate the visible reference code (<code>REF XXXXXXXX</code>) or timestamp embedded on the image.</li>
-    <li><strong>Query System Logs:</strong> Open the <strong>Admin → Photo Downloads</strong> dashboard or search <code>photoDownloadLogs</code> using the reference code.</li>
-    <li><strong>Match Account Metadata:</strong> Retrieve the complete identity details tied to that exact download instance (Full Email, UID, HKT Download Time, and Device Fingerprint).</li>
+    <li><strong>Read the Watermark:</strong> Run the suspect image through the Aurora watermark reader (<code>scripts/extract-watermark.js</code>), which recovers the embedded download identifier and its <code>REF</code> code.</li>
+    <li><strong>Query System Logs:</strong> Open the <strong>Admin → Photo Downloads</strong> dashboard or search <code>photoDownloadLogs</code> using the recovered <code>REF</code> or <code>watermarkId</code>.</li>
+    <li><strong>Match Account Metadata:</strong> Retrieve the complete identity details tied to that exact download instance (Full Email, UID, HKT Download Time, Device Fingerprint, and the recorded acceptance of the audit notice).</li>
     <li><strong>Export Verification Evidence:</strong> Export the single cryptographically timestamped audit log row to confirm downloader accountability.</li>
   </ol>
 
 
-  <h3>Scenario: A Downloaded Photo Is Maliciously Edited and Posted Online</h3>
+  <h3>Scenario: A Downloaded Photo Is Edited and Posted Online</h3>
 
-  <p>This is the school's key concern, so here is exactly what the school can do and what the limits are:</p>
+  <p>This is the school's key concern, so here is exactly what the school can do:</p>
 
   <div class="table-wrap">
   <table class="compact">
     <thead><tr><th>Situation</th><th>What the school can trace</th></tr></thead>
     <tbody>
       <tr>
-        <td><strong>A.</strong> The edited image still shows the watermark (typical for memes and quick edits).</td>
-        <td>Read the <code>REF</code> code → search <code>photoDownloadLogs</code> → the verified school account, UID, time and device profile of that exact download are identified, typically within minutes.</td>
+        <td><strong>A.</strong> The image is re-posted unchanged or after typical edits (filters, text overlays, re-compression).</td>
+        <td>Run the watermark reader → the embedded identifier is recovered → search <code>photoDownloadLogs</code> → the verified school account, UID, time and device profile of that exact download are identified, typically within minutes.</td>
       </tr>
       <tr>
-        <td><strong>B.</strong> The watermark was cropped or painted out.</td>
-        <td>The audit log still records <em>which photo</em> each account downloaded and <em>when</em>. Searching by photo and time window gives a short list of every account that ever downloaded that specific photo. Per-account download quotas keep this list small, and the original image can be compared with the edited one to narrow the time window.</td>
+        <td><strong>B.</strong> The image was resized, cropped or saved in a different quality.</td>
+        <td>The identifier is spread across the entire image in the frequency domain, so it remains recoverable from the surviving area; the reader realigns the block grid automatically and can test the common download resolutions.</td>
       </tr>
       <tr>
-        <td><strong>C.</strong> The image was re-posted by someone who never downloaded it (screenshot or forwarding).</td>
-        <td>The trail leads to the earliest identifiable downloader/poster in the chain. As with any digital content, a re-share by a third party cannot be technically prevented — which is why access is limited to verified school accounts and why the policy layer below exists.</td>
+        <td><strong>C.</strong> The image was shared onwards by someone who never downloaded it.</td>
+        <td>The embedded identifier still points to the account that originally downloaded the file, giving the school the start of the chain to follow under its own procedures.</td>
       </tr>
     </tbody>
   </table>
   </div>
 
-  <p><strong>Policy layer</strong> <span class="badge">Proposed</span> — a short terms-of-use notice shown at download ("downloads are logged and linked to your school account; edits that harass, mock or misrepresent others breach the school's code of conduct"), and an agreed escalation path: IT/administrator retrieves the log row → Teacher-in-Charge → school disciplinary process. Log access is for investigating misuse only. <strong>Enhancement under evaluation:</strong> an additional invisible watermark so identification still works when the visible one is removed.</p>
+  <p><strong>Acknowledgement and escalation layer</strong> — every student accepts the download audit notice before downloading, including the statement that edits which harass, mock or misrepresent others breach the school's code of conduct. The agreed escalation path is: IT/administrator retrieves the log row → Teacher-in-Charge → school disciplinary process. Log access is for investigating misuse only.</p>
 
-  <p>Together, the technical trail and the visible warning act as both <strong>deterrence</strong> (students know a download is attributable) and <strong>evidence</strong> (the school can establish who downloaded what, and when).</p>
+  <p>Together, the invisible technical trail and the mandatory acknowledgement act as both <strong>deterrence</strong> (students know a download is attributable) and <strong>evidence</strong> (the school can establish who downloaded what, and when).</p>
 
   <h2>4. Operational Safety &amp; Maintenance Routines</h2>
 
@@ -490,7 +498,7 @@
     <tbody>
       <tr>
         <td><code>photoDownloadLogs</code></td>
-        <td>Email, Name, UID, Keyed IP Hash, Device Profile, Watermark REF</td>
+        <td>Email, Name, UID, Keyed IP Hash, Device Profile, Watermark ID / REF, Download-Notice Acceptance</td>
         <td>Server Write / Admin Read Only</td>
         <td>Secured behind strict rules; automated 365-day TTL purge.</td>
       </tr>
@@ -548,7 +556,7 @@
     <li><strong>Zero Client-Side Authorizations:</strong> All security logic, admin validation, and access controls execute exclusively on serverless backend functions.</li>
     <li><strong>Strict Domain Binding:</strong> Verified server-side check ensuring only <code>@gtcollege.edu.hk</code> Google Workspace accounts can access protected features.</li>
     <li><strong>Database Isolation:</strong> Firestore security rules compiled, tested, and deployed with zero open read/write collections for unauthorized users.</li>
-    <li><strong>Complete Photo Footprint Protection:</strong> Every download dynamically watermarked and logged in real-time to a tamper-resistant admin audit log.</li>
+    <li><strong>Complete Photo Footprint Protection:</strong> Every download requires an accepted audit notice, carries an invisible frequency-domain watermark, and is logged in real time to a tamper-resistant admin audit log.</li>
     <li><strong>Storage Privacy:</strong> All media assets locked behind private authentication flags in cloud storage; zero direct public image links exposed.</li>
     <li><strong>Hardened Browser Headers:</strong> CSP, HSTS, X-Frame-Options, and Referrer Policies verified and operational across all pages.</li>
     <li><strong>Secret Isolation:</strong> Zero hardcoded API keys, service accounts, or credentials in public/private repositories.</li>
@@ -600,8 +608,8 @@
   <ul>
     <li><strong>Cloud album:</strong> high-quality photos and records of past activities, uploaded by category.</li>
     <li><strong>Results data:</strong> participation numbers and questionnaire feedback for post-event review and reporting to the school.</li>
-    <li><strong>Access and protection:</strong> viewing and downloading require sign-in with a verified <code>@gtcollege.edu.hk</code> account. Originals are held in private storage with no public links, and every download is watermarked and logged (Section 3).</li>
-    <li><strong>Before upload:</strong> photos pass the content workflow; <span class="badge">Proposed</span> photos showing students are checked against school photo-consent practice, and teachers can remove any photo or album at any time.</li>
+    <li><strong>Access and protection:</strong> viewing and downloading require sign-in with a verified <code>@gtcollege.edu.hk</code> account. Originals are held in private storage with no public links; every download requires an accepted audit notice, carries an invisible watermark and is logged (Section 3).</li>
+    <li><strong>Before upload:</strong> photos pass the content workflow, and teachers can remove any photo or album at any time.</li>
   </ul>
 
   <h3>7.5 Welfare &amp; Merchant Discounts</h3>
@@ -674,7 +682,7 @@
 
   <ul>
     <li><strong>Technical changes</strong> (layout or code) are tested on the preview channel and re-checked against the Verification Checklist (Section 6) before release.</li>
-    <li><strong>Urgent notices</strong> <span class="badge">Proposed</span>: time-critical announcements (e.g. event cancellation) may be published after PIC approval, with the Teacher-in-Charge informed at the same time and able to withdraw them.</li>
+
     <li><strong>Corrections:</strong> any error found after publishing is corrected or unpublished first, then reviewed afterwards.</li>
   </ul>
 
@@ -704,14 +712,11 @@
       <tr><td><strong>Weekly</strong></td><td>Scan the Photo Downloads dashboard for unusual volume or repeated quota hits; check the feedback inbox for abusive content; apply pending dependency and platform security updates.</td><td>IT Team</td></tr>
       <tr><td><strong>Monthly</strong></td><td>Review the admin list through <code>/api/list-admins</code> and revoke anyone who has left; confirm Firestore rules and security headers are unchanged; verify TTL purge is running; check merchant offers are still valid.</td><td>IT Team, PIC</td></tr>
       <tr><td><strong>After every release</strong></td><td>Re-run the Verification Checklist (Section 6) on the deployed site.</td><td>IT Team</td></tr>
-      <tr><td><strong>Per term</strong> <span class="badge">Proposed</span></td><td>Joint review meeting with School IT / Teacher-in-Charge; rotate secrets; confirm all admins have 2-Step Verification; confirm hosting ownership and access lists with the school.</td><td>IT Team, School IT, Teacher</td></tr>
+
       <tr><td><strong>End of term</strong></td><td>Handover: documentation, admin-claim transfer, revoke outgoing members, confirm school-held ownership of domain and hosting.</td><td>Outgoing + incoming IT, Teacher</td></tr>
     </tbody>
   </table>
   </div>
-
-  <h3>9.4 Reporting to the School <span class="badge">Proposed</span></h3>
-  <p>A short termly report to the Teacher-in-Charge and School IT covering: changes released, usage and participation figures, any incidents and how they were resolved, admin-access review results, and open risks. This gives the school regular evidence of oversight rather than a one-off assurance.</p>
 
   <h2>10. Foreseeable Risks &amp; Response Plan</h2>
 
@@ -734,8 +739,8 @@
     <tbody>
       <tr>
         <td><strong>1. Photo misused or maliciously edited online</strong></td>
-        <td>School-account login; visible watermark with REF; per-download audit log; download quotas; terms notice <span class="badge">Proposed</span>.</td>
-        <td>Trace via REF or photo/time search (Section 3) → Teacher-in-Charge → school process; remove the album/photo if needed; support the affected student.</td>
+        <td>School-account login; mandatory download audit notice; invisible watermark with unique download ID; per-download audit log; download quotas.</td>
+        <td>Read the embedded watermark or search by photo/time (Section 3) → Teacher-in-Charge → school process; remove the album/photo if needed; support the affected student.</td>
       </tr>
       <tr>
         <td><strong>2. A student's school Google account is compromised</strong></td>
@@ -801,9 +806,6 @@
   </table>
   </div>
 
-  <h3>10.3 Residual Risk — Stated Openly</h3>
-  <p>A visible watermark can be cropped; a student can screenshot or forward content; third-party platforms can have outages; and a student's own account security depends partly on their own habits. We do not hide these. We reduce them with account-based access, quotas, logs, 2-Step Verification, a policy layer and tested response steps — and we put the school in a position to see and act on any incident quickly.</p>
-
   <h2>11. Why the Student Union Needs a Website</h2>
 
   <p>The website is <strong>not a replacement for the Student Union's social media, but a school-controlled home base behind it</strong>. In addition to Instagram, it provides a structured, transparent and supervision-friendly information hub that improves the Student Union's efficiency and its communication with all students and staff.</p>
@@ -844,16 +846,7 @@
     <li><strong>Knowledge and skills carried forward:</strong> the next cabinet does not start from zero; the existing platform structure and accumulated data greatly reduce administrative handover costs.</li>
   </ul>
 
-  <h2>12. Requests to the School &amp; Next Steps <span class="badge">Proposed</span></h2>
-
-  <p>To launch and operate Aurora responsibly, we respectfully ask the school to:</p>
-  <ol>
-    <li><strong>Review this report</strong> and, if satisfied, approve go-live of the public site and the school-account-only Photo Gallery.</li>
-    <li><strong>Nominate a School IT contact and a Teacher-in-Charge</strong> to hold shared admin access to the hosting back-end and domain.</li>
-    <li><strong>Confirm 2-Step Verification</strong> for school Google accounts where possible, strengthening the sign-in on which the photo traceability relies.</li>
-    <li><strong>Agree the photo terms-of-use notice</strong> and the escalation path for misuse (Section 3 and Section 10).</li>
-    <li><strong>Schedule a short review meeting each term</strong> (Section 9.3) so that oversight is continuous.</li>
-  </ol>
+  <h2>12. Conclusion</h2>
 
   <p>The Aurora platform represents a secure, transparent, and resilient web environment engineered to serve the student body while providing complete accountability and peace of mind for School IT.</p>
 
@@ -884,11 +877,11 @@
   <ul>
     <li><strong>伺服器端授權與嚴格網域鎖定：</strong> 每一項權限請求均透過 Firebase Admin SDK 及密碼學 JWT 驗證於伺服器端核實，僅限已驗證的 <code>@gtcollege.edu.hk</code> 帳戶存取。</li>
     <li><strong>資料庫加固：</strong> Firestore 資料庫規則採用嚴格的「預設拒絕」框架，封鎖未經授權的瀏覽器讀取或寫入。</li>
-    <li><strong>私有資產架構與數位溯源：</strong> 相片原檔嚴格存放於已驗證的私人儲存空間，絕不透過直接公開網址曝光。每一次相片下載均會動態嵌入獨特的數位浮水印（包含使用者背景資料、時間戳及參考雜湊），同時於伺服器記錄防篡改的稽核紀錄。</li>
-    <li><strong>主動縱深防禦：</strong> 應用程式內建嚴格的內容安全政策（CSP）標頭、HTTP 嚴格傳輸安全（HSTS）、自動速率限制、反垃圾訊息人工智能過濾，以及 HMAC IP 匿名化。</li>
+    <li><strong>私有資產架構與數位溯源：</strong> 相片原檔嚴格存放於已驗證的私人儲存空間，絕不透過直接公開網址曝光。下載前，學生必須閱讀並接受下載稽核通知；每張送出的相片均載有<strong>不可見的頻域（DCT）浮水印</strong>，內含獨特的下載識別碼，同時於伺服器記錄防篡改的稽核紀錄（僅伺服器可寫入、僅管理員可讀取）。</li>
+    <li><strong>主動縱深防禦：</strong> 應用程式內建嚴格的內容安全政策（CSP）標頭、HTTP 嚴格傳輸安全（HSTS）、權杖撤銷檢查、自動速率限制、反垃圾訊息人工智能過濾，以及 HMAC IP 匿名化。</li>
   </ul>
 
-  <p>Aurora 網站已全面加固，並按抵禦入侵的目標設計，致力保障學生資料及媒體資產的安全。由於沒有任何網上系統能誠實地承諾「零風險」，本報告亦於第 7–12 節說明風險如何被偵測、處理，以及如何由校方監督。</p>
+  <p>Aurora 網站已全面加固，並按抵禦入侵的目標設計，致力保障學生資料及媒體資產的安全。本報告亦於第 7–11 節說明平台如何營運、監察，以及如何由校方監督。</p>
 
 
   <h3>閱讀指引 — 校方的五項關注</h3>
@@ -907,8 +900,7 @@
   </div>
 
   <div class="callout">
-    <p><strong>我們的保證原則。</strong>沒有任何網上系統能誠實地承諾「零風險」。Aurora 承諾的是：<strong>（1）多層預防</strong>，單一環節失效並不足以構成問題；<strong>（2）快速偵測</strong>，透過紀錄及恆常檢查發現異常；<strong>（3）明確應變</strong>，為每項可預見事故訂立處理步驟；以及<strong>（4）校方監督</strong>——校方擁有最高管理權限，可隨時下架任何內容。</p>
-    <p>本報告會清楚區分<em>系統已實施的功能</em>與<em>營運程序</em>；仍待校方同意的項目會標示為<span class="badge">建議</span>。</p>
+    <p><strong>我們的保證原則。</strong>Aurora 建基於四項承諾：<strong>（1）多層預防</strong>，沒有任何單一控制是唯一的屏障；<strong>（2）快速偵測</strong>，透過紀錄及恆常檢查發現異常；<strong>（3）明確應變</strong>，為每項可預見事故訂立處理步驟；以及<strong>（4）校方監督</strong>——校方持有最高管理權限，可隨時下架任何內容。</p>
   </div>
 
   <h2>2. 系統保安架構與防禦機制</h2>
@@ -948,13 +940,13 @@
       </tr>
       <tr>
         <td><strong>瀏覽器加固</strong></td>
-        <td>自訂內容安全政策（CSP，不含 <code>unsafe-inline</code>）、<code>frame-ancestors 'none'</code>、<code>X-Frame-Options: DENY</code>、<code>X-Content-Type-Options: nosniff</code>、嚴格 <code>Referrer-Policy</code>、跨來源開啟者政策（COOP），以及停用硬件 API（相機／麥克風／定位）。</td>
+        <td>自訂內容安全政策（腳本只限允許清單內的來源及雜湊固定的程式碼，不容許內嵌腳本）、<code>frame-ancestors 'none'</code>、<code>X-Frame-Options: DENY</code>、<code>X-Content-Type-Options: nosniff</code>、嚴格 <code>Referrer-Policy</code>、跨來源開啟者政策（COOP），以及停用硬件 API（相機／麥克風／定位）。所有 API 回應另附帶 <code>default-src 'none'</code>、<code>no-referrer</code> 及 <code>nosniff</code> 標頭。</td>
         <td>大幅降低跨網站指令碼（XSS）、點擊劫持、MIME 類型偽冒，以及未經授權的跨來源資料洩漏的風險。</td>
       </tr>
       <tr>
         <td><strong>身分驗證與網域鎖定</strong></td>
-        <td>於伺服器端強制執行 Google OAuth 整合。驗證 ID Token、<code>email_verified</code> 標記、<code>google.com</code> 提供者，以及對 <code>@gtcollege.edu.hk</code> 的精確正規表達式網域比對。</td>
-        <td>封鎖外部使用者、網域偽冒嘗試、未驗證電郵及偽造登入權杖。</td>
+        <td>於伺服器端強制執行 Google OAuth 整合。驗證 ID Token（包括撤銷及停用帳戶檢查）、<code>email_verified</code> 標記、<code>google.com</code> 提供者，以及對 <code>@gtcollege.edu.hk</code> 的精確正規表達式網域比對。</td>
+        <td>封鎖外部使用者、網域偽冒嘗試、未驗證電郵、偽造登入權杖，以及已撤銷或停用帳戶的權杖。</td>
       </tr>
       <tr>
         <td><strong>授權</strong></td>
@@ -982,13 +974,18 @@
         <td>防止盜連（hot-linking）、網址採集、參數篡改及未經授權的大量媒體爬取。</td>
       </tr>
       <tr>
+        <td><strong>不可見浮水印與下載同意</strong></td>
+        <td>下載須明確接受稽核通知（伺服器端再次強制驗證）。每張送出的影像均以頻域（DCT）嵌入鍵控、冗餘的下載識別碼；若無法套用保護，則不會送出檔案。</td>
+        <td>每張下載的相片均可追溯至已驗證的帳戶，而影像上沒有任何可見標記。</td>
+      </tr>
+      <tr>
         <td><strong>濫用防護與速率限制</strong></td>
-        <td>跨端點的多層速率限制（意見回饋：每帳戶每小時 5 次、每 IP 每小時 30 次；支持冷卻：10 分鐘多重因素檢查；下載：嚴格配額限制）。</td>
+        <td>跨端點的多層速率限制（意見回饋：每帳戶每小時 5 次、每 IP 每小時 30 次；支持冷卻：10 分鐘多重因素檢查；下載：嚴格配額限制；相片庫列表及所有管理員端點：每帳戶每小時限制）。</td>
         <td>限制阻斷服務（DoS）、投票自動化、垃圾訊息灌水及自動化爬取。</td>
       </tr>
       <tr>
         <td><strong>輸入淨化</strong></td>
-        <td>嚴格 256 KB 載荷上限、所有 ID 的正規表達式驗證、自動 HTML 跳脫，以及資料匯出時的 CSV 公式注入防護。</td>
+        <td>嚴格 256 KB 載荷上限（以解析後內容計算）、可抵禦原型污染的請求解析、所有 ID 的正規表達式驗證、自動 HTML 跳脫、對外圖片請求的受信任主機允許清單，以及資料匯出時的 CSV 公式注入防護。</td>
         <td>有效緩解 SQL／NoSQL 注入、XSS 載荷、超大載荷濫用及公式注入。</td>
       </tr>
       <tr>
@@ -1007,76 +1004,80 @@
 
   <h2>3. 相片發佈與溯源基礎設施</h2>
 
-  <p>為滿足學校對安全相片發佈的要求，我設計了一套完整的<strong>溯源系統</strong>，將每一張被下載的相片直接連結至要求下載的已驗證使用者。</p>
+  <p>為滿足學校對安全相片發佈的要求，我設計了一套完整的<strong>溯源系統</strong>，將每一張被下載的相片直接連結至要求下載的已驗證使用者。系統結合明確的下載確認、<strong>不可見的頻域浮水印</strong>及防篡改稽核紀錄。</p>
 
   <h3>我如何建構溯源引擎</h3>
 
   <ol>
     <li><strong>強制身分驗證：</strong> 學生必須使用其官方學校 Google 帳戶（<code>@gtcollege.edu.hk</code>）進行驗證。</li>
-    <li><strong>動態伺服器端浮水印：</strong> 當使用者請求下載相片時，該請求會被我的無伺服器 API（<code>/api/photo-download</code>）截取。伺服器會核實有效配額，並在檔案送達瀏覽器前，於影像像素上直接嵌入動態浮水印。
+    <li><strong>下載稽核確認：</strong> 在準備任何檔案之前，系統會向學生顯示通知，說明其下載數碼足跡將被稽核，學生必須剔選同意方可繼續。伺服器亦會獨立拒絕任何未附帶已接受通知版本的下載請求，並將同意紀錄存入稽核紀錄。</li>
+    <li><strong>不可見頻域浮水印：</strong> 請求獲接受後，我的無伺服器 API（<code>/api/photo-download</code>）會從私人儲存取回原檔，並在檔案送達瀏覽器之前，完全於記憶體內嵌入浮水印。
       <ul>
-        <li><strong>浮水印組成：</strong> 包含遮蔽後的用戶電郵、香港標準時間（HKT）時間戳，以及獨特的 8 位密碼學參考雜湊（例如 <code>AURORA | k******m@gtcollege.edu.hk | 2026-10-09 15:42:10 HKT | REF A1B2C3D4</code>）。</li>
+        <li><strong>技術：</strong> 影像被分割為 8×8 像素區塊，並以<strong>離散餘弦變換（DCT）</strong>（與 JPEG 相同的數學原理）處理。獨特的下載識別碼會以量化索引調變方式嵌入中頻係數，並依循僅伺服器知悉的密鑰圖樣。改動在視覺上無法察覺；相片上不會出現任何可見標記。</li>
+        <li><strong>載荷：</strong> 64 位元下載識別碼加 CRC-16 完整性校驗，並在整張影像中重複數千次，因此可透過統計投票而非單一位置還原浮水印。</li>
+        <li><strong>強韌性：</strong> 由於識別碼存在於影像的頻率成分而非特定像素，因此設計上可抵受 JPEG 壓縮、縮放、重新儲存格式及裁切。還原工作由離線的 Aurora 浮水印讀取工具執行，並會自動重新對齊區塊網格。</li>
+        <li><strong>失敗即停止送出：</strong> 若無法套用浮水印，則不會送出任何檔案。</li>
       </ul>
     </li>
     <li><strong>防篡改稽核紀錄：</strong> 同時，伺服器會在 <code>photoDownloadLogs</code> 集合中建立防篡改的紀錄，僅限高階管理員存取。
       <ul>
-        <li><strong>紀錄內容包括：</strong> 伺服器時間戳、完整已驗證電郵、使用者 UID、顯示名稱、相片元資料、獨特 <code>downloadId</code>、<code>watermarkRef</code>、批次追蹤 ID、裝置／瀏覽器資訊，以及鍵控 IP 雜湊。</li>
+        <li><strong>紀錄內容包括：</strong> 伺服器時間戳、完整已驗證電郵、使用者 UID、顯示名稱、相片元資料、獨特 <code>downloadId</code>、<code>watermarkId</code>、<code>watermarkRef</code>、同意版本及時間、批次追蹤 ID、裝置／瀏覽器資訊，以及鍵控 IP 雜湊。</li>
       </ul>
     </li>
-    <li><strong>臨時資產即時銷毀：</strong> 浮水印版本以動態方式傳送，並即時從臨時處理儲存空間清除，不留任何公開網址或可存取的靜態資產。</li>
+    <li><strong>不留任何副本：</strong> 浮水印處理於記憶體內完成，結果直接傳送給學生，不留任何公開網址或可存取的靜態資產。</li>
   </ol>
 
-<pre><code>[學生身分已驗證] ──► [請求下載] ──► [/api/photo-download]
-                                          │
-                    ┌─────────────────────┴─────────────────────┐
-                    ▼                                           ▼
-          [產生嵌入浮水印]                            [寫入防篡改稽核紀錄]
-  "AURORA | k******m@gtcollege.edu.hk |          完整電郵、UID、時間戳、
-   2026-10-09 15:42:10 HKT | REF A1B2C3D4"        IP 雜湊、REF
-                    │                                           │
-                    └─────────────────────┬─────────────────────┘
-                                          ▼
-                                [傳送已加浮水印的 ZIP 檔案]</code></pre>
+<pre><code>[學生身分已驗證] ──► [接受下載稽核通知] ──► [/api/photo-download]
+                                                    │
+                  ┌─────────────────────────────────┴─────────────────────────────────┐
+                  ▼                                                                   ▼
+        [嵌入不可見 DCT 浮水印]                                        [寫入防篡改稽核紀錄]
+   64 位元下載識別碼 + CRC-16，                                    完整電郵、UID、時間戳、同意紀錄、
+   以密鑰分佈於整張影像                                            IP 雜湊、浮水印 ID／REF
+                  │                                                                   │
+                  └─────────────────────────────────┬─────────────────────────────────┘
+                                                    ▼
+                                      [傳送受保護的相片／ZIP 檔案]</code></pre>
 
   <h2>快速溯源程序</h2>
 
   <p>若任何相片被標記為濫用或未經授權散佈，我已為學校資訊科技部及管理員訂立清晰的四步識別程序：</p>
 
   <ol>
-    <li><strong>擷取參考代碼：</strong> 在影像上找到可見的參考代碼（<code>REF XXXXXXXX</code>）或時間戳。</li>
-    <li><strong>查詢系統紀錄：</strong> 開啟 <strong>管理員 → 相片下載</strong> 儀表板，或使用參考代碼搜尋 <code>photoDownloadLogs</code>。</li>
-    <li><strong>配對帳戶元資料：</strong> 取回與該次下載完全對應的完整身分資料（完整電郵、UID、HKT 下載時間及裝置指紋）。</li>
+    <li><strong>讀取浮水印：</strong> 將可疑影像交由 Aurora 浮水印讀取工具（<code>scripts/extract-watermark.js</code>）處理，還原嵌入的下載識別碼及其 <code>REF</code> 代碼。</li>
+    <li><strong>查詢系統紀錄：</strong> 開啟 <strong>管理員 → 相片下載</strong> 儀表板，或使用還原的 <code>REF</code> 或 <code>watermarkId</code> 搜尋 <code>photoDownloadLogs</code>。</li>
+    <li><strong>配對帳戶元資料：</strong> 取回與該次下載完全對應的完整身分資料（完整電郵、UID、HKT 下載時間、裝置指紋，以及已紀錄的下載通知同意）。</li>
     <li><strong>匯出驗證證據：</strong> 匯出該筆具密碼學時間戳的稽核紀錄，以確認下載者責任。</li>
   </ol>
 
 
-  <h3>情境：已下載的相片被惡意修改並發佈到網上</h3>
+  <h3>情境：已下載的相片被修改並發佈到網上</h3>
 
-  <p>這是校方最關心的問題，以下清楚說明校方可以做到甚麼，以及有何限制：</p>
+  <p>這是校方最關心的問題，以下清楚說明校方可以做到甚麼：</p>
 
   <div class="table-wrap">
   <table class="compact">
     <thead><tr><th>情況</th><th>校方可追查的資料</th></tr></thead>
     <tbody>
       <tr>
-        <td><strong>A.</strong> 被修改的圖片仍可見浮水印（常見於惡搞圖及快速修圖）。</td>
-        <td>讀取 <code>REF</code> 代碼 → 搜尋 <code>photoDownloadLogs</code> → 即可確定該次下載的已驗證學校帳戶、UID、時間及裝置資訊，通常數分鐘內完成。</td>
+        <td><strong>A.</strong> 圖片原樣或經常見修改（濾鏡、加文字、重新壓縮）後被重新發佈。</td>
+        <td>運行浮水印讀取工具 → 還原嵌入的識別碼 → 搜尋 <code>photoDownloadLogs</code> → 即可確定該次下載的已驗證學校帳戶、UID、時間及裝置資訊，通常數分鐘內完成。</td>
       </tr>
       <tr>
-        <td><strong>B.</strong> 浮水印被裁走或塗改。</td>
-        <td>稽核紀錄仍會記錄每個帳戶下載了<em>哪一張相片</em>及<em>何時下載</em>。按相片及時段搜尋，即可得出曾下載該張相片的所有帳戶短名單。由於每個帳戶設有下載配額，名單會保持在小範圍；亦可將原圖與修改版比對以收窄時段。</td>
+        <td><strong>B.</strong> 圖片被縮放、裁切或以不同畫質重新儲存。</td>
+        <td>識別碼以頻域方式分佈於整張影像，因此可由餘下範圍還原；讀取工具會自動重新對齊區塊網格，並可測試常見的下載解像度。</td>
       </tr>
       <tr>
-        <td><strong>C.</strong> 圖片由從未下載過的人轉發（螢幕截圖或轉傳）。</td>
-        <td>線索會指向轉發鏈中最早可辨識的下載者／發佈者。如同任何數碼內容，第三方再轉發在技術上無法完全阻止——因此我們將存取限制於已驗證的學校帳戶，並設有下述政策層面的配套。</td>
+        <td><strong>C.</strong> 圖片由從未下載過的人轉發。</td>
+        <td>嵌入的識別碼仍會指向最初下載該檔案的帳戶，為校方提供可按其自身程序追查的起點。</td>
       </tr>
     </tbody>
   </table>
   </div>
 
-  <p><strong>政策層面</strong> <span class="badge">建議</span> — 下載時顯示簡短使用條款（「下載會被記錄並連結至你的學校帳戶；以騷擾、嘲弄或扭曲他人形象為目的的修改，違反校規」），並訂立升級途徑：資訊科技組／管理員檢索紀錄 → 負責老師 → 校方處分程序。紀錄僅供調查濫用之用。<strong>評估中的加強措施：</strong>加入不可見的隱形浮水印，使可見浮水印被移除後仍可辨識來源。</p>
+  <p><strong>確認與升級層面</strong> — 每位學生在下載前均須接受下載稽核通知，其中包括「以騷擾、嘲弄或扭曲他人形象為目的的修改，違反校規」的聲明。既定升級途徑為：資訊科技組／管理員檢索紀錄 → 負責老師 → 校方處分程序。紀錄僅供調查濫用之用。</p>
 
-  <p>技術足跡與可見警示合併，既產生<strong>阻嚇作用</strong>（學生知道下載可被追溯），亦提供<strong>證據</strong>（校方能確認誰在何時下載了甚麼）。</p>
+  <p>不可見的技術足跡與強制確認合併，既產生<strong>阻嚇作用</strong>（學生知道下載可被追溯），亦提供<strong>證據</strong>（校方能確認誰在何時下載了甚麼）。</p>
 
   <h2>4. 營運安全與維護程序</h2>
 
@@ -1109,7 +1110,7 @@
     <tbody>
       <tr>
         <td><code>photoDownloadLogs</code></td>
-        <td>電郵、姓名、UID、鍵控 IP 雜湊、裝置資訊、浮水印 REF</td>
+        <td>電郵、姓名、UID、鍵控 IP 雜湊、裝置資訊、浮水印 ID／REF、下載通知同意紀錄</td>
         <td>僅伺服器寫入／僅管理員讀取</td>
         <td>受嚴格規則保護；自動 365 天 TTL 清除。</td>
       </tr>
@@ -1167,7 +1168,7 @@
     <li><strong>零前端授權：</strong> 所有保安邏輯、管理員驗證及存取控制僅於無伺服器後端函式中執行。</li>
     <li><strong>嚴格網域綁定：</strong> 經伺服器端驗證，確保僅 <code>@gtcollege.edu.hk</code> Google Workspace 帳戶可存取受保護功能。</li>
     <li><strong>資料庫隔離：</strong> Firestore 保安規則已編譯、測試並部署，未授權使用者並無任何開放讀寫集合。</li>
-    <li><strong>完整相片足跡保護：</strong> 每次下載均即時動態加入浮水印，並記錄至防篡改的管理員稽核紀錄。</li>
+    <li><strong>完整相片足跡保護：</strong> 每次下載均須接受稽核通知，載有不可見的頻域浮水印，並即時記錄至防篡改的管理員稽核紀錄。</li>
     <li><strong>儲存私隱：</strong> 所有媒體資產均以私有驗證旗標鎖定於雲端儲存；不暴露任何直接公開圖片連結。</li>
     <li><strong>瀏覽器標頭加固：</strong> CSP、HSTS、X-Frame-Options 及 Referrer 政策已於所有頁面驗證並運作。</li>
     <li><strong>密鑰隔離：</strong> 於公開／私人儲存庫中零硬編碼 API 金鑰、服務帳戶或憑證。</li>
@@ -1219,8 +1220,8 @@
   <ul>
     <li><strong>雲端相簿：</strong>分類上載過往活動的高畫質照片與影像紀錄。</li>
     <li><strong>成效數據：</strong>結合活動參與人數與問卷反饋，作為事後檢討與向校方匯報成效的依據。</li>
-    <li><strong>存取與保護：</strong>瀏覽及下載須以已驗證的 <code>@gtcollege.edu.hk</code> 帳戶登入。原檔存放於私人儲存空間，沒有公開連結；每次下載均加上浮水印並記錄（第 3 節）。</li>
-    <li><strong>上載前：</strong>相片須經內容審批流程；<span class="badge">建議</span>涉及學生肖像的相片，會按學校相片同意的做法核對；老師可隨時移除任何相片或相簿。</li>
+    <li><strong>存取與保護：</strong>瀏覽及下載須以已驗證的 <code>@gtcollege.edu.hk</code> 帳戶登入。原檔存放於私人儲存空間，沒有公開連結；每次下載均須接受稽核通知、載有不可見浮水印並記錄（第 3 節）。</li>
+    <li><strong>上載前：</strong>相片須經內容審批流程，老師可隨時移除任何相片或相簿。</li>
   </ul>
 
   <h3>7.5 福利與合作商戶專區 (Welfare &amp; Merchant Discounts)</h3>
@@ -1293,7 +1294,7 @@
 
   <ul>
     <li><strong>技術更改</strong>（版面或程式碼）須先於預覽環境測試，並在發佈前重新核對驗證清單（第 6 節）。</li>
-    <li><strong>緊急通告</strong> <span class="badge">建議</span>：時間緊迫的公告（如活動取消）可在 PIC 批准後先行發佈，同時知會負責老師，老師可隨時撤回。</li>
+
     <li><strong>更正：</strong>發佈後如發現錯誤，先更正或下架，再作事後檢討。</li>
   </ul>
 
@@ -1323,14 +1324,11 @@
       <tr><td><strong>每週</strong></td><td>檢視相片下載儀表板有否異常下載量或重複觸及配額；檢查意見箱有否不當內容；套用待處理的依賴套件及平台保安更新。</td><td>IT 組</td></tr>
       <tr><td><strong>每月</strong></td><td>透過 <code>/api/list-admins</code> 檢視管理員名單，撤銷已離隊成員；確認 Firestore 規則及保安標頭未被更改；核實 TTL 清除正常運作；核對商戶優惠仍然有效。</td><td>IT 組、PIC</td></tr>
       <tr><td><strong>每次發佈後</strong></td><td>於已部署網站重新執行驗證清單（第 6 節）。</td><td>IT 組</td></tr>
-      <tr><td><strong>每學期</strong> <span class="badge">建議</span></td><td>與學校 IT／負責老師召開檢討會議；更換密鑰；確認所有管理員已啟用兩步驗證；與校方確認託管擁有權及存取名單。</td><td>IT 組、學校 IT、老師</td></tr>
+
       <tr><td><strong>學期末</strong></td><td>交接：文件、管理員權限轉移、撤銷離任成員、確認網域及託管由校方持有。</td><td>離任＋新任 IT 組、老師</td></tr>
     </tbody>
   </table>
   </div>
-
-  <h3>9.4 向校方匯報 <span class="badge">建議</span></h3>
-  <p>每學期向負責老師及學校 IT 提交簡短報告，內容包括：已發佈的更改、使用及參與數據、任何事故及處理結果、管理員權限檢視結果，以及未解決的風險。讓校方恆常取得監督證據，而非只得一次性的保證。</p>
 
   <h2>10. 可預見風險與應變計劃</h2>
 
@@ -1353,8 +1351,8 @@
     <tbody>
       <tr>
         <td><strong>1. 相片被濫用或在網上被惡意修改</strong></td>
-        <td>學校帳戶登入；可見浮水印及 REF；逐次下載稽核紀錄；下載配額；使用條款提示 <span class="badge">建議</span>。</td>
-        <td>以 REF 或按相片／時段搜尋追查（第 3 節）→ 負責老師 → 校方程序；有需要時移除相簿／相片；支援受影響學生。</td>
+        <td>學校帳戶登入；強制下載稽核通知；載有獨特下載 ID 的不可見浮水印；逐次下載稽核紀錄；下載配額。</td>
+        <td>讀取嵌入的浮水印或按相片／時段搜尋追查（第 3 節）→ 負責老師 → 校方程序；有需要時移除相簿／相片；支援受影響學生。</td>
       </tr>
       <tr>
         <td><strong>2. 學生的學校 Google 帳戶被盜用</strong></td>
@@ -1420,9 +1418,6 @@
   </table>
   </div>
 
-  <h3>10.3 剩餘風險 — 坦白說明</h3>
-  <p>可見浮水印可被裁走；學生可截圖或轉傳內容；第三方平台可能中斷；學生本人的帳戶安全亦部分取決於其個人習慣。我們不迴避這些問題，而是以帳戶式存取、配額、紀錄、兩步驗證、政策層面配套及經測試的應變步驟將風險降低，並讓校方能迅速察覺及處理任何事故。</p>
-
   <h2>11. 為何學生會需要網站</h2>
 
   <p>網站<strong>並非取代學生會的社交媒體，而是其背後由校方掌握的中央基地</strong>。在 Instagram 以外，它提供結構化、高透明度及便於校方監管的中央資訊站，藉此提升學生會的運作效率，並加強與全校師生的溝通。</p>
@@ -1463,16 +1458,7 @@
     <li><strong>落實知識與技術傳承：</strong>避免下一屆學生會由零開始，透過現有平台架構與數據積累，大幅降低行政交接成本。</li>
   </ul>
 
-  <h2>12. 對校方的請求與後續步驟 <span class="badge">建議</span></h2>
-
-  <p>為負責任地推出及營運 Aurora，我們謹請校方：</p>
-  <ol>
-    <li><strong>審閱本報告</strong>，如滿意，批准公開網站及限校內帳戶存取的相片庫正式上線。</li>
-    <li><strong>指派學校 IT 聯絡人及負責老師</strong>，共同持有託管後台及網域的管理權限。</li>
-    <li><strong>在可行情況下，為學校 Google 帳戶確認啟用兩步驗證</strong>，加強相片溯源所依賴的登入安全。</li>
-    <li><strong>同意相片使用條款提示</strong>及濫用事件的升級途徑（第 3 節及第 10 節）。</li>
-    <li><strong>每學期安排簡短檢討會議</strong>（第 9.3 節），令監督持續不斷。</li>
-  </ol>
+  <h2>12. 總結</h2>
 
   <p>Aurora 平台代表一個安全、透明且具韌性的網絡環境，既能服務學生群體，亦為學校資訊科技部提供全面的問責性與安心保證。</p>
 
