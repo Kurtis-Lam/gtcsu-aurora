@@ -32,6 +32,8 @@ function verifyToken(token) {
 
 export default async function handler(req, res) {
   if (!guard(req, res, ['GET', 'POST'])) return;
+  res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+  res.setHeader('Referrer-Policy', 'no-referrer');
   const uid = verifyToken(getToken(req));
   if (!uid) return res.status(400).send('This unsubscribe link is invalid. Please contact Aurora for help.');
 
