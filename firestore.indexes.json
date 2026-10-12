@@ -2,26 +2,6 @@
   "indexes": [],
   "fieldOverrides": [
     {
-      "collectionGroup": "photoDownloadLogs",
-      "fieldPath": "deleteAfter",
-      "indexes": [
-        {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "photoDownloadRateLimits",
-      "fieldPath": "expiresAt",
-      "indexes": [
-        {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION"
-        }
-      ]
-    },
-    {
       "collectionGroup": "apiRateLimits",
       "fieldPath": "expiresAt",
       "indexes": [
