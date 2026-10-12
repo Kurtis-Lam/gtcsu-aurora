@@ -2,6 +2,7 @@ import { collection, doc, onSnapshot, query, serverTimestamp, setDoc, where } fr
 import { AuroraAuth } from './load-components.js';
 import { db } from './firebase-config.js';
 import { getLocalReads, rememberLocalRead, readRevision } from './news-reads.js';
+import { readNewsCache, writeNewsCache } from './preload.js';
 
 const content = document.getElementById('news-content');
 const lang = () => localStorage.getItem('aurora_lang') === 'zh' ? 'zh' : 'en';
@@ -38,8 +39,7 @@ function isRead(article) {
 function buttonHtml(article, t) {
   const id = escapeHtml(article.id);
   if (isRead(article)) {
-    const saving = syncState.get(article.id) === 'saving';
-    return `<button class="read-btn" data-news-id="${id}" disabled>${escapeHtml(saving ? t.saving : t.read)}</button>`;
+    return `<button class="read-btn" data-news-id="${id}" disabled>${escapeHtml(t.read)}</button>`;
   }
   if (!receiptsReady) return `<button class="read-btn" data-news-id="${id}" disabled>${escapeHtml(t.checking)}</button>`;
   return `<button class="read-btn" data-news-id="${id}">${escapeHtml(t.mark)}</button>`;
@@ -72,7 +72,11 @@ function render() {
     return `<article class="news-card fade-in${seen ? ' is-visible' : ''}"${seen ? '' : ` style="transition-delay:${Math.min(index, 4) * 0.05}s"`}><div class="news-meta">${escapeHtml(t.date)}${date ? ` · ${escapeHtml(date)}` : ''}</div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(body)}</p>${readButton}${note}</article>`;
   }).join('');
   content.querySelectorAll('.news-card.fade-in:not(.is-visible)').forEach(card => window.auroraFade?.(card));
-  content.querySelectorAll('[data-news-id]:not([disabled])').forEach(button => button.addEventListener('click', () => markRead(button.dataset.newsId)));
+  content.querySelectorAll('[data-news-id]:not([disabled])').forEach(button => button.addEventListener('click', () => {
+    button.disabled = true;
+    button.textContent = text[lang()].read;
+    markRead(button.dataset.newsId);
+  }));
 }
 
 async function writeReceipt(user, newsId, revision) {
@@ -101,9 +105,15 @@ function loadNews(user) {
   newsUnsubscribers.forEach(unsubscribe => unsubscribe());
   newsUnsubscribers = [];
   activeUser = user;
-  content.className = 'notice';
-  content.textContent = text[lang()].loading;
-  articles = null;
+  const cached = readNewsCache();
+  if (cached && cached.length) {
+    articles = cached.sort((a, b) => millis(b.updatedAt) - millis(a.updatedAt));
+    render();
+  } else {
+    content.className = 'notice';
+    content.textContent = text[lang()].loading;
+    articles = null;
+  }
   serverReads = new Map();
   localReads = user ? getLocalReads(user.uid) : new Map();
   receiptsReady = !user;
@@ -114,6 +124,7 @@ function loadNews(user) {
     if (activeUser?.uid !== user?.uid) return;
     articles = snapshot.docs.map(item => ({ id:item.id, ...item.data() }))
       .sort((a,b) => millis(b.updatedAt) - millis(a.updatedAt));
+    writeNewsCache(articles);
     render();
     if (user && receiptsReady) syncPendingReceipts(user);
   }, error => showLoadError(error)));
@@ -140,7 +151,23 @@ function showLoadError(error) {
   content.textContent = text[lang()].fail;
 }
 
-async function markRead(newsId) {
+async function saveReceiptInBackground(user, newsId, revision, attempt = 1) {
+  try {
+    await writeReceipt(user, newsId, revision);
+    syncState.delete(newsId);
+    if (activeUser?.uid === user.uid) render();
+  } catch (error) {
+    console.error(`Could not save the read receipt for news ${newsId}:`, error?.code || '', error);
+    if (attempt < 2) {
+      setTimeout(() => saveReceiptInBackground(user, newsId, revision, attempt + 1), 4000);
+      return;
+    }
+    syncState.set(newsId, 'failed');
+    if (activeUser?.uid === user.uid) render();
+  }
+}
+
+function markRead(newsId) {
   const user = activeUser;
   const article = articles?.find(item => item.id === newsId);
   if (!user || !article) return;
@@ -149,14 +176,7 @@ async function markRead(newsId) {
   localReads = getLocalReads(user.uid);
   syncState.set(newsId, 'saving');
   render();
-  try {
-    await writeReceipt(user, newsId, revision);
-    syncState.delete(newsId);
-  } catch (error) {
-    console.error(`Could not save the read receipt for news ${newsId}:`, error?.code || '', error);
-    syncState.set(newsId, 'failed');
-  }
-  if (activeUser?.uid === user.uid) render();
+  saveReceiptInBackground(user, newsId, revision);
 }
 
 updateLanguage(lang());
