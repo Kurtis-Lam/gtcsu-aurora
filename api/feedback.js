@@ -55,7 +55,6 @@ function describeKey(key) {
   return {
     present: true,
     length: key.length,
-    prefix: key.slice(0, 8),
     hasWhitespace: /\s/.test(key),
     hasQuotes: /^["']|["']$/.test(key)
   };
@@ -262,9 +261,7 @@ export default async function handler(req, res) {
   log.info('request:start', {
     build: BUILD,
     method: req.method,
-    vercelEnv: process.env.VERCEL_ENV,
-    deploymentUrl: process.env.VERCEL_URL,
-    origin: req.headers?.origin || null
+    vercelEnv: process.env.VERCEL_ENV
   });
 
   if (!guard(req, res, 'POST')) {
