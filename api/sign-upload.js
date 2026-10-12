@@ -4,7 +4,9 @@
 // Browsers receive images only through the authenticated server-side photo proxy.
 import { v2 as cloudinary } from 'cloudinary';
 import { guard, bearerToken } from './_lib/http.js';
-import { isAdminByRules } from './_lib/auth.js';
+import { verifiedAdmin } from './_lib/auth.js';
+import { getServices } from './_lib/firebase.js';
+import { enforceRateLimit } from './_lib/ratelimit.js';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -16,9 +18,9 @@ export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
 
   try {
-    if (!(await isAdminByRules(bearerToken(req)))) {
-      return res.status(403).json({ error: 'Admins only.' });
-    }
+    const admin = await verifiedAdmin(bearerToken(req));
+    if (!admin) return res.status(403).json({ error: 'Admins only.' });
+    if (!(await enforceRateLimit(getServices().db, res, 'sign-upload', admin.uid, { limit: 300, windowMs: 60 * 60 * 1000 }))) return;
 
     const params = {
       timestamp: Math.round(Date.now() / 1000),
@@ -35,7 +37,7 @@ export default async function handler(req, res) {
       apiKey: process.env.CLOUDINARY_API_KEY
     });
   } catch (err) {
-    console.error('sign-upload error:', err);
+    console.error('sign-upload error:', err.message);
     return res.status(500).json({ error: 'Could not sign upload.' });
   }
 }
