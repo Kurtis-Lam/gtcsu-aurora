@@ -16,17 +16,15 @@ const TIME_BUDGET_MS = 45 * 1000;
 let deps;
 async function loadDeps() {
   if (!deps) {
-    const [nodemailerModule, firebase, auth, ratelimit] = await Promise.all([
+    const [nodemailerModule, firebase, auth] = await Promise.all([
       import('nodemailer'),
       import('./_lib/firebase.js'),
-      import('./_lib/auth.js'),
-      import('./_lib/ratelimit.js')
+      import('./_lib/auth.js')
     ]);
     deps = {
       nodemailer: nodemailerModule.default || nodemailerModule,
       getServices: firebase.getServices,
-      verifiedAdmin: auth.verifiedAdmin,
-      enforceRateLimit: ratelimit.enforceRateLimit
+      verifiedAdmin: auth.verifiedAdmin
     };
   }
   return deps;
@@ -121,7 +119,7 @@ export default async function handler(req, res) {
     console.error('publish-news could not load its dependencies:', error);
     return res.status(500).json({ error: 'Server failed to start. Check the Vercel function logs.' });
   }
-  const { nodemailer, getServices, verifiedAdmin, enforceRateLimit } = services;
+  const { nodemailer, getServices, verifiedAdmin } = services;
 
   try {
     const admin = await verifiedAdmin(bearerToken(req));
@@ -135,7 +133,6 @@ export default async function handler(req, res) {
     }
 
     const { db } = getServices();
-    if (!(await enforceRateLimit(db, res, 'publish-news', admin.uid, { limit: 60, windowMs: 60 * 60 * 1000 }))) return;
     const articleRef = db.collection('news').doc(newsId);
     const articleSnapshot = await articleRef.get();
     if (!articleSnapshot.exists) return res.status(404).json({ error: 'Announcement not found.' });
