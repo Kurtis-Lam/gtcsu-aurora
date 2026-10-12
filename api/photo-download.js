@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { guard, body, bearerToken, clientIp, hashIp } from './_lib/http.js';
 import { authenticateGalleryUser } from './_lib/auth.js';
+import { purgeExpired } from './_lib/ratelimit.js';
 import { getServices } from './_lib/firebase.js';
 import { getGalleryImage, fetchDownloadSource } from './_lib/photos.js';
 import { embedWatermark, isWatermarkConfigured, WATERMARK_METHOD } from './_lib/watermark.js';
@@ -93,6 +94,8 @@ export default async function handler(req, res) {
     const accountHash = crypto.createHmac('sha256', accountHashSecret).update(String(decoded.uid)).digest('hex');
     const { db } = getServices();
     await enforceDownloadQuota(db, accountHash, now);
+    await purgeExpired(db, 'photoDownloadRateLimits', 'expiresAt');
+    await purgeExpired(db, 'photoDownloadLogs', 'deleteAfter', { batchSize: 50, probability: 0.02 });
 
     const downloadId = crypto.randomUUID();
     const timeHkt = hongKongTime(now);
