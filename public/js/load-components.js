@@ -3,6 +3,7 @@ import { initInfo, refreshInfo } from './info.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { NEWS_READ_EVENT, getLocalReads, readRevision } from './news-reads.js';
+import { preloadNews, preloadPhotos, clearPhotoCaches, hintResources, runWhenIdle } from './preload.js';
 
 // Start fetching shared components immediately; they are mounted once the DOM is ready.
 const panelFetchPromise = fetch('panel.html')
@@ -209,6 +210,11 @@ onAuthStateChanged(auth, (user) => {
   updateNavAuthUI(currentUser);
   watchUnreadNews(currentUser);
   if (currentUser) createNewsSubscription(currentUser);
+  else if (authResolved) clearPhotoCaches();
+  runWhenIdle(() => {
+    preloadNews();
+    if (currentUser) preloadPhotos(currentUser);
+  });
 });
 
 export const AuroraAuth = {
@@ -395,6 +401,8 @@ async function loadPanel() {
     wireBackgroundVideo();
   }
 }
+
+hintResources();
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', loadPanel);
