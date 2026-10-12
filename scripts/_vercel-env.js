@@ -15,6 +15,28 @@ async function linkedProject() {
   }
 }
 
+const LOCAL_ENV_FILES = ['.env.local', '.env'];
+
+async function readLocalEnvFiles(names) {
+  const found = {};
+  for (const file of LOCAL_ENV_FILES) {
+    let text;
+    try {
+      text = await readFile(new URL(`../${file}`, import.meta.url), 'utf8');
+    } catch {
+      continue;
+    }
+    for (const line of text.split(/\r?\n/)) {
+      const match = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
+      if (!match || !names.includes(match[1]) || found[match[1]]) continue;
+      let value = match[2];
+      if (/^(["']).*\1$/.test(value)) value = value.slice(1, -1);
+      if (value) found[match[1]] = value;
+    }
+  }
+  return found;
+}
+
 async function vercelGet(path, token) {
   const response = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
   if (!response.ok) {
@@ -45,7 +67,10 @@ function matchesTarget(entry) {
  * Needs VERCEL_TOKEN. The project comes from VERCEL_PROJECT_ID, else
  * .vercel/project.json (created by `vercel link`), else "gtcsu-aurora".
  * Teams: VERCEL_TEAM_ID, or the orgId from .vercel/project.json.
- * Without a token, or with --local-env, only the local environment is used.
+ * Without a token, or with --local-env, Vercel is skipped. Anything still
+ * missing is then read from .env.local / .env in the project root (never
+ * overriding variables that are already set). Sensitive-type Vercel variables
+ * cannot be read back through the API, so those must live in .env.local.
  * Values are never printed.
  */
 export async function loadVercelEnv(names, { required = names, requireAny = false } = {}) {
@@ -84,6 +109,12 @@ export async function loadVercelEnv(names, { required = names, requireAny = fals
     }
   }
 
+  const stillMissing = names.filter((name) => !process.env[name]);
+  if (stillMissing.length) {
+    const fromFiles = await readLocalEnvFiles(stillMissing);
+    for (const [name, value] of Object.entries(fromFiles)) process.env[name] = value;
+  }
+
   const present = required.filter((name) => process.env[name]);
   const ok = requireAny ? present.length > 0 : present.length === required.length;
   if (!ok) {
@@ -91,9 +122,9 @@ export async function loadVercelEnv(names, { required = names, requireAny = fals
     const hidden = missing.filter((name) => sensitive.has(name));
     const lines = [`Missing ${requireAny ? 'one of ' : ''}${(requireAny ? required : missing).join(', ')}.`];
     if (hidden.length) {
-      lines.push(`Vercel will not return sensitive variables (${hidden.join(', ')}): recreate them as "Encrypted" instead of "Sensitive", or export them locally and run with --local-env.`);
+      lines.push(`Vercel never returns Sensitive variables (${hidden.join(', ')}). Add ${hidden.map((name) => `${name}=<value>`).join(' and ')} to .env.local in the project root (keep that file out of git), or export it and run with --local-env.`);
     } else if (!token) {
-      lines.push('Set VERCEL_TOKEN (and optionally VERCEL_PROJECT_ID / VERCEL_TEAM_ID) so the script can fetch it from Vercel, or export the variable locally and run with --local-env.');
+      lines.push('Set VERCEL_TOKEN (and optionally VERCEL_PROJECT_ID / VERCEL_TEAM_ID) so the script can fetch it from Vercel, or put it in .env.local, or export it and run with --local-env.');
     } else if (useLocalOnly) {
       lines.push('Running with --local-env, so Vercel was not queried.');
     } else {
