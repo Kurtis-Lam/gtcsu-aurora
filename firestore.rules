@@ -138,7 +138,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/news/$(request.resource.data.newsId))
         && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.status == 'published'
         && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.deleted == false
-        && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.revision == request.resource.data.revision;
+        && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.get('revision', 1) == request.resource.data.revision;
       allow update: if isSchoolUser()
         && resource.data.uid == request.auth.uid
         && request.resource.data.keys().hasOnly(['uid', 'newsId', 'revision', 'readAt'])
@@ -149,7 +149,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/news/$(request.resource.data.newsId))
         && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.status == 'published'
         && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.deleted == false
-        && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.revision == request.resource.data.revision;
+        && get(/databases/$(database)/documents/news/$(request.resource.data.newsId)).data.get('revision', 1) == request.resource.data.revision;
       allow delete: if isAdmin() || (isSchoolUser() && resource.data.uid == request.auth.uid);
     }
 
