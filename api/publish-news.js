@@ -16,15 +16,17 @@ const TIME_BUDGET_MS = 45 * 1000;
 let deps;
 async function loadDeps() {
   if (!deps) {
-    const [nodemailerModule, firebase, auth] = await Promise.all([
+    const [nodemailerModule, firebase, auth, ratelimit] = await Promise.all([
       import('nodemailer'),
       import('./_lib/firebase.js'),
-      import('./_lib/auth.js')
+      import('./_lib/auth.js'),
+      import('./_lib/ratelimit.js')
     ]);
     deps = {
       nodemailer: nodemailerModule.default || nodemailerModule,
       getServices: firebase.getServices,
-      isAdminByRules: auth.isAdminByRules
+      verifiedAdmin: auth.verifiedAdmin,
+      enforceRateLimit: ratelimit.enforceRateLimit
     };
   }
   return deps;
@@ -119,20 +121,21 @@ export default async function handler(req, res) {
     console.error('publish-news could not load its dependencies:', error);
     return res.status(500).json({ error: 'Server failed to start. Check the Vercel function logs.' });
   }
-  const { nodemailer, getServices, isAdminByRules } = services;
+  const { nodemailer, getServices, verifiedAdmin, enforceRateLimit } = services;
 
   try {
-    const token = bearerToken(req);
-    if (!token || !(await isAdminByRules(token))) {
+    const admin = await verifiedAdmin(bearerToken(req));
+    if (!admin) {
       return res.status(403).json({ error: 'Admin access is required.' });
     }
 
     const { newsId } = body(req);
-    if (typeof newsId !== 'string' || !newsId.trim() || newsId.includes('/')) {
+    if (typeof newsId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(newsId)) {
       return res.status(400).json({ error: 'Provide a valid news ID.' });
     }
 
     const { db } = getServices();
+    if (!(await enforceRateLimit(db, res, 'publish-news', admin.uid, { limit: 60, windowMs: 60 * 60 * 1000 }))) return;
     const articleRef = db.collection('news').doc(newsId);
     const articleSnapshot = await articleRef.get();
     if (!articleSnapshot.exists) return res.status(404).json({ error: 'Announcement not found.' });
