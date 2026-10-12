@@ -440,7 +440,7 @@
       <div id="support-count" class="support-count" aria-live="polite">0</div>
       <button id="support-btn" class="support-button" disabled data-en="Checking…" data-zh="正在檢查……">Checking…</button>
       <p id="support-status" class="support-status" aria-live="polite"></p>
-      <p class="support-local-count i18n" data-en="Privacy notice: when you support Aurora, we record your IP address and device details (browser, model, platform) in encrypted form to prevent abuse of this feature. They are kept for 90 days, used only for that purpose, and can be accessed only by authorised administrators." data-zh="私隱聲明：當你支持 Aurora 時，我們會以加密形式記錄你的 IP 位址及裝置資料（瀏覽器、型號、平台），以防止此功能被濫用。資料只會保留 90 日，只用於上述目的，並只有獲授權的管理員可以查閱。">Privacy notice: when you support Aurora, we record your IP address and device details (browser, model, platform) in encrypted form to prevent abuse of this feature. They are kept for 90 days, used only for that purpose, and can be accessed only by authorised administrators.</p>
+      <p class="support-local-count i18n" data-en="Privacy notice: when you support Aurora, we record your IP address and device details (browser, model, platform) in encrypted form to prevent abuse of this feature. They are kept permanently for the school's records, used only for that purpose, and can be accessed only by authorised administrators." data-zh="私隱聲明：當你支持 Aurora 時，我們會以加密形式記錄你的 IP 位址及裝置資料（瀏覽器、型號、平台），以防止此功能被濫用。資料會為校方記錄而永久保存，只用於上述目的，並只有獲授權的管理員可以查閱。">Privacy notice: when you support Aurora, we record your IP address and device details (browser, model, platform) in encrypted form to prevent abuse of this feature. They are kept permanently for the school's records, used only for that purpose, and can be accessed only by authorised administrators.</p>
       <p class="support-local-count"><span class="i18n" data-en="Your supports:" data-zh="你的支持次數：">Your supports:</span> <strong id="bar-clicks">0</strong></p>
     </section>
   </main>
@@ -488,7 +488,7 @@
         spamMsg: (r) => `Our system marked your submission as spam/irrelevant.${r ? ' Reason: ' + r : ''}`,
         errTitle: 'Submission Error',
         errGeneric: 'Something went wrong. Please try again in a moment.',
-        errRate: 'You have submitted several times recently. Please try again later.',
+        errRate: 'You can send up to 3 feedbacks per day. Please try again tomorrow.',
         errInvalid: 'Please check that your title and description meet the minimum word counts.',
         words: 'words'
       },
@@ -500,7 +500,7 @@
         spamMsg: (r) => `我們的系統已將您的反饋標記為垃圾訊息/無效內容。${r ? '原因：' + r : ''}`,
         errTitle: '提交失敗',
         errGeneric: '發生錯誤，請稍後再試。',
-        errRate: '您最近提交次數過多，請稍後再試。',
+        errRate: '每日最多可提交 3 次意見，請明天再試。',
         errInvalid: '請確認標題及內容已達最低字數要求。',
         words: '個字詞'
       }
