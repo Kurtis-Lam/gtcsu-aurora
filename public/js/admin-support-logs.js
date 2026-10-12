@@ -42,13 +42,6 @@ function init() {
     }) + ' HKT';
   }
 
-  function expiresText(date) {
-    if (!date) return '';
-    const days = Math.ceil((date.getTime() - Date.now()) / 86400000);
-    if (days <= 0) return 'expired';
-    return `in ${days}d`;
-  }
-
   function browserName(userAgent) {
     const ua = String(userAgent || '');
     if (/Edg\//i.test(ua)) return 'Edge';
@@ -162,7 +155,7 @@ function init() {
       return;
     }
     if (!logs.length) {
-      bodyEl.innerHTML = '<tr><td colspan="5" class="sl-empty">No support logs yet. A log is written for every vote and expires after 90 days.</td></tr>';
+      bodyEl.innerHTML = '<tr><td colspan="5" class="sl-empty">No support logs yet. A log is written for every vote and is kept permanently.</td></tr>';
       return;
     }
     if (!shown.length) {
@@ -173,7 +166,6 @@ function init() {
     bodyEl.innerHTML = shown.map((log) => {
       const entry = results.get(log.id);
       const created = formatTime(toDate(log.createdAt));
-      const expires = expiresText(toDate(log.expiresAt));
       const account = log.email
         ? `<div>${escapeHtml(log.email)}</div><div class="sl-muted">${escapeHtml(String(log.uid || '').slice(0, 12))}…</div>`
         : '<div class="sl-muted">Anonymous visitor</div>';
@@ -194,7 +186,7 @@ function init() {
         deviceCell = '<span class="sl-muted">🔒 Encrypted</span>';
       }
 
-      return `<tr><td>${escapeHtml(created)}</td><td>${account}</td><td>${ipCell}</td><td>${deviceCell}</td><td class="sl-muted">${escapeHtml(expires)}</td></tr>`;
+      return `<tr><td>${escapeHtml(created)}</td><td>${account}</td><td>${ipCell}</td><td>${deviceCell}</td><td class="sl-muted">Permanent</td></tr>`;
     }).join('');
   }
 
