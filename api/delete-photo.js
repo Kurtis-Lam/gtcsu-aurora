@@ -1,15 +1,16 @@
 import { guard, body, bearerToken } from './_lib/http.js';
-import { isAdminByRules } from './_lib/auth.js';
+import { verifiedAdmin } from './_lib/auth.js';
 import { getServices } from './_lib/firebase.js';
+import { enforceRateLimit } from './_lib/ratelimit.js';
 import { cloudinaryClient, GALLERY_ID_PATTERN, IMAGE_DOC_ID_PATTERN } from './_lib/photos.js';
 
 export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
 
   try {
-    if (!(await isAdminByRules(bearerToken(req)))) {
-      return res.status(403).json({ error: 'Admins only.' });
-    }
+    const admin = await verifiedAdmin(bearerToken(req));
+    if (!admin) return res.status(403).json({ error: 'Admins only.' });
+    if (!(await enforceRateLimit(getServices().db, res, 'delete-photo', admin.uid, { limit: 300, windowMs: 60 * 60 * 1000 }))) return;
 
     const { imageId } = body(req);
     if (typeof imageId !== 'string' || !IMAGE_DOC_ID_PATTERN.test(imageId)) {
