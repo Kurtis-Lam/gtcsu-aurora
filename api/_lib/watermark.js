@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 
-export const WATERMARK_METHOD = 'dct-qim-v1';
+export const WATERMARK_METHOD = 'dct-qim-v2';
+export const LEGACY_WATERMARK_METHOD = 'dct-qim-v1';
 
 const BLOCK = 8;
 const TILE = 16;
@@ -13,8 +14,10 @@ const ID_BYTES = 8;
 const PAYLOAD_BITS = (ID_BYTES + 2) * 8;
 const MIN_DIMENSION = 128;
 const OUTPUT_QUALITY = 92;
-const CLIP_LOW = 6;
-const CLIP_HIGH = 249;
+const ELIGIBLE_LOW = 4;
+const ELIGIBLE_HIGH = 251;
+const MIN_VOTES = PAYLOAD_BITS * 3;
+const MIN_CONFIDENCE = 0.2;
 const MAX_PIXELS = 40_000_000;
 
 const BASIS = COEFFICIENTS.map(([u, v]) => {
@@ -76,18 +79,18 @@ export function isWatermarkConfigured() {
   }
 }
 
-function watermarkKey() {
-  const secret = process.env.WATERMARK_SECRET || process.env.ANALYTICS_HMAC_SECRET;
+function watermarkKey(secretOverride) {
+  const secret = secretOverride ?? (process.env.WATERMARK_SECRET || process.env.ANALYTICS_HMAC_SECRET);
   if (!secret || Buffer.byteLength(secret) < 32) throw new Error('Watermark secret is not configured securely');
   return crypto.createHmac('sha256', secret).update('aurora-invisible-watermark-v1').digest();
 }
 
-let cachedTable = null;
-let cachedTableKey = null;
+const tableCache = new Map();
 
-function keyedTable() {
-  const key = watermarkKey();
-  if (cachedTable && cachedTableKey && crypto.timingSafeEqual(cachedTableKey, key)) return cachedTable;
+function keyedTable(secretOverride) {
+  const key = watermarkKey(secretOverride);
+  const cacheId = key.toString('hex');
+  if (tableCache.has(cacheId)) return tableCache.get(cacheId);
 
   let counter = 0;
   const nextBytes = () => {
@@ -114,9 +117,10 @@ function keyedTable() {
     bitIndex[slot] = order[slot] % PAYLOAD_BITS;
     dither[slot] = (take(2).readUInt16BE(0) / 65536) * 2 * STEP;
   }
-  cachedTable = { bitIndex, dither };
-  cachedTableKey = Buffer.from(key);
-  return cachedTable;
+  const table = { bitIndex, dither };
+  if (tableCache.size >= 4) tableCache.delete(tableCache.keys().next().value);
+  tableCache.set(cacheId, table);
+  return table;
 }
 
 function tileSlot(blockX, blockY, slot) {
@@ -181,18 +185,6 @@ export async function embedWatermark(inputBuffer, watermarkId) {
       const originX = bx * BLOCK;
       const originY = by * BLOCK;
 
-      let low = 255;
-      let high = 0;
-      for (let y = 0; y < BLOCK; y += 1) {
-        const rowStart = (originY + y) * width + originX;
-        for (let x = 0; x < BLOCK; x += 1) {
-          const value = plane[rowStart + x];
-          if (value < low) low = value;
-          if (value > high) high = value;
-        }
-      }
-      if (low < CLIP_LOW || high > CLIP_HIGH) continue;
-
       delta.fill(0);
       for (let slot = 0; slot < SLOTS_PER_BLOCK; slot += 1) {
         const index = tileSlot(bx, by, slot);
@@ -223,7 +215,7 @@ export async function embedWatermark(inputBuffer, watermarkId) {
   return { buffer, width, height, method: WATERMARK_METHOD };
 }
 
-function sampleCoefficients(plane, width, height, offsetX, offsetY, maxBlocks) {
+function sampleCoefficients(plane, width, height, offsetX, offsetY, maxBlocks, masked) {
   const blocksX = Math.floor((width - offsetX) / BLOCK);
   const blocksY = Math.floor((height - offsetY) / BLOCK);
   const spanX = Math.min(blocksX, maxBlocks);
@@ -232,61 +224,84 @@ function sampleCoefficients(plane, width, height, offsetX, offsetY, maxBlocks) {
   const startX = Math.floor((blocksX - spanX) / 2);
   const startY = Math.floor((blocksY - spanY) / 2);
   const values = new Float32Array(spanX * spanY * SLOTS_PER_BLOCK);
+  const usable = new Uint8Array(spanX * spanY);
   let cursor = 0;
+  let block = 0;
   for (let j = 0; j < spanY; j += 1) {
     for (let i = 0; i < spanX; i += 1) {
       const originX = offsetX + (startX + i) * BLOCK;
       const originY = offsetY + (startY + j) * BLOCK;
-      for (let slot = 0; slot < SLOTS_PER_BLOCK; slot += 1) {
-        values[cursor] = blockCoefficient(plane, width, originX, originY, slot);
-        cursor += 1;
+      let keep = 1;
+      if (masked) {
+        let low = 255;
+        let high = 0;
+        for (let y = 0; y < BLOCK && keep; y += 1) {
+          const rowStart = (originY + y) * width + originX;
+          for (let x = 0; x < BLOCK; x += 1) {
+            const value = plane[rowStart + x];
+            if (value < low) low = value;
+            if (value > high) high = value;
+          }
+        }
+        if (low < ELIGIBLE_LOW || high > ELIGIBLE_HIGH) keep = 0;
       }
+      usable[block] = keep;
+      block += 1;
+      if (keep) {
+        for (let slot = 0; slot < SLOTS_PER_BLOCK; slot += 1) {
+          values[cursor + slot] = blockCoefficient(plane, width, originX, originY, slot);
+        }
+      }
+      cursor += SLOTS_PER_BLOCK;
     }
   }
-  return { values, spanX, spanY, startX, startY };
+  return { values, usable, spanX, spanY, startX, startY };
 }
 
 function tally(sample, phaseX, phaseY, table) {
   const sums = new Float64Array(PAYLOAD_BITS);
-  let cursor = 0;
+  let votes = 0;
+  let block = 0;
   for (let j = 0; j < sample.spanY; j += 1) {
     for (let i = 0; i < sample.spanX; i += 1) {
-      const tileBase = (((j + phaseY) % TILE) * TILE + ((i + phaseX) % TILE)) * SLOTS_PER_BLOCK;
-      for (let slot = 0; slot < SLOTS_PER_BLOCK; slot += 1) {
-        const index = tileBase + slot;
-        sums[table.bitIndex[index]] += softVote(sample.values[cursor], table.dither[index]);
-        cursor += 1;
+      if (sample.usable[block]) {
+        const tileBase = (((j + phaseY) % TILE) * TILE + ((i + phaseX) % TILE)) * SLOTS_PER_BLOCK;
+        const valueBase = block * SLOTS_PER_BLOCK;
+        for (let slot = 0; slot < SLOTS_PER_BLOCK; slot += 1) {
+          const index = tileBase + slot;
+          sums[table.bitIndex[index]] += softVote(sample.values[valueBase + slot], table.dither[index]);
+        }
+        votes += SLOTS_PER_BLOCK;
       }
+      block += 1;
     }
   }
-  const votes = sample.spanX * sample.spanY * SLOTS_PER_BLOCK;
+  if (votes < MIN_VOTES) return { sums, confidence: 0, votes };
   let confidence = 0;
   for (let b = 0; b < PAYLOAD_BITS; b += 1) confidence += Math.abs(sums[b]);
-  return { sums, confidence: confidence / votes };
+  return { sums, confidence: confidence / votes, votes };
 }
 
-function extractFromPlane(plane, width, height, table) {
-  if (width < MIN_DIMENSION || height < MIN_DIMENSION) return null;
+function searchOffsets(plane, width, height, table, offsets, masked) {
+  const coarseBlocks = masked ? 64 : 40;
   const candidates = [];
 
-  for (let offsetY = 0; offsetY < BLOCK; offsetY += 1) {
-    for (let offsetX = 0; offsetX < BLOCK; offsetX += 1) {
-      const sample = sampleCoefficients(plane, width, height, offsetX, offsetY, 40);
-      if (!sample) continue;
-      let best = null;
-      for (let phaseY = 0; phaseY < TILE; phaseY += 1) {
-        for (let phaseX = 0; phaseX < TILE; phaseX += 1) {
-          const result = tally(sample, phaseX, phaseY, table);
-          if (!best || result.confidence > best.confidence) best = { ...result, offsetX, offsetY, phaseX, phaseY, startX: sample.startX, startY: sample.startY };
-        }
+  for (const [offsetX, offsetY] of offsets) {
+    const sample = sampleCoefficients(plane, width, height, offsetX, offsetY, coarseBlocks, masked);
+    if (!sample) continue;
+    let best = null;
+    for (let phaseY = 0; phaseY < TILE; phaseY += 1) {
+      for (let phaseX = 0; phaseX < TILE; phaseX += 1) {
+        const result = tally(sample, phaseX, phaseY, table);
+        if (!best || result.confidence > best.confidence) best = { ...result, offsetX, offsetY, phaseX, phaseY, startX: sample.startX, startY: sample.startY };
       }
-      if (best) candidates.push(best);
     }
+    if (best) candidates.push(best);
   }
 
   candidates.sort((a, b) => b.confidence - a.confidence);
   for (const candidate of candidates.slice(0, 3)) {
-    const sample = sampleCoefficients(plane, width, height, candidate.offsetX, candidate.offsetY, 128);
+    const sample = sampleCoefficients(plane, width, height, candidate.offsetX, candidate.offsetY, 128, masked);
     if (!sample) continue;
     const phaseX = (((candidate.phaseX + sample.startX - candidate.startX) % TILE) + TILE) % TILE;
     const phaseY = (((candidate.phaseY + sample.startY - candidate.startY) % TILE) + TILE) % TILE;
@@ -294,26 +309,88 @@ function extractFromPlane(plane, width, height, table) {
     const bits = new Uint8Array(PAYLOAD_BITS);
     for (let b = 0; b < PAYLOAD_BITS; b += 1) bits[b] = refined.sums[b] >= 0 ? 0 : 1;
     const id = bitsToId(bits);
-    if (id && refined.confidence > 0.2) {
+    if (id && refined.confidence > MIN_CONFIDENCE) {
       return {
         id,
         confidence: Number(refined.confidence.toFixed(4)),
         offsetX: candidate.offsetX,
-        offsetY: candidate.offsetY
+        offsetY: candidate.offsetY,
+        masked
       };
     }
   }
   return null;
 }
 
+function extractFromPlane(plane, width, height, table) {
+  if (width < MIN_DIMENSION || height < MIN_DIMENSION) return null;
+
+  const origin = [[0, 0]];
+  const others = [];
+  for (let offsetY = 0; offsetY < BLOCK; offsetY += 1) {
+    for (let offsetX = 0; offsetX < BLOCK; offsetX += 1) {
+      if (offsetX || offsetY) others.push([offsetX, offsetY]);
+    }
+  }
+
+  // Images embedded with dct-qim-v2 carry the mark in every block. Images
+  // issued by dct-qim-v1 only carry it in blocks that were not flat or clipped,
+  // so the masked pass ignores the blocks that could never have been marked.
+  for (const offsets of [origin, others]) {
+    for (const masked of [false, true]) {
+      const found = searchOffsets(plane, width, height, table, offsets, masked);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export async function describeImage(inputBuffer) {
+  const { data, width, height, channels } = await decodeRaw(inputBuffer);
+  const plane = lumaPlane(data, width, height, channels);
+  const blocksX = Math.floor(width / BLOCK);
+  const blocksY = Math.floor(height / BLOCK);
+  let clipped = 0;
+  for (let by = 0; by < blocksY; by += 1) {
+    for (let bx = 0; bx < blocksX; bx += 1) {
+      let low = 255;
+      let high = 0;
+      for (let y = 0; y < BLOCK; y += 1) {
+        const rowStart = (by * BLOCK + y) * width + bx * BLOCK;
+        for (let x = 0; x < BLOCK; x += 1) {
+          const value = plane[rowStart + x];
+          if (value < low) low = value;
+          if (value > high) high = value;
+        }
+      }
+      if (low < ELIGIBLE_LOW || high > ELIGIBLE_HIGH) clipped += 1;
+    }
+  }
+  const total = Math.max(1, blocksX * blocksY);
+  return { width, height, clippedShare: clipped / total };
+}
+
 export async function extractWatermark(inputBuffer, options = {}) {
-  const table = keyedTable();
+  const secrets = Array.isArray(options.secrets) && options.secrets.length
+    ? options.secrets
+    : [{ name: 'environment', value: undefined }];
+  const tables = [];
+  for (const secret of secrets) {
+    try {
+      tables.push({ name: secret.name, table: keyedTable(secret.value) });
+    } catch {
+      // Skip secrets that are missing or too short.
+    }
+  }
+  if (!tables.length) throw new Error('Watermark secret is not configured securely');
+
   const first = await decodeRaw(inputBuffer);
   const widths = [first.width, ...(Array.isArray(options.widths) ? options.widths : [])]
     .map(Number)
-    .filter((value, index, list) => Number.isInteger(value) && value >= MIN_DIMENSION && value <= 12000 && list.indexOf(value) === index);
+    .filter((value, index, list) => Number.isInteger(value) && value >= MIN_DIMENSION && value <= 12000 && (value === first.width || value > first.width) && list.indexOf(value) === index);
 
   for (const targetWidth of widths) {
+    if (typeof options.onProgress === 'function') options.onProgress(targetWidth);
     let decoded = first;
     if (targetWidth !== first.width) {
       const targetHeight = Math.max(MIN_DIMENSION, Math.round((first.height * targetWidth) / first.width));
@@ -324,8 +401,10 @@ export async function extractWatermark(inputBuffer, options = {}) {
       decoded = { data: resized.data, width: resized.info.width, height: resized.info.height, channels: resized.info.channels };
     }
     const plane = lumaPlane(decoded.data, decoded.width, decoded.height, decoded.channels);
-    const found = extractFromPlane(plane, decoded.width, decoded.height, table);
-    if (found) return { ...found, analysedWidth: decoded.width, method: WATERMARK_METHOD };
+    for (const { name, table } of tables) {
+      const found = extractFromPlane(plane, decoded.width, decoded.height, table);
+      if (found) return { ...found, analysedWidth: decoded.width, secretName: name, method: found.masked ? LEGACY_WATERMARK_METHOD : WATERMARK_METHOD };
+    }
   }
   return null;
 }
