@@ -110,8 +110,19 @@ export default async function handler(req, res) {
 
     const counterRef = db.collection('counters').doc('supportCounter');
     const logRef = db.collection('supportLogs').doc();
-    const ipEnc = encryptField(clientIp(req));
-    const deviceEnc = encryptField(JSON.stringify(collectDeviceInfo(req)));
+
+    // The encrypted audit log is a safeguard, not a prerequisite for voting.
+    // If the encryption key is missing or malformed, the vote is still counted
+    // (the cooldowns are enforced by hashed ids) and no log is written, so the
+    // visitor never sees an error and no plaintext IP is ever stored.
+    let ipEnc = null;
+    let deviceEnc = null;
+    try {
+      ipEnc = encryptField(clientIp(req));
+      deviceEnc = encryptField(JSON.stringify(collectDeviceInfo(req)));
+    } catch (encryptionError) {
+      console.error('support log skipped - fix SUPPORT_ENCRYPTION_KEY on Vercel:', encryptionError.message);
+    }
 
     const result = await db.runTransaction(async (tx) => {
       // All reads must come before any writes in a transaction.
@@ -163,14 +174,16 @@ export default async function handler(req, res) {
         { merge: true }
       );
 
-      tx.set(logRef, {
-        ipEnc,
-        deviceEnc,
-        uid: user ? user.uid : null,
-        email: user ? user.email : null,
-        createdAt: FieldValue.serverTimestamp(),
-        expiresAt: Timestamp.fromMillis(Date.now() + LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000)
-      });
+      if (ipEnc && deviceEnc) {
+        tx.set(logRef, {
+          ipEnc,
+          deviceEnc,
+          uid: user ? user.uid : null,
+          email: user ? user.email : null,
+          createdAt: FieldValue.serverTimestamp(),
+          expiresAt: Timestamp.fromMillis(Date.now() + LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000)
+        });
+      }
 
       tx.set(counterRef, { count: FieldValue.increment(1) }, { merge: true });
       return { ok: true, remainingMs: COOLDOWN_MS };
