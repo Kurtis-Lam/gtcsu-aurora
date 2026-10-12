@@ -1249,7 +1249,7 @@
 
       <div class="sl-panel" id="support-logs-panel">
         <h3 class="chart-title">Support Logs (encrypted IP &amp; device)</h3>
-        <p class="sl-help">Every vote writes one log with its IP address and device details, encrypted with <code>SUPPORT_ENCRYPTION_KEY</code>. Paste that key below to decrypt every log in this list. Decryption happens only in this browser tab; the key is never sent anywhere or saved, and it is cleared after 15 minutes idle. Use it only to investigate abuse. Logs expire after 90 days.</p>
+        <p class="sl-help">Every vote writes one log with its IP address and device details, encrypted with <code>SUPPORT_ENCRYPTION_KEY</code>. Paste that key below to decrypt every log in this list. Decryption happens only in this browser tab; the key is never sent anywhere or saved, and it is cleared after 15 minutes idle. Use it only to investigate abuse. Logs are kept permanently.</p>
         <div class="sl-key-row">
           <input type="password" id="sl-key-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste SUPPORT_ENCRYPTION_KEY (64 hex characters or base64)">
           <label class="sl-check"><input type="checkbox" id="sl-show-key"> Show</label>
@@ -1264,7 +1264,7 @@
         <div class="sl-table-wrap">
           <table class="sl-table">
             <thead>
-              <tr><th>Time</th><th>Account</th><th>IP address</th><th>Device</th><th>Expires</th></tr>
+              <tr><th>Time</th><th>Account</th><th>IP address</th><th>Device</th><th>Retention</th></tr>
             </thead>
             <tbody id="sl-body">
               <tr><td colspan="5" class="sl-empty">Open this tab to load support logs.</td></tr>
@@ -1481,21 +1481,23 @@
       '/feedbacks':'Feedbacks'
     };
 
+    // Nine destinations, hues spaced evenly (33.75 degrees apart) from
+    // yellow through orange, red, pink, purple, blue and cyan to green.
     const routeColors = {
       'all': '#2fe6b8',
       '/admin': '#ffffff',
-      '/': '#ffd700',          // Yellow
-      '/index': '#ffd700',     // Yellow
-      '/news': '#ff4d5e',       // Red
-      '/photos': '#ff9800',     // Orange
-      '/aboutus': '#ff4d4d',    // Red
-      '/activities': '#ff69b4', // Pink
-      '/acitivites': '#ff69b4', // Pink
-      '/welfare': '#a855f7',    // Violet
-      '/schedule': '#7b1fa2',   // Purple
-      '/financial': '#2196f3',  // Blue
-      '/feedbacks': '#00ced1',  // Blue-green (turquoise)
-      '/feedback': '#00ced1'    // Blue-green (turquoise)
+      '/': '#f4d525',           // Yellow
+      '/index': '#f4d525',
+      '/aboutus': '#f46025',    // Orange
+      '/news': '#f4255e',       // Red
+      '/activities': '#f425d2', // Pink
+      '/acitivites': '#f425d2',
+      '/financial': '#a125f4',  // Purple
+      '/schedule': '#2d25f4',   // Blue
+      '/welfare': '#2591f4',    // Sky blue
+      '/photos': '#25f4e1',     // Cyan
+      '/feedbacks': '#25f46d',  // Green
+      '/feedback': '#25f46d'
     };
 
     const FALLBACK_PALETTE = ['#f77f00', '#06d6a0', '#ef476f', '#118ab2', '#ffd166', '#8338ec', '#3a86ff', '#fb5607'];
@@ -1814,7 +1816,10 @@
           return a.localeCompare(b);
         });
 
-        const metricRoutes = validRoutes.filter(r => r !== '/admin');
+        const metricRoutes = [
+          ...DESTINATION_ORDER,
+          ...validRoutes.filter(r => r !== '/admin' && !DESTINATION_ORDER.includes(r))
+        ];
         metricRoutes.forEach(colorForRoute);
 
         const pageMetrics = {};
@@ -1848,7 +1853,7 @@
           let closeDate = data.closedAt?.toDate ? data.closedAt.toDate() : (data.closedAt ? new Date(data.closedAt) : null);
           let dateStr = openDate ? getHKTDateString(openDate) : data.dateStr;
 
-          const userLabel = data.userEmail || data.userName || null;
+          const userLabel = data.userEmail || data.userName || (path === '/admin' ? 'Admin (identity not recorded)' : null);
 
           if (path !== '/admin') {
             totalViews++;
@@ -2414,7 +2419,7 @@
       const logs = photoAuditLogs.filter(item => [item.email, item.uid, item.photoTitle, item.folderPath, item.downloadId, item.watermarkRef, item.batchId]
         .some(value => String(value || '').toLowerCase().includes(queryText)));
       document.getElementById('photo-audit-recent-count').textContent = String(photoAuditLogs.length);
-      document.getElementById('photo-audit-caption').textContent = `Showing ${logs.length} matching rows from ${photoAuditLogs.length} recent records. Audit log retention is 365 days; aggregate totals may outlive individual logs.`;
+      document.getElementById('photo-audit-caption').textContent = `Showing ${logs.length} matching rows from ${photoAuditLogs.length} recent records. Audit logs are kept permanently.`;
       const logBody = document.getElementById('photo-audit-logs-body');
       logBody.innerHTML = logs.length ? logs.map(item => `
         <tr>
