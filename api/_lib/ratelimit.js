@@ -6,11 +6,29 @@ function rateKey(scope, identity) {
   return crypto.createHmac('sha256', secret).update(`${scope}:${identity}`).digest('hex').slice(0, 40);
 }
 
+export async function purgeExpired(db, collectionName, field, { batchSize = 100, probability = 0.05 } = {}) {
+  if (Math.random() >= probability) return 0;
+  try {
+    const snapshot = await db.collection(collectionName)
+      .where(field, '<', Timestamp.now())
+      .limit(batchSize)
+      .get();
+    if (snapshot.empty) return 0;
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => batch.delete(document.ref));
+    await batch.commit();
+    return snapshot.size;
+  } catch (err) {
+    console.error(`purgeExpired(${collectionName}) failed:`, err.message);
+    return 0;
+  }
+}
+
 // Fixed-window limiter backed by Firestore (shared across serverless instances).
 // Returns { allowed, retryAfterSeconds }.
 export async function takeRateLimit(db, scope, identity, { limit, windowMs }) {
   const ref = db.collection('apiRateLimits').doc(`${scope}_${rateKey(scope, identity)}`);
-  return db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     const now = Date.now();
     const data = snapshot.exists ? snapshot.data() : {};
@@ -32,6 +50,8 @@ export async function takeRateLimit(db, scope, identity, { limit, windowMs }) {
     });
     return { allowed: true, retryAfterSeconds: 0 };
   });
+  await purgeExpired(db, 'apiRateLimits', 'expiresAt');
+  return result;
 }
 
 export async function enforceRateLimit(db, res, scope, identity, options) {
