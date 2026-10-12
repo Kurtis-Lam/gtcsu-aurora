@@ -957,6 +957,36 @@
   .news-translation-dialog { width:min(420px,90vw); margin:auto; padding:24px; color:var(--aurora-ink); border:1px solid rgba(127,233,240,.35); border-radius:16px; background:#08151d; text-align:center; }
   .news-translation-dialog::backdrop { background:rgba(0,0,0,.82); backdrop-filter:blur(6px); }
   @media (max-width:640px) { .news-review { grid-template-columns:1fr; } .news-editor { padding:18px; max-height:94vh; } }
+  /* Supporter logs (encrypted IP / device records) */
+  .sl-panel { margin-top: 24px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; }
+  .sl-panel h3 { margin: 0 0 6px; }
+  .sl-help { font-size: 0.8rem; color: rgba(223, 246, 242, 0.7); line-height: 1.6; margin: 0 0 14px; }
+  .sl-key-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .sl-key-row input[type="password"], .sl-key-row input[type="text"] {
+    flex: 1 1 320px; min-width: 0; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--card-border); background: rgba(5, 11, 18, 0.7); color: #dff6f2;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem;
+  }
+  .sl-key-row input:focus { outline: none; border-color: var(--aurora-teal); }
+  .sl-check { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: rgba(223, 246, 242, 0.8); cursor: pointer; }
+  .sl-status { min-height: 1.2em; margin: 10px 0 0; font-size: 0.82rem; color: rgba(223, 246, 242, 0.75); }
+  .sl-status[data-tone="ok"] { color: var(--aurora-teal); }
+  .sl-status[data-tone="warn"] { color: #ffd166; }
+  .sl-status[data-tone="error"] { color: #ff6b6b; }
+  .sl-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 18px 0 12px; }
+  .sl-toolbar input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--card-border); background: rgba(5, 11, 18, 0.7); color: #dff6f2; min-width: 220px; }
+  .sl-count { font-size: 0.78rem; color: rgba(223, 246, 242, 0.6); }
+  .sl-table-wrap { width: 100%; overflow-x: auto; }
+  .sl-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.84rem; text-align: left; }
+  .sl-table th { background: rgba(110, 195, 255, 0.1); color: var(--support-blue); padding: 10px 12px; font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em; border-bottom: 1px solid var(--card-border); }
+  .sl-table td { padding: 10px 12px; border-bottom: 1px solid rgba(127, 233, 240, 0.1); vertical-align: top; color: rgba(223, 246, 242, 0.9); word-break: break-word; }
+  .sl-muted { color: rgba(223, 246, 242, 0.5); font-size: 0.78rem; }
+  .sl-bad { color: #ff6b6b; }
+  .sl-empty { text-align: center; color: rgba(223, 246, 242, 0.5); padding: 28px !important; }
+  .sl-ip { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--aurora-teal); user-select: all; }
+  .sl-table details { margin-top: 4px; }
+  .sl-table summary { cursor: pointer; font-size: 0.75rem; color: var(--aurora-cyan); }
+  .sl-table pre { margin: 6px 0 0; padding: 8px; max-width: 360px; overflow: auto; white-space: pre-wrap; background: rgba(5, 11, 18, 0.7); border-radius: 6px; font-size: 0.72rem; }
 </style>
 
 
@@ -1215,6 +1245,35 @@
             <tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="sl-panel" id="support-logs-panel">
+        <h3 class="chart-title">Support Logs (encrypted IP &amp; device)</h3>
+        <p class="sl-help">Every vote writes one log with its IP address and device details, encrypted with <code>SUPPORT_ENCRYPTION_KEY</code>. Paste that key below to decrypt every log in this list. Decryption happens only in this browser tab; the key is never sent anywhere or saved, and it is cleared after 15 minutes idle. Use it only to investigate abuse. Logs expire after 90 days.</p>
+        <div class="sl-key-row">
+          <input type="password" id="sl-key-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste SUPPORT_ENCRYPTION_KEY (64 hex characters or base64)">
+          <label class="sl-check"><input type="checkbox" id="sl-show-key"> Show</label>
+          <button class="nav-btn" id="sl-decrypt-btn" type="button">🔓 Decrypt all logs</button>
+          <button class="nav-btn" id="sl-clear-btn" type="button">Clear key</button>
+        </div>
+        <p class="sl-status" id="sl-status" role="status" aria-live="polite"></p>
+        <div class="sl-toolbar">
+          <input type="search" id="sl-filter" placeholder="Filter by IP, email, device or time" autocomplete="off">
+          <span class="sl-count" id="sl-count"></span>
+        </div>
+        <div class="sl-table-wrap">
+          <table class="sl-table">
+            <thead>
+              <tr><th>Time</th><th>Account</th><th>IP address</th><th>Device</th><th>Expires</th></tr>
+            </thead>
+            <tbody id="sl-body">
+              <tr><td colspan="5" class="sl-empty">Open this tab to load support logs.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="text-align:center; margin-top:14px;">
+          <button class="nav-btn hidden" id="sl-more-btn" type="button">Load 100 more</button>
+        </div>
       </div>
     </div>
 
@@ -2792,5 +2851,6 @@
       handleFiles(e.dataTransfer.files);
     });
   </script>
+  <script type="module" src="js/admin-support-logs.js"></script>
 </body>
 </html>
