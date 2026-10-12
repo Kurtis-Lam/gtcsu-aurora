@@ -1,8 +1,10 @@
 .firebase/
 .firebaserc
+.DS_Store
+.vercel
+.env*
 node_modules/
 firebase-debug.log
-.DS_Store
 
 keys.txt
 serviceAccounts.json
@@ -12,5 +14,5 @@ public/assets/aurora-legacy-logo.png
 public/assets/promo_vid.mp4
 
 public/ob.js
-.vercel
-.env*
+
+aurora.zip
