@@ -25,8 +25,22 @@ function originAllowed(origin) {
  * when the origin is present but not allowed.
  * Exported so handlers can call it before anything that might fail.
  */
-export function applyCors(req, res, methods = ['GET', 'POST']) {
+export function applySecurityHeaders(res) {
   res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.removeHeader?.('X-Powered-By');
+}
+
+export function applyCors(req, res, methods = ['GET', 'POST']) {
+  applySecurityHeaders(res);
   res.setHeader('Vary', 'Origin, Access-Control-Request-Headers');
 
   const origin = req.headers.origin;
@@ -82,18 +96,51 @@ export function hashIp(value) {
 
 export function bearerToken(req) {
   const header = req.headers.authorization || '';
-  return /^Bearer\s+[^\s]+$/i.test(header) ? header.replace(/^Bearer\s+/i, '').trim() : null;
+  if (header.length > 4300) return null;
+  const match = /^Bearer\s+([A-Za-z0-9._~+/=-]+)$/i.exec(header);
+  return match ? match[1] : null;
+}
+
+export function safeEqual(a, b) {
+  const left = Buffer.from(String(a));
+  const right = Buffer.from(String(b));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+const MAX_BODY_BYTES = 256 * 1024;
+
+function plainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) && !Buffer.isBuffer(value);
 }
 
 export function body(req) {
   const contentLength = Number(req.headers['content-length'] || 0);
-  if (Number.isFinite(contentLength) && contentLength > 256 * 1024) return {};
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) return {};
   const raw = req.body;
-  if (raw && typeof raw === 'object' && !Buffer.isBuffer(raw)) return raw;
+  if (plainObject(raw)) {
+    try {
+      if (Buffer.byteLength(JSON.stringify(raw)) > MAX_BODY_BYTES) return {};
+    } catch {
+      return {};
+    }
+    const clean = Object.create(null);
+    for (const key of Object.keys(raw)) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+      clean[key] = raw[key];
+    }
+    return clean;
+  }
   if (typeof raw === 'string') {
+    if (Buffer.byteLength(raw) > MAX_BODY_BYTES) return {};
     try {
       const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed : {};
+      if (!plainObject(parsed)) return {};
+      const clean = Object.create(null);
+      for (const key of Object.keys(parsed)) {
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+        clean[key] = parsed[key];
+      }
+      return clean;
     } catch {
       return {};
     }
