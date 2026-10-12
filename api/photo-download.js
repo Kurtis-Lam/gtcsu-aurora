@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { guard, body, bearerToken, clientIp, hashIp } from './_lib/http.js';
 import { authenticateGalleryUser } from './_lib/auth.js';
-import { purgeExpired } from './_lib/ratelimit.js';
+import { takeRateLimit, RATE_LIMITS } from './_lib/ratelimit.js';
 import { getServices } from './_lib/firebase.js';
 import { getGalleryImage, fetchDownloadSource } from './_lib/photos.js';
 import { embedWatermark, isWatermarkConfigured, WATERMARK_METHOD } from './_lib/watermark.js';
@@ -36,32 +36,6 @@ function hongKongTime(date) {
   return `${values.year}-${values.month}-${values.day} ${values.hour}:${values.minute}:${values.second}`;
 }
 
-async function enforceDownloadQuota(db, accountHash, now) {
-  const ref = db.collection('photoDownloadRateLimits').doc(accountHash);
-  const hourWindow = now.toISOString().slice(0, 13);
-  const dayWindow = now.toISOString().slice(0, 10);
-  const expiresAt = Timestamp.fromDate(new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000));
-  await db.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(ref);
-    const current = snapshot.exists ? snapshot.data() : {};
-    const hourCount = current.hourWindow === hourWindow ? Number(current.hourCount || 0) : 0;
-    const dayCount = current.dayWindow === dayWindow ? Number(current.dayCount || 0) : 0;
-    if (hourCount >= 120 || dayCount >= 500) {
-      const error = new Error('Photo download rate limit reached. Try again later.');
-      error.statusCode = 429;
-      throw error;
-    }
-    transaction.set(ref, {
-      hourWindow,
-      hourCount: hourCount + 1,
-      dayWindow,
-      dayCount: dayCount + 1,
-      lastAttemptAt: FieldValue.serverTimestamp(),
-      expiresAt
-    }, { merge: true });
-  });
-}
-
 export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
 
@@ -93,9 +67,15 @@ export default async function handler(req, res) {
     const now = new Date();
     const accountHash = crypto.createHmac('sha256', accountHashSecret).update(String(decoded.uid)).digest('hex');
     const { db } = getServices();
-    await enforceDownloadQuota(db, accountHash, now);
-    await purgeExpired(db, 'photoDownloadRateLimits', 'expiresAt');
-    await purgeExpired(db, 'photoDownloadLogs', 'deleteAfter', { batchSize: 50, probability: 0.02 });
+    const quota = await takeRateLimit(db, RATE_LIMITS.photoDownload, accountHash);
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      const minutes = Math.max(1, Math.ceil(quota.retryAfterSeconds / 60));
+      return res.status(429).json({
+        error: `Download limit reached (10 photos per hour). Try again in about ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+        code: 'RATE_LIMITED'
+      });
+    }
 
     const downloadId = crypto.randomUUID();
     const timeHkt = hongKongTime(now);
@@ -117,7 +97,6 @@ export default async function handler(req, res) {
     const summaryRef = db.collection('photoDownloadStats').doc('summary');
     const photoStatsRef = db.collection('photoDownloadStats').doc(`photo_${image.id}`);
     const userStatsRef = db.collection('photoDownloadUsers').doc(accountHash);
-    const deleteAfter = Timestamp.fromDate(new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000));
     const log = {
       downloadId,
       batchId: typeof batchId === 'string' ? batchId : null,
@@ -143,8 +122,7 @@ export default async function handler(req, res) {
       browser,
       device,
       watermarkRef,
-      ...(networkHash ? { networkHash } : {}),
-      deleteAfter
+      ...(networkHash ? { networkHash } : {})
     };
 
     await db.runTransaction(async (transaction) => {
@@ -183,7 +161,6 @@ export default async function handler(req, res) {
     res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
     return res.status(200).send(delivered.buffer);
   } catch (err) {
-    if (err.statusCode === 429) return res.status(429).json({ error: err.message });
     console.error('photo-download error:', err.message);
     return res.status(502).json({ error: 'Could not prepare the protected download.' });
   }
