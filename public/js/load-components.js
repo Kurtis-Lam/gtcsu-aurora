@@ -130,7 +130,17 @@ function watchUnreadNews(user) {
 
   let news = [];
   let reads = [];
+  let newsReady = false;
+  let readsReady = false;
+  let failed = false;
+
+  // Only decide once BOTH snapshots have arrived. Otherwise the news list can
+  // load before the read receipts and the dot flashes on every page load.
   const render = () => {
+    if (failed || !newsReady || !readsReady) {
+      badge.classList.remove('visible');
+      return;
+    }
     const readByNewsId = new Map(reads.map(item => [item.newsId, Number(item.revision) || 0]));
     const unread = news.some(item => (Number(item.revision) || 1) > (readByNewsId.get(item.id) || 0));
     badge.classList.toggle('visible', unread);
@@ -139,12 +149,22 @@ function watchUnreadNews(user) {
   newsUnsubscribers = [
     onSnapshot(query(collection(db, 'news'), where('status', '==', 'published'), where('deleted', '==', false)), snapshot => {
       news = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+      newsReady = true;
       render();
-    }, error => console.error('Could not watch news updates:', error)),
+    }, error => {
+      failed = true;
+      console.error('Could not watch news updates:', error);
+      render();
+    }),
     onSnapshot(query(collection(db, 'newsReads'), where('uid', '==', user.uid)), snapshot => {
       reads = snapshot.docs.map(item => item.data());
+      readsReady = true;
       render();
-    }, error => console.error('Could not watch news read status:', error))
+    }, error => {
+      failed = true;
+      console.error('Could not watch news read status:', error);
+      render();
+    })
   ];
 }
 
