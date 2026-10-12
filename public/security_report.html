@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora — Security Report &amp; Operations Plan</title>
+<style>
+  :root{
+    --bg:#f5f6f8;
+    --card:#ffffff;
+    --text:#1b1f24;
+    --muted:#5b6572;
+    --border:#e3e7ec;
+    --accent:#1f4fd8;
+    --accent-soft:#eef2ff;
+    --ok:#0f7b3f;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15.5px;
+    line-height:1.7;
+  }
+
+  /* ---------- Top bar with language switch ---------- */
+  .topbar{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:saturate(180%) blur(8px);
+    border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{
+    max-width:920px;
+    margin:0 auto;
+    padding:10px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .brand{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .brand strong{color:var(--accent);}
+  .lang-btn{
+    flex:0 0 auto;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:7px 16px;
+    font:inherit;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--accent);
+    background:var(--accent-soft);
+    border:1px solid #c9d6ff;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease, box-shadow .15s ease, transform .05s ease;
+  }
+  .lang-btn:hover{background:#dfe7ff;}
+  .lang-btn:active{transform:translateY(1px);}
+  .lang-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .lang-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;}
+
+  /* ---------- Document ---------- */
+  main{max-width:920px;margin:0 auto;padding:28px 24px 80px;}
+  .lang-section{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:38px 44px 48px;
+    box-shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px -16px rgba(16,24,40,.18);
+  }
+  .lang-section[hidden],
+  .lang-section.is-hidden{display:none !important;}
+
+  h1{
+    font-size:25px;
+    line-height:1.35;
+    margin:0 0 22px;
+    letter-spacing:-.01em;
+  }
+  h2{
+    font-size:18.5px;
+    margin:44px 0 14px;
+    padding-bottom:8px;
+    border-bottom:2px solid var(--accent-soft);
+    letter-spacing:-.005em;
+  }
+  h3{
+    font-size:15.5px;
+    margin:26px 0 10px;
+    color:var(--accent);
+  }
+  p{margin:0 0 14px;}
+  ul,ol{margin:0 0 16px;padding-left:22px;}
+  li{margin:0 0 8px;}
+  code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.88em;
+    background:#f1f3f7;
+    border:1px solid var(--border);
+    border-radius:5px;
+    padding:1px 5px;
+    word-break:break-word;
+  }
+  strong{font-weight:650;}
+  hr{border:0;border-top:1px solid var(--border);margin:32px 0;}
+
+  /* meta table */
+  table{border-collapse:collapse;width:100%;margin:0 0 18px;font-size:14.5px;}
+  th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top;}
+  thead th{background:#f7f9fc;font-weight:650;font-size:13.5px;letter-spacing:.01em;}
+  tbody tr:nth-child(even) td{background:#fcfdff;}
+  table.meta th{
+    width:118px;
+    background:#f7f9fc;
+    font-weight:650;
+    white-space:nowrap;
+  }
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:18px;}
+  .table-wrap table{margin-bottom:0;min-width:560px;}
+
+  /* ASCII diagrams */
+  pre{
+    background:#f7f9fc;
+    border:1px solid var(--border);
+    border-left:3px solid var(--accent);
+    border-radius:10px;
+    padding:16px 18px;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans Mono CJK TC",monospace;
+    font-size:12.4px;
+    line-height:1.5;
+    margin:0 0 20px;
+  }
+  pre code{background:none;border:0;padding:0;font-size:inherit;}
+
+  /* checklist */
+  ul.checklist{list-style:none;padding-left:0;}
+  ul.checklist li{
+    position:relative;
+    padding-left:30px;
+    margin-bottom:11px;
+  }
+  ul.checklist li::before{
+    content:"✓";
+    position:absolute;
+    left:0;
+    top:1px;
+    width:19px;height:19px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+    background:var(--ok);
+    border-radius:5px;
+  }
+
+  .lead{font-size:15.5px;}
+
+  @media (max-width:640px){
+    .lang-section{padding:26px 20px 34px;border-radius:12px;}
+    main{padding:18px 14px 60px;}
+    h1{font-size:21px;}
+    h2{font-size:17px;}
+    body{font-size:15px;}
+    .topbar-inner{padding:9px 16px;}
+    .brand{font-size:11.5px;}
+  }
+
+  @media print{
+    .topbar{display:none;}
+    body{background:#fff;}
+    .lang-section{border:0;box-shadow:none;padding:0;}
+    pre{page-break-inside:avoid;}
+    table{page-break-inside:auto;}
+    tr{page-break-inside:avoid;}
+  }
+
+  /* ---------- Added for operations plan ---------- */
+  .callout{
+    background:var(--accent-soft);
+    border:1px solid #c9d6ff;
+    border-left:4px solid var(--accent);
+    border-radius:10px;
+    padding:14px 18px;
+    margin:0 0 20px;
+  }
+  .callout p{margin:0 0 8px;}
+  .callout p:last-child{margin:0;}
+  .badge{
+    display:inline-block;
+    font-size:12px;
+    font-weight:650;
+    line-height:1;
+    padding:4px 8px;
+    border-radius:999px;
+    white-space:nowrap;
+    border:1px solid var(--border);
+    background:#f1f3f7;
+    color:var(--muted);
+  }
+  .badge.pub{background:#eaf7ef;border-color:#bfe3cd;color:var(--ok);}
+  .badge.login{background:var(--accent-soft);border-color:#c9d6ff;color:var(--accent);}
+  .badge.admin{background:#fff4e5;border-color:#f3d6a6;color:#9a5b00;}
+  .proposed{font-size:12.5px;color:var(--muted);}
+  table.compact{font-size:14px;}
+  h3 .badge{margin-left:8px;vertical-align:middle;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="brand">Aurora · <strong id="brandLabel">Security Report</strong></span>
+    <button id="langToggle" class="lang-btn" type="button" aria-label="Switch language">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"></path>
+      </svg>
+      <span id="langToggleLabel">中文</span>
+    </button>
+  </div>
+</div>
+
+<main>
+
+<!-- ============================ ENGLISH ============================ -->
+<article id="report-en" class="lang-section">
+
+  <h1>Aurora Website — Security Assurance &amp; Operations Plan</h1>
+
+  <table class="meta">
+    <tbody>
+      <tr><th>Project</th><td>Aurora (G.T. (Ellen Yeung) College Student Union Candidate Cabinet, 2026–27) — <code>gtcsu-aurora</code></td></tr>
+      <tr><th>Author</th><td>Kurtis Lam (Lead Developer)</td></tr>
+      <tr><th>Recipient</th><td>School IT Department / Teacher-in-Charge</td></tr>
+      <tr><th>Date</th><td>9 October 2026 (revised 12 October 2026)</td></tr>
+      <tr><th>Subject</th><td>Technical Security Assurance, System Architecture, Photo Traceability, Page-by-Page Site Introduction, Operations &amp; Risk Plan</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>1. Executive Summary</h2>
+
+  <p class="lead">As the lead developer of the Aurora web platform, I have designed and engineered this system from the ground up prioritizing security discipline, data privacy, and robust access control. Unlike standard web projects that rely on weak client-side controls, I have implemented a <strong>server-enforced, defense-in-depth security architecture built on zero-trust principles</strong>, where all security decisions, user authentication, and data authorizations are enforced strictly on the server.</p>
+
+  <p>Key security highlights I implemented include:</p>
+  <ul>
+    <li><strong>Server-Side Authorization &amp; Strict Domain Locking:</strong> Every privilege request is validated on the server side using Firebase Admin SDK and cryptographic JWT verification, enforcing exclusive access for verified <code>@gtcollege.edu.hk</code> accounts.</li>
+    <li><strong>Database Hardening:</strong> Firestore database rules operate on a strict default-deny framework, blocking unauthorized browser reads or writes.</li>
+    <li><strong>Private Asset Architecture &amp; Digital Traceability:</strong> Photo originals are hosted strictly in authenticated private storage and are never exposed via direct public URLs. Every single photo download dynamically embeds a unique digital watermark (containing user context, timestamp, and reference hash) while simultaneously logging a tamper-resistant audit record on the server (written only by the server, readable only by administrators).</li>
+    <li><strong>Proactive Defense-in-Depth:</strong> The application incorporates strict Content Security Policy (CSP) headers, HTTP Strict Transport Security (HSTS), automated rate limiting, anti-spam artificial intelligence filters, and HMAC IP anonymization.</li>
+  </ul>
+
+  <p>The Aurora website is hardened, designed to resist intrusion, and engineered to safeguard student data and media assets. Because no online system can honestly promise zero risk, this report also sets out how risks are detected, handled and overseen by the school (Sections 7–12).</p>
+
+
+  <h3>Reader's Guide — The School's Five Questions</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>#</th><th>School's question</th><th>Where answered</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>How is the site defended, and how is security maintained <em>while it is in use</em>?</td><td>Sections 2, 4, 5, 6, 9</td></tr>
+      <tr><td>2</td><td>Students can download photos, but the school needs a digital footprint to trace a downloader (e.g. if someone maliciously edits a photo online).</td><td>Section 3 (including the "malicious edit" scenario)</td></tr>
+      <tr><td>3</td><td>A clear, complete introduction to <em>every page</em>, plus planned updates, workflow, monitoring and role assignments.</td><td>Sections 7, 8, 9</td></tr>
+      <tr><td>4</td><td>Foreseeable crises and how we handle them.</td><td>Section 10</td></tr>
+      <tr><td>5</td><td>Why the Student Union needs a website — from the school's, students' and SU's perspectives.</td><td>Section 11</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p><strong>Our assurance principle.</strong> No online system can honestly promise "zero risk". What Aurora commits to is: <strong>(1) layered prevention</strong> so that one failure is not enough; <strong>(2) fast detection</strong> through logs and routine checks; <strong>(3) a defined response</strong> for every foreseeable incident; and <strong>(4) school oversight</strong> — the school holds top-level admin authority and can unpublish anything at any time.</p>
+    <p>Throughout this report we distinguish what is <em>implemented in the system</em> from what is an <em>operating procedure</em>, and items still awaiting the school's approval are marked <span class="badge">Proposed</span>.</p>
+  </div>
+
+  <h2>2. System Security Architecture &amp; Defense Mechanisms</h2>
+
+  <p>I built the Aurora platform using a multi-tiered defense-in-depth model. If an attacker attempts to breach any single layer, subsequent independent security layers intercept and stop the threat.</p>
+
+<pre><code> Student / Visitor Browser
+        │  HTTPS (HSTS, CSP, X-Frame-Options: DENY, COOP, Referrer-Policy)
+        ▼
+ Firebase Hosting (Static Content)         Firebase Auth (Strict @gtcollege.edu.hk verification)
+        │                                         │ ID Token (Cryptographic JWT)
+        │  fetch(API, Authorization: Bearer …)    │
+        ▼                                         ▼
+ Vercel Serverless API (/api/*)  ── Verifies Token ──┘
+        │            │               │
+        │            │               └─► Cloudinary Private Storage (Authenticated Images)
+        │            └─► OpenRouter AI (Spam Moderation)
+        ▼
+ Firestore Database (Default-Deny Security Rules)</code></pre>
+
+  <h3>Security Controls I Engineered</h3>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Defense Layer</th>
+        <th>Security Control Implemented</th>
+        <th>Security Guarantee</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Transport Security</strong></td>
+        <td>Forced HTTPS redirection; 1-year HSTS with subdomain inclusion; <code>upgrade-insecure-requests</code> policy.</td>
+        <td>Protects traffic against man-in-the-middle (MITM) interception, protocol downgrades, and traffic sniffing.</td>
+      </tr>
+      <tr>
+        <td><strong>Browser Hardening</strong></td>
+        <td>Custom Content Security Policy (CSP without <code>unsafe-inline</code>), <code>frame-ancestors 'none'</code>, <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, strict <code>Referrer-Policy</code>, Cross-Origin Opener Policy (COOP), disabled hardware APIs (camera/mic/geolocation).</td>
+        <td>Mitigates Cross-Site Scripting (XSS), clickjacking, MIME-type spoofing, and unauthorized cross-origin data leaks.</td>
+      </tr>
+      <tr>
+        <td><strong>Authentication &amp; Domain Locking</strong></td>
+        <td>Google OAuth integration enforced server-side. Validates ID tokens, <code>email_verified</code> flags, <code>google.com</code> provider, and exact regex domain matching against <code>@gtcollege.edu.hk</code>.</td>
+        <td>Blocks external users, domain spoofing attempts, unverified emails, and forged sign-in tokens.</td>
+      </tr>
+      <tr>
+        <td><strong>Authorization</strong></td>
+        <td>Administrative rights require a cryptographically signed custom JWT claim (<code>admin: true</code>) combined with explicit server verification. Admin claims are granted exclusively via offline service account scripts.</td>
+        <td>Prevents privilege escalation, client-side tampering, and self-promotion attacks.</td>
+      </tr>
+      <tr>
+        <td><strong>Database Hardening</strong></td>
+        <td>Strict default-deny Firestore rules. Sensitive collections (<code>feedbacks</code>, <code>supporters</code>, <code>pageviews</code>, <code>galleryImages</code>, logs, rate limits) reject direct browser access (<code>read: false</code>, <code>write: false</code>). Explicit field allow-lists govern user interaction documents.</td>
+        <td>Denies unauthorized database reads, writes and direct client modification by default.</td>
+      </tr>
+      <tr>
+        <td><strong>Server-Side API Writes</strong></td>
+        <td>Sensitive actions (feedback submission, support voting, analytics, audit logging) are processed and executed exclusively by serverless backend logic.</td>
+        <td>Prevents request forgery, log manipulation, and database pollution from browser consoles.</td>
+      </tr>
+      <tr>
+        <td><strong>CORS Governance</strong></td>
+        <td>Strict origin allow-listing (<code>ALLOWED_ORIGINS</code> and trusted domain matching).</td>
+        <td>Blocks unauthorized cross-origin API calls from external websites.</td>
+      </tr>
+      <tr>
+        <td><strong>Media Protection</strong></td>
+        <td>Original assets stored as <code>authenticated</code> private resources in Cloudinary. Previews served via server proxies with <code>no-store</code> cache controls; original full-resolution files are locked from direct access.</td>
+        <td>Prevents hot-linking, URL harvesting, parameter tampering, and unauthorized bulk media scraping.</td>
+      </tr>
+      <tr>
+        <td><strong>Abuse &amp; Rate Limiting</strong></td>
+        <td>Multi-layer rate limits across endpoints (Feedback: 5/hr/account, 30/hr/IP; Support Cooldowns: 10 min multi-factor check; Downloads: strict quota limits).</td>
+        <td>Limits Denial of Service (DoS) attempts, voting automation, spam flooding, and automated scraping.</td>
+      </tr>
+      <tr>
+        <td><strong>Input Sanitization</strong></td>
+        <td>Strict 256 KB payload caps, strict regex validation for all IDs, automatic HTML escaping, and CSV formula injection guards on data exports.</td>
+        <td>Mitigates SQL/NoSQL injection, XSS payloads, oversized-payload abuse, and formula injection.</td>
+      </tr>
+      <tr>
+        <td><strong>Content Moderation</strong></td>
+        <td>Automated AI spam filtering on anonymous feedback endpoints, treating all incoming user content as untrusted data before processing.</td>
+        <td>Protects administrators from malicious input, prompt injection, and automated inbox flooding.</td>
+      </tr>
+      <tr>
+        <td><strong>Data Privacy &amp; Anonymization</strong></td>
+        <td>IP addresses stored strictly as keyed HMAC cryptographic hashes; user-agent data abstracted; automatic TTL data purge policies configured.</td>
+        <td>Supports data-minimization principles and privacy protocols.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>3. Photo Distribution &amp; Traceability Infrastructure</h2>
+
+  <p>To satisfy the school's requirements for secure photo distribution, I designed a complete <strong>traceability system</strong> that ties every downloaded photo directly to the authenticated user who requested it.</p>
+
+  <h3>How I Built the Traceability Engine</h3>
+
+  <ol>
+    <li><strong>Mandatory Identity Verification:</strong> A student must authenticate using their official school Google account (<code>@gtcollege.edu.hk</code>).</li>
+    <li><strong>Dynamic Server-Side Watermarking:</strong> When a user requests a photo download, the request is intercepted by my serverless API (<code>/api/photo-download</code>). The server verifies active quotas and generates a dynamic watermark embedded directly onto the image pixels before the file reaches the browser.
+      <ul>
+        <li><strong>Watermark Composition:</strong> Contains the masked user email, Hong Kong Standard Time (HKT) timestamp, and a unique 8-character cryptographic reference hash (e.g., <code>AURORA | k******m@gtcollege.edu.hk | 2026-10-09 15:42:10 HKT | REF A1B2C3D4</code>).</li>
+      </ul>
+    </li>
+    <li><strong>Tamper-Resistant Audit Logging:</strong> Concurrently, the server creates a tamper-resistant log in the <code>photoDownloadLogs</code> collection, accessible only by high-level administrators.
+      <ul>
+        <li><strong>Log Record Contains:</strong> Server timestamp, full verified email, user UID, display name, photo metadata, unique <code>downloadId</code>, <code>watermarkRef</code>, batch tracking ID, device/browser profile, and keyed IP hash.</li>
+      </ul>
+    </li>
+    <li><strong>Temporary Asset Disposal:</strong> Watermarked variants are delivered dynamically and purged immediately from temporary processing storage, leaving zero public URLs or accessible static assets behind.</li>
+  </ol>
+
+<pre><code>[Student Authenticated] ──► [Request Download] ──► [/api/photo-download]
+                                                          │
+   ┌──────────────────────────────────────────────────────┴──────────────────────────────────────────────────────┐
+   ▼                                                                                                            ▼
+[Generate Embedded Watermark]                                                                      [Write Tamper-Resistant Audit Log]
+"AURORA | k******m@gtcollege.edu.hk | 2026-10-09 15:42:10 HKT | REF A1B2C3D4"                  Full Email, UID, Timestamp, IP Hash, REF
+   │                                                                                                            │
+   └──────────────────────────────────────────────────────┬──────────────────────────────────────────────────────┘
+                                                          ▼
+                                            [Deliver Watermarked ZIP File]</code></pre>
+
+  <h2>Rapid Traceability Protocol</h2>
+
+  <p>If a photo is ever flagged for misuse or unauthorized distribution, I have established a clear 4-step identification procedure for School IT and administrators:</p>
+
+  <ol>
+    <li><strong>Extract Reference Code:</strong> Locate the visible reference code (<code>REF XXXXXXXX</code>) or timestamp embedded on the image.</li>
+    <li><strong>Query System Logs:</strong> Open the <strong>Admin → Photo Downloads</strong> dashboard or search <code>photoDownloadLogs</code> using the reference code.</li>
+    <li><strong>Match Account Metadata:</strong> Retrieve the complete identity details tied to that exact download instance (Full Email, UID, HKT Download Time, and Device Fingerprint).</li>
+    <li><strong>Export Verification Evidence:</strong> Export the single cryptographically timestamped audit log row to confirm downloader accountability.</li>
+  </ol>
+
+
+  <h3>Scenario: A Downloaded Photo Is Maliciously Edited and Posted Online</h3>
+
+  <p>This is the school's key concern, so here is exactly what the school can do and what the limits are:</p>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>Situation</th><th>What the school can trace</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>A.</strong> The edited image still shows the watermark (typical for memes and quick edits).</td>
+        <td>Read the <code>REF</code> code → search <code>photoDownloadLogs</code> → the verified school account, UID, time and device profile of that exact download are identified, typically within minutes.</td>
+      </tr>
+      <tr>
+        <td><strong>B.</strong> The watermark was cropped or painted out.</td>
+        <td>The audit log still records <em>which photo</em> each account downloaded and <em>when</em>. Searching by photo and time window gives a short list of every account that ever downloaded that specific photo. Per-account download quotas keep this list small, and the original image can be compared with the edited one to narrow the time window.</td>
+      </tr>
+      <tr>
+        <td><strong>C.</strong> The image was re-posted by someone who never downloaded it (screenshot or forwarding).</td>
+        <td>The trail leads to the earliest identifiable downloader/poster in the chain. As with any digital content, a re-share by a third party cannot be technically prevented — which is why access is limited to verified school accounts and why the policy layer below exists.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>Policy layer</strong> <span class="badge">Proposed</span> — a short terms-of-use notice shown at download ("downloads are logged and linked to your school account; edits that harass, mock or misrepresent others breach the school's code of conduct"), and an agreed escalation path: IT/administrator retrieves the log row → Teacher-in-Charge → school disciplinary process. Log access is for investigating misuse only. <strong>Enhancement under evaluation:</strong> an additional invisible watermark so identification still works when the visible one is removed.</p>
+
+  <p>Together, the technical trail and the visible warning act as both <strong>deterrence</strong> (students know a download is attributable) and <strong>evidence</strong> (the school can establish who downloaded what, and when).</p>
+
+  <h2>4. Operational Safety &amp; Maintenance Routines</h2>
+
+  <p>To ensure operational security remains uncompromised throughout the term, I have established strict operational protocols and maintenance routines:</p>
+
+  <ul>
+    <li><strong>Pre-Launch System Audit:</strong> Comprehensive verification of Vercel environment variables, Firebase security rules deployment, and active TTL execution policies.</li>
+    <li><strong>Access Control Maintenance:</strong> Monthly review of admin lists via <code>/api/list-admins</code>. Any individual leaving the team has their claims and active tokens revoked immediately using automated service account scripts (<code>scripts/set-admin-claims.js --revoke</code>).</li>
+    <li><strong>Secret Management &amp; Hygiene:</strong> All sensitive API keys, service account credentials, and SMTP passwords are stored securely in Vercel environment variables, completely excluded from source code repositories.</li>
+    <li><strong>Administrative Code of Conduct:</strong> All platform administrators must enforce mandatory 2-Step Verification (2SV) on their Google accounts, conduct administrative duties exclusively on secured devices, and adhere to strict data protection standards regarding log exports.</li>
+  </ul>
+
+
+  <p>The day-to-day, weekly, monthly and per-term routines that keep these controls working while the site is live are listed in <strong>Section 9.3 (Monitoring Routines)</strong>, and the handling of foreseeable incidents is in <strong>Section 10</strong>.</p>
+
+  <h2>5. System Data Inventory &amp; Security Controls</h2>
+
+  <p>I have structured the database to ensure maximum privacy, implementing automated retention lifetimes (TTL) across log collections:</p>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Collection / Store</th>
+        <th>Data Stored</th>
+        <th>Access Level</th>
+        <th>Security &amp; Retention Mechanism</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>photoDownloadLogs</code></td>
+        <td>Email, Name, UID, Keyed IP Hash, Device Profile, Watermark REF</td>
+        <td>Server Write / Admin Read Only</td>
+        <td>Secured behind strict rules; automated 365-day TTL purge.</td>
+      </tr>
+      <tr>
+        <td><code>photoDownloadStats</code> / <code>Users</code></td>
+        <td>Keyed Account Hashes, Download Counters</td>
+        <td>Server Write / Admin Read Only</td>
+        <td>Anonymized tracking aggregations.</td>
+      </tr>
+      <tr>
+        <td><code>photoDownloadRateLimits</code></td>
+        <td>Keyed Account Hashes, Timestamps</td>
+        <td>Server Only</td>
+        <td>Automated 90-day TTL purge.</td>
+      </tr>
+      <tr>
+        <td><code>feedbacks</code></td>
+        <td>Feedback Text, Optional Submitter Email</td>
+        <td>Server Write / Admin Read Only</td>
+        <td>Stored securely; restricted admin-only access.</td>
+      </tr>
+      <tr>
+        <td><code>supporters</code></td>
+        <td>Device Hashes, Verified Emails</td>
+        <td>Server Write / Admin Read Only</td>
+        <td>Protected write operations; isolated access.</td>
+      </tr>
+      <tr>
+        <td><code>pageviews</code></td>
+        <td>Anonymized Path, HKT Timestamp</td>
+        <td>Server Write / Admin Read Only</td>
+        <td>Automated rolling retention.</td>
+      </tr>
+      <tr>
+        <td><code>newsSubscriptions</code> / <code>Deliveries</code></td>
+        <td>Verified Email, Subscription Status</td>
+        <td>Owner / Server Only</td>
+        <td>Unsubscribe mechanisms protected by HMAC-signed tokens.</td>
+      </tr>
+      <tr>
+        <td><code>galleryImages</code></td>
+        <td>Photo Metadata &amp; Private File Identifiers</td>
+        <td>Admin Only</td>
+        <td>No public storage URLs exposed.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>6. Verification Checklist</h2>
+
+  <p>The platform has passed all pre-launch technical security checks:</p>
+
+  <ul class="checklist">
+    <li><strong>Zero Client-Side Authorizations:</strong> All security logic, admin validation, and access controls execute exclusively on serverless backend functions.</li>
+    <li><strong>Strict Domain Binding:</strong> Verified server-side check ensuring only <code>@gtcollege.edu.hk</code> Google Workspace accounts can access protected features.</li>
+    <li><strong>Database Isolation:</strong> Firestore security rules compiled, tested, and deployed with zero open read/write collections for unauthorized users.</li>
+    <li><strong>Complete Photo Footprint Protection:</strong> Every download dynamically watermarked and logged in real-time to a tamper-resistant admin audit log.</li>
+    <li><strong>Storage Privacy:</strong> All media assets locked behind private authentication flags in cloud storage; zero direct public image links exposed.</li>
+    <li><strong>Hardened Browser Headers:</strong> CSP, HSTS, X-Frame-Options, and Referrer Policies verified and operational across all pages.</li>
+    <li><strong>Secret Isolation:</strong> Zero hardcoded API keys, service accounts, or credentials in public/private repositories.</li>
+  </ul>
+
+
+  <h2>7. Website Structure — Page-by-Page Introduction</h2>
+
+  <p>The Aurora website (<code>gtcsu-aurora.web.app</code>) is a new kind of platform for our school, so this section introduces <strong>every page</strong>: what it contains, who can see it, who maintains it, and how it is protected. The site uses responsive design and works on phones, tablets and computers. It is organised into six public-facing sections plus an internal admin area.</p>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>Page</th><th>Purpose</th><th>Who can view</th><th>Maintained by</th><th>Update frequency</th></tr></thead>
+    <tbody>
+      <tr><td><strong>7.1 Home</strong></td><td>Identity, announcements, Instagram shortcut</td><td><span class="badge pub">Public</span></td><td>Content team, reviewed by PIC</td><td>Immediate / weekly</td></tr>
+      <tr><td><strong>7.2 About Us &amp; Cabinet</strong></td><td>Mission, structure, member roles</td><td><span class="badge pub">Public</span></td><td>Content team</td><td>As needed</td></tr>
+      <tr><td><strong>7.3 Events &amp; Proposals</strong></td><td>Annual calendar; proposal preview for teachers</td><td><span class="badge pub">Public</span> calendar; proposals for reviewers</td><td>Content team + PIC</td><td>Weekly / monthly</td></tr>
+      <tr><td><strong>7.4 Photo Gallery</strong></td><td>Event photos, results review, downloads</td><td><span class="badge login">School account</span></td><td>Content team (upload); IT (system)</td><td>Monthly</td></tr>
+      <tr><td><strong>7.5 Welfare &amp; Merchant Discounts</strong></td><td>Student discount directory</td><td><span class="badge pub">Public</span></td><td>Content team</td><td>Monthly check</td></tr>
+      <tr><td><strong>7.6 Contact &amp; Feedback</strong></td><td>Enquiries and suggestions</td><td>Open to submit; <span class="badge admin">Admin</span> to read</td><td>Cabinet (replies); IT (system)</td><td>Replies summarised monthly</td></tr>
+      <tr><td><strong>7.7 Admin Area</strong></td><td>Photo-download audit, admin management</td><td><span class="badge admin">Admin only</span></td><td>IT team; school oversight</td><td>Per routine (Section 9)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>7.1 Home</h3>
+  <ul>
+    <li><strong>Brand identity:</strong> the cabinet name "Aurora" and slogan "Sparked by Aurora, united with Harmonia".</li>
+    <li><strong>Latest announcements board:</strong> urgent notices, event sign-up deadline reminders and important circulars.</li>
+    <li><strong>Official social shortcut:</strong> a link to the official Instagram account (@gteyc_aurora2627) so students can follow live updates.</li>
+    <li><strong>Safety notes:</strong> the Instagram connection is a shortcut only; under our Content Security Policy, third-party scripts cannot run unless explicitly allow-listed. Announcements follow the approval workflow in Section 8.</li>
+  </ul>
+
+  <h3>7.2 About Us &amp; Cabinet Structure</h3>
+  <ul>
+    <li><strong>Cabinet mission:</strong> the service philosophy and vision of this term's cabinet.</li>
+    <li><strong>Organisation and duties:</strong> chairperson, vice-chairpersons, secretary, treasurer and other members, so that responsibilities are transparent.</li>
+    <li><strong>Safety notes:</strong> member information is limited to name/role content approved by the member and the PIC before publishing; no contact details of individual students are published.</li>
+  </ul>
+
+  <h3>7.3 Events &amp; Proposals</h3>
+  <ul>
+    <li><strong>Annual calendar:</strong> a timeline of all large and small activities this school year (e.g. singing contest, sports-day booths, festival celebrations) with dates and progress.</li>
+    <li><strong>Proposal preview:</strong> detailed objectives, target participants, run-of-show and safety guidelines for each activity, so teachers can review and approve in advance at any time.</li>
+    <li><strong>Why it matters to the school:</strong> proposals, schedule and progress are in one place instead of scattered messages, making approval and supervision faster and auditable.</li>
+  </ul>
+
+  <h3>7.4 Photo Gallery (Event Highlights &amp; Results Review)</h3>
+  <ul>
+    <li><strong>Cloud album:</strong> high-quality photos and records of past activities, uploaded by category.</li>
+    <li><strong>Results data:</strong> participation numbers and questionnaire feedback for post-event review and reporting to the school.</li>
+    <li><strong>Access and protection:</strong> viewing and downloading require sign-in with a verified <code>@gtcollege.edu.hk</code> account. Originals are held in private storage with no public links, and every download is watermarked and logged (Section 3).</li>
+    <li><strong>Before upload:</strong> photos pass the content workflow; <span class="badge">Proposed</span> photos showing students are checked against school photo-consent practice, and teachers can remove any photo or album at any time.</li>
+  </ul>
+
+  <h3>7.5 Welfare &amp; Merchant Discounts</h3>
+  <ul>
+    <li><strong>Student offers overview:</strong> the list of partner merchants the Student Union has negotiated, with discounts and terms of use, available to students at any time.</li>
+    <li><strong>Safety notes:</strong> merchant logos and offers are published only with the merchant's agreement; an expiry/validity check is part of the monthly routine to avoid outdated or misleading offers.</li>
+  </ul>
+
+  <h3>7.6 Contact &amp; Feedback</h3>
+  <ul>
+    <li><strong>Feedback form:</strong> an online channel for enquiries, suggestions and campus-life concerns from students and teachers.</li>
+    <li><strong>Protection built in:</strong> submissions go through the server (never directly to the database); rate limits (5 per hour per account, 30 per hour per IP); 256 KB payload cap; automated AI spam filtering that treats all text as untrusted; only administrators can read submissions; IP addresses are stored only as keyed hashes.</li>
+  </ul>
+
+  <h3>7.7 Admin Area (Internal — Not Public)</h3>
+  <ul>
+    <li><strong>Photo Downloads dashboard:</strong> the audit view used for the traceability protocol in Section 3.</li>
+    <li><strong>Admin management:</strong> admin rights exist only as signed claims granted through offline service-account scripts and reviewed monthly (Section 4 and Section 9).</li>
+    <li><strong>Visibility:</strong> not linked from public pages; every call is re-verified on the server.</li>
+  </ul>
+
+  <h2>8. Planned Updates, Publishing Workflow &amp; Role Assignments</h2>
+
+  <p>A website is only safe and useful if it is kept up to date in a disciplined way. Because Aurora will be updated throughout the year, we have fixed in advance <strong>who updates what, how often, and who must approve</strong>.</p>
+
+  <h3>8.1 Role Assignments</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>Role</th><th>Person</th><th>Responsibilities</th></tr></thead>
+    <tbody>
+      <tr><td><strong>IT Team</strong></td><td>11A 林正晞 (Kurtis Lam)</td><td>Front-end maintenance of <code>gtcsu-aurora.web.app</code>, Firebase hosting operation, layout updates, security rules, admin-claim management, monitoring routines and basic security protection.</td></tr>
+      <tr><td><strong>Publicity &amp; Content Team</strong></td><td>9E 余卓堯</td><td>Writing event copy, image processing, uploading event photos and maintaining the calendar.</td></tr>
+      <tr><td><strong>Cabinet Website PIC</strong></td><td>11A 徐兆睿</td><td>First review of all content before it goes live; coordinates progress between teams.</td></tr>
+      <tr><td><strong>Teacher Advisors / School</strong></td><td>Teacher-in-Charge; School IT</td><td>Highest management and review authority; ensure content complies with school rules; can unpublish any content.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>Separation of duties:</strong> the person who drafts content is never the only person who approves it, and the IT team does not approve its own content. Every piece of public content therefore has at least two student reviewers and one school-level checkpoint.</p>
+
+  <h3>8.2 Planned Update Items</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>Frequency</th><th>Planned items</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Immediate / weekly</strong></td><td>Homepage announcement board; latest event sign-up links; Instagram feed shortcut check.</td><td>Content Team → PIC review</td></tr>
+      <tr><td><strong>Monthly</strong></td><td>Event photo albums; proposal progress updates; feedback-reply summary; merchant offer validity check.</td><td>Content Team, PIC; IT for system items</td></tr>
+      <tr><td><strong>Per term / as needed</strong></td><td>Cabinet structure changes; security audit and admin review; end-of-term handover.</td><td>IT Team, PIC, Teacher Advisors</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>8.3 Content Publishing Workflow</h3>
+
+<pre><code>[Content drafting &amp; design]            (Publicity &amp; Content Team)
+          │
+          ▼
+[Page layout &amp; testing]                (IT Team) → deployed to a test / preview channel of gtcsu-aurora.web.app
+          │
+          ▼
+[Cabinet internal first review]        (Chairperson / Vice-chair / Website PIC confirm accuracy)
+          │
+          ▼
+[School / Teacher Advisor approval]    (Teacher Review &amp; Sign-off)
+          │
+          ▼
+[Published to the public site]</code></pre>
+
+  <ul>
+    <li><strong>Technical changes</strong> (layout or code) are tested on the preview channel and re-checked against the Verification Checklist (Section 6) before release.</li>
+    <li><strong>Urgent notices</strong> <span class="badge">Proposed</span>: time-critical announcements (e.g. event cancellation) may be published after PIC approval, with the Teacher-in-Charge informed at the same time and able to withdraw them.</li>
+    <li><strong>Corrections:</strong> any error found after publishing is corrected or unpublished first, then reviewed afterwards.</li>
+  </ul>
+
+  <h2>9. Monitoring &amp; Governance</h2>
+
+  <h3>9.1 The School Holds Final Authority</h3>
+  <ul>
+    <li><strong>Shared top-level access:</strong> management of the domain and the hosting back-end is shared with the school / Teacher Advisors, so the school can review and take down any inappropriate content at any time. The project does not depend on any single student.</li>
+    <li><strong>Kill switches:</strong> a page, an album, gallery access or the whole site can be switched off immediately by those with hosting access, without needing the developer.</li>
+    <li><strong>Sensitive-content access control:</strong> pages involving student portraits or internal forms are restricted to verified school accounts to prevent leakage outside the school.</li>
+  </ul>
+
+  <h3>9.2 What Is Monitored</h3>
+  <ul>
+    <li>Who downloads which photo, how often, and from what device profile (Photo Downloads audit log).</li>
+    <li>Who holds admin rights (admin list review).</li>
+    <li>Whether security rules, headers and secrets remain correctly configured after every change.</li>
+    <li>Feedback inbox for abusive, harassing or harmful content.</li>
+  </ul>
+
+  <h3>9.3 Monitoring Routines</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>Frequency</th><th>Check</th><th>Who</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Weekly</strong></td><td>Scan the Photo Downloads dashboard for unusual volume or repeated quota hits; check the feedback inbox for abusive content; apply pending dependency and platform security updates.</td><td>IT Team</td></tr>
+      <tr><td><strong>Monthly</strong></td><td>Review the admin list through <code>/api/list-admins</code> and revoke anyone who has left; confirm Firestore rules and security headers are unchanged; verify TTL purge is running; check merchant offers are still valid.</td><td>IT Team, PIC</td></tr>
+      <tr><td><strong>After every release</strong></td><td>Re-run the Verification Checklist (Section 6) on the deployed site.</td><td>IT Team</td></tr>
+      <tr><td><strong>Per term</strong> <span class="badge">Proposed</span></td><td>Joint review meeting with School IT / Teacher-in-Charge; rotate secrets; confirm all admins have 2-Step Verification; confirm hosting ownership and access lists with the school.</td><td>IT Team, School IT, Teacher</td></tr>
+      <tr><td><strong>End of term</strong></td><td>Handover: documentation, admin-claim transfer, revoke outgoing members, confirm school-held ownership of domain and hosting.</td><td>Outgoing + incoming IT, Teacher</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>9.4 Reporting to the School <span class="badge">Proposed</span></h3>
+  <p>A short termly report to the Teacher-in-Charge and School IT covering: changes released, usage and participation figures, any incidents and how they were resolved, admin-access review results, and open risks. This gives the school regular evidence of oversight rather than a one-off assurance.</p>
+
+  <h2>10. Foreseeable Risks &amp; Response Plan</h2>
+
+  <p>We have anticipated the crises a student-run school website is most likely to face. For each, we state how we <strong>prevent</strong> it and what we do <strong>if it happens</strong>.</p>
+
+  <h3>10.1 Standard Incident Response</h3>
+  <ol>
+    <li><strong>Detect:</strong> via audit logs, routine checks, a user report or a teacher's report.</li>
+    <li><strong>Contain:</strong> immediately unpublish the content, disable the affected feature, or revoke affected tokens/admin claims.</li>
+    <li><strong>Assess:</strong> identify what happened, which data or accounts were involved, and whether personal data is affected.</li>
+    <li><strong>Notify:</strong> inform the Teacher-in-Charge and School IT, and affected persons where appropriate; the school decides on any disciplinary or external reporting.</li>
+    <li><strong>Recover &amp; learn:</strong> restore service, rotate secrets if needed, record the incident, and fix the root cause.</li>
+  </ol>
+
+  <h3>10.2 Risk Register</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>Risk</th><th>Prevention</th><th>If it happens</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Photo misused or maliciously edited online</strong></td>
+        <td>School-account login; visible watermark with REF; per-download audit log; download quotas; terms notice <span class="badge">Proposed</span>.</td>
+        <td>Trace via REF or photo/time search (Section 3) → Teacher-in-Charge → school process; remove the album/photo if needed; support the affected student.</td>
+      </tr>
+      <tr>
+        <td><strong>2. A student's school Google account is compromised</strong></td>
+        <td>Server-side token and domain verification; school-recommended 2-Step Verification; download rate limits.</td>
+        <td>Contact the student; revoke the session; review that account's download log; ask School IT to reset the account.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Admin account misused, or an admin leaves</strong></td>
+        <td>Admin rights only via signed claims granted offline; mandatory 2SV; monthly admin-list review.</td>
+        <td>Revoke claims and tokens immediately with <code>scripts/set-admin-claims.js --revoke</code>; review the audit log for that period.</td>
+      </tr>
+      <tr>
+        <td><strong>4. Attempts to access the system from outside the school</strong></td>
+        <td>Domain-locked authentication; default-deny database; strict CORS; private storage.</td>
+        <td>Check logs for the source pattern; tighten rate limits; block the origin; escalate to School IT if persistent.</td>
+      </tr>
+      <tr>
+        <td><strong>5. Abusive, bullying or defamatory feedback</strong></td>
+        <td>AI spam filter; rate limits; admin-only reading; all text treated as untrusted.</td>
+        <td>Do not reply or publish; preserve the entry; escalate to the Teacher-in-Charge; handle under school policy.</td>
+      </tr>
+      <tr>
+        <td><strong>6. Inappropriate or wrong content gets published</strong></td>
+        <td>Two-stage review plus teacher sign-off; separation of duties.</td>
+        <td>Unpublish first, correct afterwards; record the cause and tighten the checkpoint that missed it.</td>
+      </tr>
+      <tr>
+        <td><strong>7. Traffic surge, spam flood or denial-of-service attempt</strong></td>
+        <td>Rate limiting on every sensitive endpoint; managed cloud platforms for static content.</td>
+        <td>Throttle or temporarily disable the affected feature; keep the static pages online; announce through the official Instagram.</td>
+      </tr>
+      <tr>
+        <td><strong>8. Third-party service outage (hosting, API, storage)</strong></td>
+        <td>Static content separated from the API; originals kept in managed private storage.</td>
+        <td>Post a notice on Instagram and the homepage where possible; wait for or fail over service; verify no data loss on recovery.</td>
+      </tr>
+      <tr>
+        <td><strong>9. Suspected personal-data leak</strong></td>
+        <td>Data minimisation; IP stored only as keyed hash; TTL purges; access limited to admins.</td>
+        <td>Contain; revoke tokens and rotate secrets; assess affected data; notify the school immediately; follow the school's PDPO (Hong Kong Personal Data (Privacy) Ordinance) procedures.</td>
+      </tr>
+      <tr>
+        <td><strong>10. API key or secret leak</strong></td>
+        <td>Secrets only in Vercel environment variables; none in repositories.</td>
+        <td>Rotate the key at the provider and in the environment; redeploy; review recent logs.</td>
+      </tr>
+      <tr>
+        <td><strong>11. Key people graduate or leave (handover failure)</strong></td>
+        <td>Documentation; school-shared ownership of hosting and domain; written handover each term.</td>
+        <td>School-held access ensures continuity; transfer admin claims to the incoming team and revoke the outgoing one.</td>
+      </tr>
+      <tr>
+        <td><strong>12. Copyright or consent problems with images, logos or music</strong></td>
+        <td>Content review step checks sources and permissions before publishing.</td>
+        <td>Remove the item promptly and replace it with a licensed or original alternative.</td>
+      </tr>
+      <tr>
+        <td><strong>13. Outdated or wrong information (e.g. expired discounts)</strong></td>
+        <td>Monthly validity check; "last updated" dates.</td>
+        <td>Correct or remove the item and notify students if the error caused inconvenience.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>10.3 Residual Risk — Stated Openly</h3>
+  <p>A visible watermark can be cropped; a student can screenshot or forward content; third-party platforms can have outages; and a student's own account security depends partly on their own habits. We do not hide these. We reduce them with account-based access, quotas, logs, 2-Step Verification, a policy layer and tested response steps — and we put the school in a position to see and act on any incident quickly.</p>
+
+  <h2>11. Why the Student Union Needs a Website</h2>
+
+  <p>The website is <strong>not a replacement for the Student Union's social media, but a school-controlled home base behind it</strong>. In addition to Instagram, it provides a structured, transparent and supervision-friendly information hub that improves the Student Union's efficiency and its communication with all students and staff.</p>
+
+  <h3>11.1 For the School (Core Benefits)</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>Dimension</th><th>Public social media only</th><th>Aurora official website</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Student portraits &amp; personal data</strong></td><td>Photos on public platforms can be saved or screenshotted by anyone outside the school.</td><td>Sensitive pages restricted to verified school accounts; originals in private storage; every download watermarked and traceable.</td></tr>
+      <tr><td><strong>Control &amp; oversight</strong></td><td>Account is held by students on a third-party platform; the school cannot directly remove content or see who did what.</td><td>Hosting/domain admin shared with the school; school can review, unpublish or switch off at any time; audit logs.</td></tr>
+      <tr><td><strong>Continuity across terms</strong></td><td>Information is often lost or broken when the cabinet changes and accounts are handed over.</td><td>Complete record of each cabinet kept as a long-term archive; future cabinets reuse the structure.</td></tr>
+      <tr><td><strong>Reach</strong></td><td>Reaches only students who use that platform, and posts sink over time.</td><td>Any student, teacher or parent with a browser can find information in clear categories — no extra account needed to read public pages.</td></tr>
+      <tr><td><strong>Approval &amp; compliance</strong></td><td>Posted first, reviewed afterwards.</td><td>Draft → test → cabinet review → teacher sign-off → publish; proposals, schedule and activity records in one place.</td></tr>
+      <tr><td><strong>Showcase of school strengths</strong></td><td>—</td><td>A student-built and student-maintained platform is a practical example of G.T.'s IT capability, self-directed learning and STEAM education.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <ul>
+    <li><strong>Protect student portraits and personal data.</strong> The self-built site can set permissions on sensitive pages (e.g. school-account sign-in only), which effectively reduces external security risk and portrait leakage.</li>
+    <li><strong>Reach more students and communicate more efficiently.</strong> The website becomes a long-term carrier of school spirit and student activities, passes experience on to later cabinets, and widens the audience beyond Instagram users.</li>
+    <li><strong>Demonstrate the school's IT and self-directed learning outcomes.</strong> The website is developed and maintained by students themselves and shows excellent IT ability and project execution.</li>
+    <li><strong>Strengthen supervision and transparency.</strong> Activity proposals, financial transparency and activity records are centralised on one platform, so the school can supervise at any time and confirm compliance.</li>
+  </ul>
+
+  <h3>11.2 For Students</h3>
+  <ul>
+    <li><strong>Break platform barriers and include everyone:</strong> some students do not use Instagram or any specific social account. Public pages can be read without registering anywhere, so every G.T. student gets information fairly and promptly.</li>
+    <li><strong>Structured search instead of clutter:</strong> social posts sink and are hard to search. Clear categories (calendar, welfare overview, form downloads) let students find what they need quickly and proactively.</li>
+    <li><strong>A better activity experience:</strong> a high-quality photo album and a clear timeline help students review activities and download keepsakes.</li>
+  </ul>
+
+  <h3>11.3 For the Student Union</h3>
+  <ul>
+    <li><strong>Digital transformation of the student union:</strong> setting the precedent of an official website raises professionalism and a modern image.</li>
+    <li><strong>Knowledge and skills carried forward:</strong> the next cabinet does not start from zero; the existing platform structure and accumulated data greatly reduce administrative handover costs.</li>
+  </ul>
+
+  <h2>12. Requests to the School &amp; Next Steps <span class="badge">Proposed</span></h2>
+
+  <p>To launch and operate Aurora responsibly, we respectfully ask the school to:</p>
+  <ol>
+    <li><strong>Review this report</strong> and, if satisfied, approve go-live of the public site and the school-account-only Photo Gallery.</li>
+    <li><strong>Nominate a School IT contact and a Teacher-in-Charge</strong> to hold shared admin access to the hosting back-end and domain.</li>
+    <li><strong>Confirm 2-Step Verification</strong> for school Google accounts where possible, strengthening the sign-in on which the photo traceability relies.</li>
+    <li><strong>Agree the photo terms-of-use notice</strong> and the escalation path for misuse (Section 3 and Section 10).</li>
+    <li><strong>Schedule a short review meeting each term</strong> (Section 9.3) so that oversight is continuous.</li>
+  </ol>
+
+  <p>The Aurora platform represents a secure, transparent, and resilient web environment engineered to serve the student body while providing complete accountability and peace of mind for School IT.</p>
+
+</article>
+
+<!-- ============================ 中文版 ============================ -->
+<article id="report-zh" class="lang-section" hidden>
+
+  <h1>Aurora 網站 — 保安保證與營運計劃書</h1>
+
+  <table class="meta">
+    <tbody>
+      <tr><th>項目</th><td>Aurora（優才（楊殷有娣）書院學生會候選內閣，2026–27）— <code>gtcsu-aurora</code></td></tr>
+      <tr><th>作者</th><td>Kurtis Lam（首席開發者）</td></tr>
+      <tr><th>收件人</th><td>學校資訊科技部／負責老師</td></tr>
+      <tr><th>日期</th><td>2026 年 10 月 9 日（2026 年 10 月 12 日修訂）</td></tr>
+      <tr><th>主題</th><td>技術保安保證、系統架構、相片溯源、網站逐頁介紹、營運及風險應變計劃</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>1. 執行摘要</h2>
+
+  <p class="lead">作為 Aurora 網站平台的首席開發者，我由零開始設計及建構本系統，並以保安紀律、資料私隱及嚴謹的存取控制為最高優先。有別於依賴薄弱前端控制的標準網站項目，我實施了<strong>以零信任原則設計、由伺服器強制執行的縱深防禦保安架構</strong>，所有保安決策、使用者身分驗證及資料授權均嚴格於伺服器端執行。</p>
+
+  <p>我所實施的主要保安重點包括：</p>
+  <ul>
+    <li><strong>伺服器端授權與嚴格網域鎖定：</strong> 每一項權限請求均透過 Firebase Admin SDK 及密碼學 JWT 驗證於伺服器端核實，僅限已驗證的 <code>@gtcollege.edu.hk</code> 帳戶存取。</li>
+    <li><strong>資料庫加固：</strong> Firestore 資料庫規則採用嚴格的「預設拒絕」框架，封鎖未經授權的瀏覽器讀取或寫入。</li>
+    <li><strong>私有資產架構與數位溯源：</strong> 相片原檔嚴格存放於已驗證的私人儲存空間，絕不透過直接公開網址曝光。每一次相片下載均會動態嵌入獨特的數位浮水印（包含使用者背景資料、時間戳及參考雜湊），同時於伺服器記錄防篡改的稽核紀錄。</li>
+    <li><strong>主動縱深防禦：</strong> 應用程式內建嚴格的內容安全政策（CSP）標頭、HTTP 嚴格傳輸安全（HSTS）、自動速率限制、反垃圾訊息人工智能過濾，以及 HMAC IP 匿名化。</li>
+  </ul>
+
+  <p>Aurora 網站已全面加固，並按抵禦入侵的目標設計，致力保障學生資料及媒體資產的安全。由於沒有任何網上系統能誠實地承諾「零風險」，本報告亦於第 7–12 節說明風險如何被偵測、處理，以及如何由校方監督。</p>
+
+
+  <h3>閱讀指引 — 校方的五項關注</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>#</th><th>校方關注</th><th>對應章節</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>網站如何防禦？<em>使用期間</em>如何維持保安？</td><td>第 2、4、5、6、9 節</td></tr>
+      <tr><td>2</td><td>學生會希望讓同學下載相片，學校則需要數碼足跡追查下載者（例如有人惡意於網上改圖）。</td><td>第 3 節（包括「惡意改圖」情境）</td></tr>
+      <tr><td>3</td><td>清晰完整介紹網站<em>每一頁</em>，並列明預計更新項目、工作流程、監察流程及人員分工。</td><td>第 7、8、9 節</td></tr>
+      <tr><td>4</td><td>可預見的危機及處理方法。</td><td>第 10 節</td></tr>
+      <tr><td>5</td><td>學生會為何需要網站？（學校、學生、學生會角度）</td><td>第 11 節</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p><strong>我們的保證原則。</strong>沒有任何網上系統能誠實地承諾「零風險」。Aurora 承諾的是：<strong>（1）多層預防</strong>，單一環節失效並不足以構成問題；<strong>（2）快速偵測</strong>，透過紀錄及恆常檢查發現異常；<strong>（3）明確應變</strong>，為每項可預見事故訂立處理步驟；以及<strong>（4）校方監督</strong>——校方擁有最高管理權限，可隨時下架任何內容。</p>
+    <p>本報告會清楚區分<em>系統已實施的功能</em>與<em>營運程序</em>；仍待校方同意的項目會標示為<span class="badge">建議</span>。</p>
+  </div>
+
+  <h2>2. 系統保安架構與防禦機制</h2>
+
+  <p>我採用多層縱深防禦模型建構 Aurora 平台。若攻擊者試圖突破任何單一防禦層，其後的獨立保安層將截擊並阻止威脅。</p>
+
+<pre><code> 學生／訪客瀏覽器
+        │  HTTPS（HSTS、CSP、X-Frame-Options: DENY、COOP、Referrer-Policy）
+        ▼
+ Firebase Hosting（靜態內容）        Firebase Auth（嚴格 @gtcollege.edu.hk 驗證）
+        │                                         │ ID Token（密碼學 JWT）
+        │  fetch(API, Authorization: Bearer …)    │
+        ▼                                         ▼
+ Vercel 無伺服器 API (/api/*)  ── 驗證 Token ──┘
+        │            │               │
+        │            │               └─► Cloudinary 私人儲存（已驗證圖片）
+        │            └─► OpenRouter AI（垃圾訊息審核）
+        ▼
+ Firestore 資料庫（預設拒絕保安規則）</code></pre>
+
+  <h3>我所設計的保安控制</h3>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>防禦層</th>
+        <th>已實施的保安控制</th>
+        <th>保安保證</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>傳輸安全</strong></td>
+        <td>強制 HTTPS 重新導向；為期一年的 HSTS 並包含子網域；<code>upgrade-insecure-requests</code> 政策。</td>
+        <td>有效防範中間人（MITM）攔截、協定降級及流量竊聽。</td>
+      </tr>
+      <tr>
+        <td><strong>瀏覽器加固</strong></td>
+        <td>自訂內容安全政策（CSP，不含 <code>unsafe-inline</code>）、<code>frame-ancestors 'none'</code>、<code>X-Frame-Options: DENY</code>、<code>X-Content-Type-Options: nosniff</code>、嚴格 <code>Referrer-Policy</code>、跨來源開啟者政策（COOP），以及停用硬件 API（相機／麥克風／定位）。</td>
+        <td>大幅降低跨網站指令碼（XSS）、點擊劫持、MIME 類型偽冒，以及未經授權的跨來源資料洩漏的風險。</td>
+      </tr>
+      <tr>
+        <td><strong>身分驗證與網域鎖定</strong></td>
+        <td>於伺服器端強制執行 Google OAuth 整合。驗證 ID Token、<code>email_verified</code> 標記、<code>google.com</code> 提供者，以及對 <code>@gtcollege.edu.hk</code> 的精確正規表達式網域比對。</td>
+        <td>封鎖外部使用者、網域偽冒嘗試、未驗證電郵及偽造登入權杖。</td>
+      </tr>
+      <tr>
+        <td><strong>授權</strong></td>
+        <td>管理權限須同時具備密碼學簽署的自訂 JWT 聲明（<code>admin: true</code>）及明確的伺服器端驗證。管理員聲明僅可透過離線服務帳戶腳本授予。</td>
+        <td>防止權限提升、前端篡改及自我提權攻擊。</td>
+      </tr>
+      <tr>
+        <td><strong>資料庫加固</strong></td>
+        <td>嚴格的「預設拒絕」Firestore 規則。敏感集合（<code>feedbacks</code>、<code>supporters</code>、<code>pageviews</code>、<code>galleryImages</code>、各類紀錄及速率限制）拒絕瀏覽器直接存取（<code>read: false</code>、<code>write: false</code>）。使用者互動文件則受明確欄位允許清單規管。</td>
+        <td>預設拒絕未經授權的資料庫讀取、寫入及前端直接修改。</td>
+      </tr>
+      <tr>
+        <td><strong>伺服器端 API 寫入</strong></td>
+        <td>敏感操作（意見提交、支持投票、分析數據、稽核紀錄）僅由無伺服器後端邏輯處理及執行。</td>
+        <td>防止請求偽造、紀錄操縱，以及從瀏覽器主控台污染資料庫。</td>
+      </tr>
+      <tr>
+        <td><strong>CORS 管治</strong></td>
+        <td>嚴格來源允許清單（<code>ALLOWED_ORIGINS</code> 及受信任網域比對）。</td>
+        <td>封鎖來自外部網站的未經授權跨來源 API 呼叫。</td>
+      </tr>
+      <tr>
+        <td><strong>媒體保護</strong></td>
+        <td>原始資產以 <code>authenticated</code> 私有資源形式存放於 Cloudinary。預覽圖經由伺服器代理提供，並使用 <code>no-store</code> 快取控制；原始全解析度檔案鎖定，禁止直接存取。</td>
+        <td>防止盜連（hot-linking）、網址採集、參數篡改及未經授權的大量媒體爬取。</td>
+      </tr>
+      <tr>
+        <td><strong>濫用防護與速率限制</strong></td>
+        <td>跨端點的多層速率限制（意見回饋：每帳戶每小時 5 次、每 IP 每小時 30 次；支持冷卻：10 分鐘多重因素檢查；下載：嚴格配額限制）。</td>
+        <td>限制阻斷服務（DoS）、投票自動化、垃圾訊息灌水及自動化爬取。</td>
+      </tr>
+      <tr>
+        <td><strong>輸入淨化</strong></td>
+        <td>嚴格 256 KB 載荷上限、所有 ID 的正規表達式驗證、自動 HTML 跳脫，以及資料匯出時的 CSV 公式注入防護。</td>
+        <td>有效緩解 SQL／NoSQL 注入、XSS 載荷、超大載荷濫用及公式注入。</td>
+      </tr>
+      <tr>
+        <td><strong>內容審核</strong></td>
+        <td>於匿名意見端點執行自動化 AI 垃圾訊息過濾，在處理前將所有傳入的使用者內容視為不可信資料。</td>
+        <td>保護管理員免受惡意輸入、提示注入及自動化訊息灌爆攻擊。</td>
+      </tr>
+      <tr>
+        <td><strong>資料私隱與匿名化</strong></td>
+        <td>IP 位址嚴格以鍵控 HMAC 密碼學雜湊形式儲存；使用者代理資料經抽象化處理；並已配置自動 TTL 資料清除政策。</td>
+        <td>支持資料最小化原則及私隱規範。</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>3. 相片發佈與溯源基礎設施</h2>
+
+  <p>為滿足學校對安全相片發佈的要求，我設計了一套完整的<strong>溯源系統</strong>，將每一張被下載的相片直接連結至要求下載的已驗證使用者。</p>
+
+  <h3>我如何建構溯源引擎</h3>
+
+  <ol>
+    <li><strong>強制身分驗證：</strong> 學生必須使用其官方學校 Google 帳戶（<code>@gtcollege.edu.hk</code>）進行驗證。</li>
+    <li><strong>動態伺服器端浮水印：</strong> 當使用者請求下載相片時，該請求會被我的無伺服器 API（<code>/api/photo-download</code>）截取。伺服器會核實有效配額，並在檔案送達瀏覽器前，於影像像素上直接嵌入動態浮水印。
+      <ul>
+        <li><strong>浮水印組成：</strong> 包含遮蔽後的用戶電郵、香港標準時間（HKT）時間戳，以及獨特的 8 位密碼學參考雜湊（例如 <code>AURORA | k******m@gtcollege.edu.hk | 2026-10-09 15:42:10 HKT | REF A1B2C3D4</code>）。</li>
+      </ul>
+    </li>
+    <li><strong>防篡改稽核紀錄：</strong> 同時，伺服器會在 <code>photoDownloadLogs</code> 集合中建立防篡改的紀錄，僅限高階管理員存取。
+      <ul>
+        <li><strong>紀錄內容包括：</strong> 伺服器時間戳、完整已驗證電郵、使用者 UID、顯示名稱、相片元資料、獨特 <code>downloadId</code>、<code>watermarkRef</code>、批次追蹤 ID、裝置／瀏覽器資訊，以及鍵控 IP 雜湊。</li>
+      </ul>
+    </li>
+    <li><strong>臨時資產即時銷毀：</strong> 浮水印版本以動態方式傳送，並即時從臨時處理儲存空間清除，不留任何公開網址或可存取的靜態資產。</li>
+  </ol>
+
+<pre><code>[學生身分已驗證] ──► [請求下載] ──► [/api/photo-download]
+                                          │
+                    ┌─────────────────────┴─────────────────────┐
+                    ▼                                           ▼
+          [產生嵌入浮水印]                            [寫入防篡改稽核紀錄]
+  "AURORA | k******m@gtcollege.edu.hk |          完整電郵、UID、時間戳、
+   2026-10-09 15:42:10 HKT | REF A1B2C3D4"        IP 雜湊、REF
+                    │                                           │
+                    └─────────────────────┬─────────────────────┘
+                                          ▼
+                                [傳送已加浮水印的 ZIP 檔案]</code></pre>
+
+  <h2>快速溯源程序</h2>
+
+  <p>若任何相片被標記為濫用或未經授權散佈，我已為學校資訊科技部及管理員訂立清晰的四步識別程序：</p>
+
+  <ol>
+    <li><strong>擷取參考代碼：</strong> 在影像上找到可見的參考代碼（<code>REF XXXXXXXX</code>）或時間戳。</li>
+    <li><strong>查詢系統紀錄：</strong> 開啟 <strong>管理員 → 相片下載</strong> 儀表板，或使用參考代碼搜尋 <code>photoDownloadLogs</code>。</li>
+    <li><strong>配對帳戶元資料：</strong> 取回與該次下載完全對應的完整身分資料（完整電郵、UID、HKT 下載時間及裝置指紋）。</li>
+    <li><strong>匯出驗證證據：</strong> 匯出該筆具密碼學時間戳的稽核紀錄，以確認下載者責任。</li>
+  </ol>
+
+
+  <h3>情境：已下載的相片被惡意修改並發佈到網上</h3>
+
+  <p>這是校方最關心的問題，以下清楚說明校方可以做到甚麼，以及有何限制：</p>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>情況</th><th>校方可追查的資料</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>A.</strong> 被修改的圖片仍可見浮水印（常見於惡搞圖及快速修圖）。</td>
+        <td>讀取 <code>REF</code> 代碼 → 搜尋 <code>photoDownloadLogs</code> → 即可確定該次下載的已驗證學校帳戶、UID、時間及裝置資訊，通常數分鐘內完成。</td>
+      </tr>
+      <tr>
+        <td><strong>B.</strong> 浮水印被裁走或塗改。</td>
+        <td>稽核紀錄仍會記錄每個帳戶下載了<em>哪一張相片</em>及<em>何時下載</em>。按相片及時段搜尋，即可得出曾下載該張相片的所有帳戶短名單。由於每個帳戶設有下載配額，名單會保持在小範圍；亦可將原圖與修改版比對以收窄時段。</td>
+      </tr>
+      <tr>
+        <td><strong>C.</strong> 圖片由從未下載過的人轉發（螢幕截圖或轉傳）。</td>
+        <td>線索會指向轉發鏈中最早可辨識的下載者／發佈者。如同任何數碼內容，第三方再轉發在技術上無法完全阻止——因此我們將存取限制於已驗證的學校帳戶，並設有下述政策層面的配套。</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>政策層面</strong> <span class="badge">建議</span> — 下載時顯示簡短使用條款（「下載會被記錄並連結至你的學校帳戶；以騷擾、嘲弄或扭曲他人形象為目的的修改，違反校規」），並訂立升級途徑：資訊科技組／管理員檢索紀錄 → 負責老師 → 校方處分程序。紀錄僅供調查濫用之用。<strong>評估中的加強措施：</strong>加入不可見的隱形浮水印，使可見浮水印被移除後仍可辨識來源。</p>
+
+  <p>技術足跡與可見警示合併，既產生<strong>阻嚇作用</strong>（學生知道下載可被追溯），亦提供<strong>證據</strong>（校方能確認誰在何時下載了甚麼）。</p>
+
+  <h2>4. 營運安全與維護程序</h2>
+
+  <p>為確保營運安全於整個任期內不受損害，我已訂立嚴格的營運協議及維護程序：</p>
+
+  <ul>
+    <li><strong>上線前系統審核：</strong> 全面核實 Vercel 環境變數、Firebase 保安規則部署，以及有效的 TTL 執行政策。</li>
+    <li><strong>存取控制維護：</strong> 每月透過 <code>/api/list-admins</code> 檢視管理員名單。任何離隊成員的權限聲明及有效權杖，均會即時透過自動化服務帳戶腳本（<code>scripts/set-admin-claims.js --revoke</code>）撤銷。</li>
+    <li><strong>密鑰管理與衛生：</strong> 所有敏感 API 金鑰、服務帳戶憑證及 SMTP 密碼均安全存放於 Vercel 環境變數中，完全排除於原始碼儲存庫之外。</li>
+    <li><strong>管理員行為守則：</strong> 所有平台管理員必須在其 Google 帳戶上強制啟用兩步驗證（2SV），僅在安全裝置上執行管理職務，並在匯出紀錄方面遵守嚴格的資料保護標準。</li>
+  </ul>
+
+
+  <p>網站運作期間，用以確保上述控制持續有效的每週、每月及每學期檢查程序列於<strong>第 9.3 節（監察程序）</strong>；可預見事故的處理方式列於<strong>第 10 節</strong>。</p>
+
+  <h2>5. 系統資料清單與保安控制</h2>
+
+  <p>我已妥善規劃資料庫結構以確保最高私隱，並在所有紀錄集合中實施自動保留期限（TTL）：</p>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>集合／儲存庫</th>
+        <th>儲存資料</th>
+        <th>存取級別</th>
+        <th>保安與保留機制</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>photoDownloadLogs</code></td>
+        <td>電郵、姓名、UID、鍵控 IP 雜湊、裝置資訊、浮水印 REF</td>
+        <td>僅伺服器寫入／僅管理員讀取</td>
+        <td>受嚴格規則保護；自動 365 天 TTL 清除。</td>
+      </tr>
+      <tr>
+        <td><code>photoDownloadStats</code> / <code>Users</code></td>
+        <td>鍵控帳戶雜湊、下載計數</td>
+        <td>僅伺服器寫入／僅管理員讀取</td>
+        <td>匿名化追蹤彙總資料。</td>
+      </tr>
+      <tr>
+        <td><code>photoDownloadRateLimits</code></td>
+        <td>鍵控帳戶雜湊、時間戳</td>
+        <td>僅伺服器</td>
+        <td>自動 90 天 TTL 清除。</td>
+      </tr>
+      <tr>
+        <td><code>feedbacks</code></td>
+        <td>意見內容、可選提交者電郵</td>
+        <td>僅伺服器寫入／僅管理員讀取</td>
+        <td>安全儲存；僅限管理員存取。</td>
+      </tr>
+      <tr>
+        <td><code>supporters</code></td>
+        <td>裝置雜湊、已驗證電郵</td>
+        <td>僅伺服器寫入／僅管理員讀取</td>
+        <td>受保護的寫入操作；隔離存取。</td>
+      </tr>
+      <tr>
+        <td><code>pageviews</code></td>
+        <td>匿名化路徑、HKT 時間戳</td>
+        <td>僅伺服器寫入／僅管理員讀取</td>
+        <td>自動滾動式保留。</td>
+      </tr>
+      <tr>
+        <td><code>newsSubscriptions</code> / <code>Deliveries</code></td>
+        <td>已驗證電郵、訂閱狀態</td>
+        <td>僅擁有者／伺服器</td>
+        <td>取消訂閱機制受 HMAC 簽署權杖保護。</td>
+      </tr>
+      <tr>
+        <td><code>galleryImages</code></td>
+        <td>相片元資料及私有檔案識別碼</td>
+        <td>僅管理員</td>
+        <td>不暴露任何公開儲存網址。</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>6. 驗證清單</h2>
+
+  <p>平台已通過所有上線前技術保安檢查：</p>
+
+  <ul class="checklist">
+    <li><strong>零前端授權：</strong> 所有保安邏輯、管理員驗證及存取控制僅於無伺服器後端函式中執行。</li>
+    <li><strong>嚴格網域綁定：</strong> 經伺服器端驗證，確保僅 <code>@gtcollege.edu.hk</code> Google Workspace 帳戶可存取受保護功能。</li>
+    <li><strong>資料庫隔離：</strong> Firestore 保安規則已編譯、測試並部署，未授權使用者並無任何開放讀寫集合。</li>
+    <li><strong>完整相片足跡保護：</strong> 每次下載均即時動態加入浮水印，並記錄至防篡改的管理員稽核紀錄。</li>
+    <li><strong>儲存私隱：</strong> 所有媒體資產均以私有驗證旗標鎖定於雲端儲存；不暴露任何直接公開圖片連結。</li>
+    <li><strong>瀏覽器標頭加固：</strong> CSP、HSTS、X-Frame-Options 及 Referrer 政策已於所有頁面驗證並運作。</li>
+    <li><strong>密鑰隔離：</strong> 於公開／私人儲存庫中零硬編碼 API 金鑰、服務帳戶或憑證。</li>
+  </ul>
+
+
+  <h2>7. 網站架構 — 逐頁介紹</h2>
+
+  <p>Aurora 網站（<code>gtcsu-aurora.web.app</code>）對本校而言是一個全新的平台，因此本節逐一介紹<strong>每一個頁面</strong>：內容、誰可以瀏覽、由誰負責維護，以及如何保護。網站採用響應式設計，手機、平板及電腦均可瀏覽，分為六大公開板塊及一個內部管理區。</p>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>頁面</th><th>用途</th><th>可瀏覽者</th><th>負責維護</th><th>更新頻率</th></tr></thead>
+    <tbody>
+      <tr><td><strong>7.1 首頁</strong></td><td>標識、公告、Instagram 捷徑</td><td><span class="badge pub">公開</span></td><td>內容組，由 PIC 審閱</td><td>即時／每週</td></tr>
+      <tr><td><strong>7.2 關於我們與內閣架構</strong></td><td>宗旨、組織、成員分工</td><td><span class="badge pub">公開</span></td><td>內容組</td><td>按需要</td></tr>
+      <tr><td><strong>7.3 活動資訊與計劃書</strong></td><td>年度行事曆；供老師查閱的提案預覽</td><td>行事曆<span class="badge pub">公開</span>；提案供審閱人員</td><td>內容組 + PIC</td><td>每週／每月</td></tr>
+      <tr><td><strong>7.4 活動花絮與成果回顧</strong></td><td>活動相片、成效回顧、下載</td><td><span class="badge login">學校帳戶</span></td><td>內容組（上載）；IT 組（系統）</td><td>每月</td></tr>
+      <tr><td><strong>7.5 福利與合作商戶</strong></td><td>學生優惠名單</td><td><span class="badge pub">公開</span></td><td>內容組</td><td>每月核對</td></tr>
+      <tr><td><strong>7.6 聯絡與意見收集</strong></td><td>查詢及建議</td><td>任何人可提交；<span class="badge admin">管理員</span>可讀取</td><td>內閣（回覆）；IT 組（系統）</td><td>每月整理回覆</td></tr>
+      <tr><td><strong>7.7 管理區</strong></td><td>相片下載稽核、管理員管理</td><td><span class="badge admin">僅管理員</span></td><td>IT 組；校方監督</td><td>按程序（第 9 節）</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>7.1 首頁 (Home)</h3>
+  <ul>
+    <li><strong>核心標識：</strong>展示內閣名稱「Aurora」及口號「Sparked by Aurora, united with Harmonia」。</li>
+    <li><strong>最新公告欄：</strong>即時發佈突發通知、活動報名限期提醒或重要通告。</li>
+    <li><strong>官方動態捷徑：</strong>連結至官方 Instagram 帳號（@gteyc_aurora2627），方便同學追蹤即時動態。</li>
+    <li><strong>保安說明：</strong>Instagram 只作捷徑連結；在內容安全政策（CSP）下，未經明確列入允許清單的第三方指令碼不能執行。公告均須依第 8 節的審批流程發佈。</li>
+  </ul>
+
+  <h3>7.2 關於我們與內閣架構 (About Us &amp; Cabinet Structure)</h3>
+  <ul>
+    <li><strong>內閣宗旨：</strong>說明本屆服務理念與願景。</li>
+    <li><strong>組織架構與分工：</strong>列出主席、副主席、秘書、財政等成員，落實權責透明。</li>
+    <li><strong>保安說明：</strong>成員資料只限經本人及 PIC 確認的姓名／職位內容；不公開個別學生的聯絡方式。</li>
+  </ul>
+
+  <h3>7.3 活動資訊與計劃書專區 (Events &amp; Proposals)</h3>
+  <ul>
+    <li><strong>年度行事曆：</strong>以時間軸列出本學年各項大型及小型活動（如歌唱比賽、陸運會攤位、節日慶祝等）的舉辦日期與進度。</li>
+    <li><strong>提案預覽：</strong>供老師隨時查閱各項活動的詳細目標、對象、流程及安全指引，利於提前審批。</li>
+    <li><strong>對校方的意義：</strong>提案、日程及進度集中於一處，而非散落於各種訊息中，令審批與監督更快捷、有紀錄可查。</li>
+  </ul>
+
+  <h3>7.4 活動花絮與成果回顧 (Photo Gallery)</h3>
+  <ul>
+    <li><strong>雲端相簿：</strong>分類上載過往活動的高畫質照片與影像紀錄。</li>
+    <li><strong>成效數據：</strong>結合活動參與人數與問卷反饋，作為事後檢討與向校方匯報成效的依據。</li>
+    <li><strong>存取與保護：</strong>瀏覽及下載須以已驗證的 <code>@gtcollege.edu.hk</code> 帳戶登入。原檔存放於私人儲存空間，沒有公開連結；每次下載均加上浮水印並記錄（第 3 節）。</li>
+    <li><strong>上載前：</strong>相片須經內容審批流程；<span class="badge">建議</span>涉及學生肖像的相片，會按學校相片同意的做法核對；老師可隨時移除任何相片或相簿。</li>
+  </ul>
+
+  <h3>7.5 福利與合作商戶專區 (Welfare &amp; Merchant Discounts)</h3>
+  <ul>
+    <li><strong>學生優惠總覽：</strong>列出學生會為同學爭取的校外合作商戶清單、折扣優惠及使用細則，方便同學隨時查閱。</li>
+    <li><strong>保安說明：</strong>商戶標誌及優惠僅在商戶同意後發佈；每月例行檢查優惠有效期，避免資訊過時或誤導。</li>
+  </ul>
+
+  <h3>7.6 聯絡與意見收集區 (Contact &amp; Feedback)</h3>
+  <ul>
+    <li><strong>意見反映表單：</strong>設置線上諮詢與意見收集渠道，供師生提交查詢或校園生活訴求。</li>
+    <li><strong>內建保護：</strong>提交一律經伺服器處理（絕不直接寫入資料庫）；速率限制（每帳戶每小時 5 次、每 IP 每小時 30 次）；256 KB 載荷上限；自動 AI 垃圾訊息過濾，並將所有文字視為不可信資料；僅管理員可讀取提交內容；IP 位址只以鍵控雜湊形式儲存。</li>
+  </ul>
+
+  <h3>7.7 管理區（內部 — 不公開）</h3>
+  <ul>
+    <li><strong>相片下載儀表板：</strong>用於第 3 節溯源程序的稽核檢視。</li>
+    <li><strong>管理員管理：</strong>管理權限只以簽署聲明形式存在，並透過離線服務帳戶腳本授予，每月檢視（第 4 節及第 9 節）。</li>
+    <li><strong>可見性：</strong>公開頁面不設連結；每項呼叫均於伺服器重新驗證。</li>
+  </ul>
+
+  <h2>8. 預計更新項目、發佈流程與人員分工</h2>
+
+  <p>網站要安全又有用，必須以紀律持續更新。由於 Aurora 會於全年不斷更新，我們已預先訂明<strong>誰更新甚麼、多久更新一次、誰必須批准</strong>。</p>
+
+  <h3>8.1 人員分工</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>崗位</th><th>負責人</th><th>職責</th></tr></thead>
+    <tbody>
+      <tr><td><strong>資訊科技組</strong></td><td>11A 林正晞（Kurtis Lam）</td><td>負責 <code>gtcsu-aurora.web.app</code> 的網頁前端維護、Firebase 託管運作、版面更新、保安規則、管理員權限管理、監察程序及基本資安防護。</td></tr>
+      <tr><td><strong>宣傳與內容組</strong></td><td>9E 余卓堯</td><td>負責活動文案撰寫、圖片處理、活動相片上載及行事曆維護。</td></tr>
+      <tr><td><strong>內閣網站 PIC</strong></td><td>11A 徐兆睿</td><td>負責所有上線內容的初審，統籌各組進度。</td></tr>
+      <tr><td><strong>指導老師與校方</strong></td><td>負責老師；學校 IT</td><td>擁有最高管理與審閱權限，確保內容符合校規；可下架任何內容。</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>職責分離：</strong>起草內容的人絕不是唯一的批准人，資訊科技組亦不會自行批准其內容。因此每項公開內容至少經過兩位學生審閱及一個校方層面的關卡。</p>
+
+  <h3>8.2 預計更新項目</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>頻率</th><th>預計項目</th><th>負責</th></tr></thead>
+    <tbody>
+      <tr><td><strong>即時／每週</strong></td><td>首頁公告欄；最新活動報名連結；Instagram 動態捷徑檢查。</td><td>內容組 → PIC 審閱</td></tr>
+      <tr><td><strong>每月</strong></td><td>活動花絮相簿；活動提案進度更新；意見箱回覆整理；商戶優惠有效期核對。</td><td>內容組、PIC；系統項目由 IT 組負責</td></tr>
+      <tr><td><strong>每學期／按需要</strong></td><td>內閣架構變動；保安審核及管理員檢視；學期末交接。</td><td>IT 組、PIC、指導老師</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>8.3 內容發佈工作流程</h3>
+
+<pre><code>[內容草擬與設計]            （宣傳與內容組）
+          │
+          ▼
+[網頁排版與測試]            （IT 組）→ 部署至 gtcsu-aurora.web.app 測試／預覽環境
+          │
+          ▼
+[學生會內部初審]            （主席／副主席／網站 PIC 確認無誤）
+          │
+          ▼
+[校方／指導老師審批]        （Teacher Review &amp; Sign-off）
+          │
+          ▼
+[正式公開上線]</code></pre>
+
+  <ul>
+    <li><strong>技術更改</strong>（版面或程式碼）須先於預覽環境測試，並在發佈前重新核對驗證清單（第 6 節）。</li>
+    <li><strong>緊急通告</strong> <span class="badge">建議</span>：時間緊迫的公告（如活動取消）可在 PIC 批准後先行發佈，同時知會負責老師，老師可隨時撤回。</li>
+    <li><strong>更正：</strong>發佈後如發現錯誤，先更正或下架，再作事後檢討。</li>
+  </ul>
+
+  <h2>9. 監察與管治</h2>
+
+  <h3>9.1 校方擁有最終權限</h3>
+  <ul>
+    <li><strong>共享最高權限：</strong>網域及託管後台管理權限與校方／指導老師共享，確保校方隨時可查閱及下架任何不當內容；項目不依賴任何單一學生。</li>
+    <li><strong>緊急關閉：</strong>持有託管權限者可立即關閉單一頁面、相簿、相簿存取，甚至整個網站，無須依賴開發者。</li>
+    <li><strong>敏感內容存取控制：</strong>涉及學生肖像或內部表格的頁面，限於已驗證學校帳戶存取，防止校外流出。</li>
+  </ul>
+
+  <h3>9.2 監察範圍</h3>
+  <ul>
+    <li>誰下載了哪張相片、頻率及裝置資訊（相片下載稽核紀錄）。</li>
+    <li>誰持有管理員權限（管理員名單檢視）。</li>
+    <li>每次更改後，保安規則、標頭及密鑰是否仍正確配置。</li>
+    <li>意見箱是否出現辱罵、騷擾或有害內容。</li>
+  </ul>
+
+  <h3>9.3 監察程序</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>頻率</th><th>檢查項目</th><th>負責</th></tr></thead>
+    <tbody>
+      <tr><td><strong>每週</strong></td><td>檢視相片下載儀表板有否異常下載量或重複觸及配額；檢查意見箱有否不當內容；套用待處理的依賴套件及平台保安更新。</td><td>IT 組</td></tr>
+      <tr><td><strong>每月</strong></td><td>透過 <code>/api/list-admins</code> 檢視管理員名單，撤銷已離隊成員；確認 Firestore 規則及保安標頭未被更改；核實 TTL 清除正常運作；核對商戶優惠仍然有效。</td><td>IT 組、PIC</td></tr>
+      <tr><td><strong>每次發佈後</strong></td><td>於已部署網站重新執行驗證清單（第 6 節）。</td><td>IT 組</td></tr>
+      <tr><td><strong>每學期</strong> <span class="badge">建議</span></td><td>與學校 IT／負責老師召開檢討會議；更換密鑰；確認所有管理員已啟用兩步驗證；與校方確認託管擁有權及存取名單。</td><td>IT 組、學校 IT、老師</td></tr>
+      <tr><td><strong>學期末</strong></td><td>交接：文件、管理員權限轉移、撤銷離任成員、確認網域及託管由校方持有。</td><td>離任＋新任 IT 組、老師</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>9.4 向校方匯報 <span class="badge">建議</span></h3>
+  <p>每學期向負責老師及學校 IT 提交簡短報告，內容包括：已發佈的更改、使用及參與數據、任何事故及處理結果、管理員權限檢視結果，以及未解決的風險。讓校方恆常取得監督證據，而非只得一次性的保證。</p>
+
+  <h2>10. 可預見風險與應變計劃</h2>
+
+  <p>我們已預想學生自行營運的校園網站最可能面對的危機。每一項均說明如何<strong>預防</strong>，以及<strong>一旦發生</strong>時如何處理。</p>
+
+  <h3>10.1 標準事故應變流程</h3>
+  <ol>
+    <li><strong>偵測：</strong>透過稽核紀錄、恆常檢查、用戶舉報或老師通報。</li>
+    <li><strong>遏止：</strong>立即下架內容、停用受影響功能，或撤銷受影響的權杖／管理員聲明。</li>
+    <li><strong>評估：</strong>確定事件經過、涉及的資料或帳戶，以及是否影響個人資料。</li>
+    <li><strong>通報：</strong>通知負責老師及學校 IT，並在適當時通知受影響人士；是否作出處分或對外通報，由校方決定。</li>
+    <li><strong>復原與檢討：</strong>恢復服務，需要時更換密鑰，記錄事件，並修正根本原因。</li>
+  </ol>
+
+  <h3>10.2 風險登記表</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>風險</th><th>預防措施</th><th>一旦發生</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1. 相片被濫用或在網上被惡意修改</strong></td>
+        <td>學校帳戶登入；可見浮水印及 REF；逐次下載稽核紀錄；下載配額；使用條款提示 <span class="badge">建議</span>。</td>
+        <td>以 REF 或按相片／時段搜尋追查（第 3 節）→ 負責老師 → 校方程序；有需要時移除相簿／相片；支援受影響學生。</td>
+      </tr>
+      <tr>
+        <td><strong>2. 學生的學校 Google 帳戶被盜用</strong></td>
+        <td>伺服器端權杖及網域驗證；校方建議啟用兩步驗證；下載速率限制。</td>
+        <td>聯絡該學生；撤銷登入工作階段；檢視該帳戶的下載紀錄；請學校 IT 重設帳戶。</td>
+      </tr>
+      <tr>
+        <td><strong>3. 管理員帳戶被濫用，或管理員離隊</strong></td>
+        <td>管理權限僅可經離線授予的簽署聲明取得；強制兩步驗證；每月檢視管理員名單。</td>
+        <td>即時以 <code>scripts/set-admin-claims.js --revoke</code> 撤銷聲明及權杖；檢視該期間的稽核紀錄。</td>
+      </tr>
+      <tr>
+        <td><strong>4. 校外人士嘗試存取系統</strong></td>
+        <td>網域鎖定驗證；預設拒絕資料庫；嚴格 CORS；私人儲存。</td>
+        <td>檢查紀錄找出來源模式；收緊速率限制；封鎖來源；持續發生時上報學校 IT。</td>
+      </tr>
+      <tr>
+        <td><strong>5. 辱罵、欺凌或誹謗性意見</strong></td>
+        <td>AI 垃圾訊息過濾；速率限制；僅管理員可讀取；所有文字視為不可信資料。</td>
+        <td>不回覆、不發佈；保留該提交紀錄；上報負責老師；按校規處理。</td>
+      </tr>
+      <tr>
+        <td><strong>6. 不當或錯誤內容被發佈</strong></td>
+        <td>兩階段審閱加老師簽核；職責分離。</td>
+        <td>先下架，再更正；記錄原因，並加強未能攔截的關卡。</td>
+      </tr>
+      <tr>
+        <td><strong>7. 流量暴增、垃圾訊息灌爆或阻斷服務攻擊</strong></td>
+        <td>所有敏感端點設速率限制；靜態內容放於受管理雲端平台。</td>
+        <td>限流或暫時停用受影響功能；保持靜態頁面上線；透過官方 Instagram 發出通知。</td>
+      </tr>
+      <tr>
+        <td><strong>8. 第三方服務中斷（託管、API、儲存）</strong></td>
+        <td>靜態內容與 API 分離；原檔存放於受管理私人儲存。</td>
+        <td>於 Instagram 及可行時於首頁張貼通知；等待或切換服務；復原後核實無資料損失。</td>
+      </tr>
+      <tr>
+        <td><strong>9. 懷疑個人資料外洩</strong></td>
+        <td>資料最小化；IP 只以鍵控雜湊儲存；TTL 自動清除；僅管理員可存取。</td>
+        <td>遏止；撤銷權杖及更換密鑰；評估受影響資料；即時通知校方；跟從學校按《個人資料（私隱）條例》（PDPO）的處理程序。</td>
+      </tr>
+      <tr>
+        <td><strong>10. API 金鑰或密鑰外洩</strong></td>
+        <td>密鑰只存放於 Vercel 環境變數；原始碼庫內沒有。</td>
+        <td>於服務供應商及環境中更換金鑰；重新部署；檢視近期紀錄。</td>
+      </tr>
+      <tr>
+        <td><strong>11. 關鍵成員畢業或離開（交接失敗）</strong></td>
+        <td>文件記錄；託管及網域由校方共享擁有；每學期書面交接。</td>
+        <td>校方持有的權限確保運作延續；將管理員權限轉予新任團隊並撤銷離任者。</td>
+      </tr>
+      <tr>
+        <td><strong>12. 圖片、標誌或音樂的版權／同意問題</strong></td>
+        <td>內容審閱步驟於發佈前核對來源及授權。</td>
+        <td>盡快移除該項目，改用已獲授權或原創的替代品。</td>
+      </tr>
+      <tr>
+        <td><strong>13. 資訊過時或錯誤（例如優惠已過期）</strong></td>
+        <td>每月有效期核對；註明「最後更新」日期。</td>
+        <td>更正或移除該項目；如錯誤造成不便，通知同學。</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>10.3 剩餘風險 — 坦白說明</h3>
+  <p>可見浮水印可被裁走；學生可截圖或轉傳內容；第三方平台可能中斷；學生本人的帳戶安全亦部分取決於其個人習慣。我們不迴避這些問題，而是以帳戶式存取、配額、紀錄、兩步驗證、政策層面配套及經測試的應變步驟將風險降低，並讓校方能迅速察覺及處理任何事故。</p>
+
+  <h2>11. 為何學生會需要網站</h2>
+
+  <p>網站<strong>並非取代學生會的社交媒體，而是其背後由校方掌握的中央基地</strong>。在 Instagram 以外，它提供結構化、高透明度及便於校方監管的中央資訊站，藉此提升學生會的運作效率，並加強與全校師生的溝通。</p>
+
+  <h3>11.1 學校層面（核心優勢）</h3>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead><tr><th>範疇</th><th>只用公開社交平台</th><th>Aurora 官方網站</th></tr></thead>
+    <tbody>
+      <tr><td><strong>學生肖像與個人資料</strong></td><td>公開平台上的相片，校外人士可隨意儲存或截圖。</td><td>敏感頁面限已驗證學校帳戶；原檔存於私人儲存；每次下載均加浮水印並可追溯。</td></tr>
+      <tr><td><strong>管理與監督</strong></td><td>帳戶由學生在第三方平台持有；校方無法直接移除內容，亦看不到誰做了甚麼。</td><td>託管／網域管理權限與校方共享；校方可隨時審閱、下架或關閉；設有稽核紀錄。</td></tr>
+      <tr><td><strong>屆別延續</strong></td><td>內閣更替、帳戶交接時，資訊常出現斷層或遺失。</td><td>每屆內閣的發展完整保存為長期檔案；後續屆別可沿用架構。</td></tr>
+      <tr><td><strong>觸及範圍</strong></td><td>只觸及使用該平台的學生，且貼文隨時間下沉。</td><td>任何有瀏覽器的學生、老師或家長，均可經清晰分類找到資料；閱讀公開頁面無須額外帳號。</td></tr>
+      <tr><td><strong>審批與合規</strong></td><td>先發佈，後檢討。</td><td>草擬 → 測試 → 內閣初審 → 老師簽核 → 發佈；提案、日程及活動紀錄集中一處。</td></tr>
+      <tr><td><strong>展現學校優勢</strong></td><td>—</td><td>由學生自主研發及維護的平台，是 G.T. 資訊科技能力、自主學習及 STEAM 教育的實際典範。</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <ul>
+    <li><strong>保障學生個人資料與肖像安全。</strong>自建網站可針對敏感頁面設定權限（如僅限校內帳號登入），有效防範外部資安風險與肖像外洩。</li>
+    <li><strong>觸及更廣泛的學生群體，提升資訊傳播效率。</strong>官方網站成為校風與學生活動的長期載體，後續屆別可直接沿用架構實現經驗傳承，並突破只限 Instagram 使用者的受眾範圍。</li>
+    <li><strong>展現學校 IT 與自主學習成果。</strong>網站由學生自主研發與維護，充分體現 G.T. 學生優秀的資訊科技能力與專案執行力。</li>
+    <li><strong>強化校方監管與透明度。</strong>所有活動計劃書、財政透明度與活動紀錄集中於單一平台，校方可隨時監督，確保運作合規。</li>
+  </ul>
+
+  <h3>11.2 學生層面</h3>
+  <ul>
+    <li><strong>打破社交平台限制，照顧全體同學：</strong>部分同學並未使用 Instagram 或特定社交帳號。公開頁面無須註冊任何帳號即可瀏覽，確保所有 G.T. 學生均能公平、即時獲取資訊。</li>
+    <li><strong>結構化檢索，告別資訊雜亂：</strong>社交平台貼文隨時間下沉且難以搜尋。網站透過清晰分類（行事曆、福利總覽、表格下載），讓學生能「主動」迅速找到所需資料。</li>
+    <li><strong>優化活動體驗：</strong>提供高畫質活動相簿與清晰的時間軸，便於同學參與活動後回顧與下載留念。</li>
+  </ul>
+
+  <h3>11.3 學生會層面</h3>
+  <ul>
+    <li><strong>推動校園學生會數碼轉型：</strong>開創官方網站先例，提升學生會工作的專業度與現代化形象。</li>
+    <li><strong>落實知識與技術傳承：</strong>避免下一屆學生會由零開始，透過現有平台架構與數據積累，大幅降低行政交接成本。</li>
+  </ul>
+
+  <h2>12. 對校方的請求與後續步驟 <span class="badge">建議</span></h2>
+
+  <p>為負責任地推出及營運 Aurora，我們謹請校方：</p>
+  <ol>
+    <li><strong>審閱本報告</strong>，如滿意，批准公開網站及限校內帳戶存取的相片庫正式上線。</li>
+    <li><strong>指派學校 IT 聯絡人及負責老師</strong>，共同持有託管後台及網域的管理權限。</li>
+    <li><strong>在可行情況下，為學校 Google 帳戶確認啟用兩步驗證</strong>，加強相片溯源所依賴的登入安全。</li>
+    <li><strong>同意相片使用條款提示</strong>及濫用事件的升級途徑（第 3 節及第 10 節）。</li>
+    <li><strong>每學期安排簡短檢討會議</strong>（第 9.3 節），令監督持續不斷。</li>
+  </ol>
+
+  <p>Aurora 平台代表一個安全、透明且具韌性的網絡環境，既能服務學生群體，亦為學校資訊科技部提供全面的問責性與安心保證。</p>
+
+</article>
+
+</main>
+
+<!-- External script reference allowed by CSP self rule -->
+<script src="/js/security-report.js" defer></script>
+
+</body>
+</html>
