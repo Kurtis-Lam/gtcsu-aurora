@@ -2,6 +2,7 @@ import { auth, db, isSchoolUser, ALLOWED_DOMAIN } from './firebase-config.js';
 import { initInfo, refreshInfo } from './info.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { NEWS_READ_EVENT, getLocalReads, readRevision } from './news-reads.js';
 
 // Start fetching shared components immediately; they are mounted once the DOM is ready.
 const panelFetchPromise = fetch('panel.html')
@@ -119,17 +120,23 @@ let currentUser = null;
 let authResolved = false;
 const authListeners = new Set();
 let newsUnsubscribers = [];
+let stopLocalReadWatch = null;
 
 function watchUnreadNews(user) {
   newsUnsubscribers.forEach(unsubscribe => unsubscribe());
   newsUnsubscribers = [];
+  if (stopLocalReadWatch) {
+    stopLocalReadWatch();
+    stopLocalReadWatch = null;
+  }
   const badge = document.querySelector('.news-unread-dot');
   if (!badge) return;
   badge.classList.remove('visible');
   if (!user) return;
 
   let news = [];
-  let reads = [];
+  let reads = new Map();
+  let localReads = getLocalReads(user.uid);
   let newsReady = false;
   let readsReady = false;
   let failed = false;
@@ -141,10 +148,17 @@ function watchUnreadNews(user) {
       badge.classList.remove('visible');
       return;
     }
-    const readByNewsId = new Map(reads.map(item => [item.newsId, Number(item.revision) || 0]));
-    const unread = news.some(item => (Number(item.revision) || 1) > (readByNewsId.get(item.id) || 0));
+    const unread = news.some(item => (Number(item.revision) || 1) > readRevision(reads, localReads, item.id));
     badge.classList.toggle('visible', unread);
   };
+
+  const onLocalRead = event => {
+    if (event.detail?.uid && event.detail.uid !== user.uid) return;
+    localReads = getLocalReads(user.uid);
+    render();
+  };
+  window.addEventListener(NEWS_READ_EVENT, onLocalRead);
+  stopLocalReadWatch = () => window.removeEventListener(NEWS_READ_EVENT, onLocalRead);
 
   newsUnsubscribers = [
     onSnapshot(query(collection(db, 'news'), where('status', '==', 'published'), where('deleted', '==', false)), snapshot => {
@@ -157,12 +171,12 @@ function watchUnreadNews(user) {
       render();
     }),
     onSnapshot(query(collection(db, 'newsReads'), where('uid', '==', user.uid)), snapshot => {
-      reads = snapshot.docs.map(item => item.data());
+      reads = new Map(snapshot.docs.map(item => [item.data().newsId, Number(item.data().revision) || 0]));
       readsReady = true;
       render();
     }, error => {
-      failed = true;
       console.error('Could not watch news read status:', error);
+      readsReady = true;
       render();
     })
   ];
