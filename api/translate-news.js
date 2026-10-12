@@ -1,6 +1,4 @@
 import { verifiedAdmin } from './_lib/auth.js';
-import { getServices } from './_lib/firebase.js';
-import { enforceRateLimit } from './_lib/ratelimit.js';
 import { bearerToken, body, guard } from './_lib/http.js';
 
 const MAX_TEXT_LENGTH = 10000;
@@ -14,7 +12,6 @@ export default async function handler(req, res) {
     if (!admin) {
       return res.status(403).json({ error: 'Admin access is required.', code: 'FORBIDDEN' });
     }
-    if (!(await enforceRateLimit(getServices().db, res, 'translate-news', admin.uid, { limit: 120, windowMs: 60 * 60 * 1000 }))) return;
 
     const { text, targetLanguage } = body(req);
     if (
