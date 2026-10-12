@@ -1225,15 +1225,10 @@
               </select>
             </div>
           </div>
-          <div class="supporters-actions">
-            <button class="nav-btn nav-btn-danger" id="delete-selected-votes-btn">❌ Delete Selected Votes</button>
-            <button class="nav-btn nav-btn-danger" id="reset-votes-btn">🗑 Reset All Votes</button>
-          </div>
         </div>
         <table class="supporters-table">
           <thead>
             <tr>
-              <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-supporters"></th>
               <th>Supporter (Account / Device)</th>
               <th>Votes Cast</th>
               <th>Last Vote</th>
@@ -1242,7 +1237,7 @@
             </tr>
           </thead>
           <tbody id="supporters-table-body">
-            <tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
+            <tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">Loading supporters...</td></tr>
           </tbody>
         </table>
       </div>
@@ -2265,7 +2260,7 @@
       document.getElementById('kpi-unique-supporters').textContent = latestSupporterDocs.filter(s => supporterKind(s) !== 'account').length.toLocaleString();
 
       if (!latestSupporterDocs.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:rgba(223,246,242,0.5); padding: 30px;">No supporters yet.</td></tr>`;
         document.getElementById('kpi-last-support').textContent = 'None yet';
         return;
       }
@@ -2298,9 +2293,6 @@
 
         rows += `
           <tr class="clickable-row" data-id="${escapeHtml(s.id)}">
-            <td style="text-align: center;" onclick="event.stopPropagation();">
-              <input type="checkbox" class="supporter-checkbox" value="${escapeHtml(s.id)}" data-clicks="${supporterKind(s) === 'account' ? 0 : (s.clicks || 0)}">
-            </td>
             <td title="Click to view details">${supporterCellHtml(s)}</td>
             <td>${s.clicks || 0}</td>
             <td><strong style="color: var(--support-blue);">${lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A'}</strong></td>
@@ -2353,57 +2345,6 @@
         });
       });
     }
-
-    async function deleteInChunks(refs) {
-      for (let i = 0; i < refs.length; i += 400) {
-        const batch = writeBatch(db);
-        refs.slice(i, i + 400).forEach(r => batch.delete(r));
-        await batch.commit();
-      }
-    }
-
-    document.getElementById('select-all-supporters')?.addEventListener('change', (e) => {
-      document.querySelectorAll('.supporter-checkbox').forEach(cb => cb.checked = e.target.checked);
-    });
-
-    document.getElementById('delete-selected-votes-btn')?.addEventListener('click', async () => {
-      if (!currentUser) return;
-      const checkedBoxes = Array.from(document.querySelectorAll('.supporter-checkbox:checked'));
-      if (checkedBoxes.length === 0) { uiAlert("Tick at least one supporter first, then try again.", { title: "Nothing selected" }); return; }
-      if (!await uiConfirm(`${checkedBoxes.length} selected record(s) and their votes will be removed from the total.`, { title: "Delete selected votes?", okText: "Delete" })) return;
-
-      try {
-        let totalClicksToRemove = 0;
-        const refs = checkedBoxes.map(cb => {
-          totalClicksToRemove += parseInt(cb.getAttribute('data-clicks') || '0', 10);
-          return doc(db, "supporters", cb.value);
-        });
-        await deleteInChunks(refs);
-
-        const counterRef = doc(db, "counters", "supportCounter");
-        const counterSnap = await getDoc(counterRef);
-        const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
-        await setDoc(counterRef, { count: Math.max(0, currentCount - totalClicksToRemove) }, { merge: true });
-
-        toast("Selected records deleted ✓");
-      } catch (err) { uiError(err.message, "Couldn't delete votes"); }
-    });
-
-    document.getElementById('reset-votes-btn').addEventListener('click', async () => {
-      if (!currentUser) return;
-      if (!await uiConfirm("Every vote record will be deleted and the counter reset. This can't be undone.", { title: "Reset all votes?", okText: "Yes, reset" })) return;
-      const input = await uiPrompt("What should the vote counter start at?", { title: "Starting count", defaultValue: "0", inputType: "number", okText: "Reset" });
-      if (input === null) return;
-      const newCount = parseInt(input, 10);
-      if (isNaN(newCount) || newCount < 0) return;
-
-      try {
-        const querySnapshot = await getDocs(collection(db, "supporters"));
-        await deleteInChunks(querySnapshot.docs.map(d => d.ref));
-        await setDoc(doc(db, "counters", "supportCounter"), { count: newCount });
-        toast("All votes reset ✓");
-      } catch (err) { uiError(err.message, "Couldn't reset votes"); }
-    });
 
     function auditHkt(value) {
       if (!value) return '—';
