@@ -2,6 +2,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
 import { guard, body, bearerToken, hashIp } from './_lib/http.js';
 import { verifySchoolUser } from './_lib/auth.js';
+import { takeRateLimit, RATE_LIMITS } from './_lib/ratelimit.js';
 
 // Change this string every time you edit the file. It is printed on every request,
 // so you can confirm in Vercel logs which version is actually deployed.
@@ -15,9 +16,6 @@ const MIN_TITLE_WORDS = 3;
 const MIN_DESC_WORDS = 20;
 const MAX_TITLE_CHARS = 150;
 const MAX_DESC_CHARS = 3000;
-
-const RATE_LIMIT_MAX_USER = 5;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 const MODERATION_TIMEOUT_MS = 8000;
 
@@ -87,19 +85,6 @@ function localSpamCheck(title, description) {
   const noVowel = words.filter(w => w.length >= 5 && !/[aeiouy]/.test(w)).length;
   if (words.length && noVowel / words.length > 0.3) return 'looks like gibberish';
   return null;
-}
-
-async function takeRateLimitSlot(db, key, max) {
-  const ref = db.collection('rateLimits').doc(key);
-  return db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const now = Date.now();
-    let { windowStart = now, count = 0 } = snap.exists ? snap.data() : {};
-    if (now - windowStart > RATE_LIMIT_WINDOW_MS) { windowStart = now; count = 0; }
-    if (count >= max) return false;
-    tx.set(ref, { windowStart, count: count + 1 });
-    return true;
-  });
 }
 
 // ---------- moderation ----------
@@ -304,10 +289,11 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'A school email is required.', code: 'NOT_SCHOOL_EMAIL' });
     }
 
-    const allowed = await takeRateLimitSlot(db, `feedback_u_${hashIp(user.uid)}`, RATE_LIMIT_MAX_USER);
-    log.info('ratelimit:result', { allowed });
-    if (!allowed) {
-      return res.status(429).json({ error: 'Too many submissions. Please try again later.', code: 'RATE_LIMITED' });
+    const quota = await takeRateLimit(db, RATE_LIMITS.feedback, hashIp(user.uid));
+    log.info('ratelimit:result', { allowed: quota.allowed });
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      return res.status(429).json({ error: 'You can send up to 3 feedbacks per day. Please try again later.', code: 'RATE_LIMITED', retryAfterSeconds: quota.retryAfterSeconds });
     }
 
     const verdict = await moderate(title, description, log);
