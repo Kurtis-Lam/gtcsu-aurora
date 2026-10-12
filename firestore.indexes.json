@@ -4,20 +4,32 @@
     {
       "collectionGroup": "photoDownloadLogs",
       "fieldPath": "deleteAfter",
-      "indexes": [],
-      "ttl": true
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
     },
     {
       "collectionGroup": "photoDownloadRateLimits",
       "fieldPath": "expiresAt",
-      "indexes": [],
-      "ttl": true
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
     },
     {
       "collectionGroup": "apiRateLimits",
       "fieldPath": "expiresAt",
-      "indexes": [],
-      "ttl": true
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
     }
   ]
 }
