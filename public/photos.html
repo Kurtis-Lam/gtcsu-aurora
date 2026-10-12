@@ -152,21 +152,74 @@
     box-shadow: 0 0 12px rgba(46, 230, 184, 0.3);
   }
 
-  /* Batch Download Toolbar */
-  .toolbar {
-    display: flex; justify-content: space-between; align-items: center;
-    background: var(--glass-bg); border: 1px solid var(--glass-border);
-    border-radius: 12px; padding: 12px 20px; margin-bottom: 24px;
-    backdrop-filter: blur(12px);
+  /* Download notice */
+  .notice-card {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: rgba(47, 230, 184, 0.07); border: 1px solid rgba(47, 230, 184, 0.28);
+    border-radius: 14px; padding: 14px 18px; margin: 0 0 18px;
   }
-  .toolbar-info { font-size: 0.88rem; color: var(--aurora-cyan); }
+  .notice-icon {
+    flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px;
+    display: grid; place-items: center; background: rgba(47, 230, 184, 0.16); color: var(--aurora-teal);
+  }
+  .notice-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .notice-title { font-size: 0.92rem; font-weight: 700; color: #ffffff; margin-bottom: 2px; }
+  .notice-text { font-size: 0.82rem; line-height: 1.55; color: rgba(223, 246, 242, 0.78); }
+
+  /* Download toolbar */
+  .toolbar {
+    position: sticky; top: 76px; z-index: 40;
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+    background: rgba(10, 26, 32, 0.88); border: 1px solid var(--glass-border);
+    border-radius: 14px; padding: 12px 18px; margin-bottom: 14px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .select-all {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 0.85rem; font-weight: 500; color: var(--ink); user-select: none;
+  }
+  .select-all input { width: 18px; height: 18px; accent-color: var(--aurora-teal); cursor: pointer; }
+  .count-chip {
+    font-size: 0.8rem; font-weight: 600; color: var(--aurora-cyan);
+    background: rgba(127, 233, 240, 0.1); border: 1px solid rgba(127, 233, 240, 0.28);
+    padding: 5px 12px; border-radius: 999px; white-space: nowrap;
+  }
+  .count-chip.has-selection { color: #04121c; background: var(--aurora-teal); border-color: var(--aurora-teal); }
+  .ghost-btn {
+    background: transparent; color: var(--ink); border: 1px solid var(--glass-border);
+    padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .ghost-btn:hover:not(:disabled) { border-color: var(--aurora-cyan); background: rgba(127, 233, 240, 0.1); }
+  .ghost-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .download-btn {
     background: var(--aurora-teal); color: #050b12; border: none;
-    padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
-    cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 20px; border-radius: 8px; font-weight: 700; font-size: 0.86rem;
+    cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px;
   }
-  .download-btn:hover:not(:disabled) { box-shadow: 0 0 12px rgba(46, 230, 184, 0.5); opacity: 0.95; }
+  .download-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .download-btn:hover:not(:disabled) { box-shadow: 0 0 14px rgba(46, 230, 184, 0.55); transform: translateY(-1px); }
   .download-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .ghost-btn:focus-visible, .download-btn:focus-visible, .select-all input:focus-visible,
+  .photo-card:focus-visible, .card-download:focus-visible { outline: 2px solid var(--aurora-cyan); outline-offset: 2px; }
+
+  /* Progress + status */
+  .progress-panel {
+    display: none; background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: 12px; padding: 12px 18px; margin-bottom: 14px;
+  }
+  .progress-panel.active { display: block; }
+  .progress-head { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--ink); margin-bottom: 8px; }
+  .progress-track { height: 6px; border-radius: 999px; background: rgba(223, 246, 242, 0.12); overflow: hidden; }
+  .progress-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--aurora-teal), var(--aurora-cyan)); transition: width 0.3s ease; }
+  .status-banner {
+    display: none; border-radius: 12px; padding: 11px 16px; margin-bottom: 14px; font-size: 0.85rem; line-height: 1.5;
+  }
+  .status-banner.active { display: block; }
+  .status-banner.error { background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.4); color: #ffb3b3; }
+  .status-banner.success { background: rgba(47, 230, 184, 0.1); border: 1px solid rgba(47, 230, 184, 0.4); color: #b8f5e4; }
 
   /* Photos Masonry Grid */
   .photos-grid {
@@ -181,10 +234,22 @@
   .photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
   .photo-card:hover img { transform: scale(1.05); }
 
+  .photo-card.selected { border-color: var(--aurora-teal); box-shadow: 0 0 0 2px rgba(47, 230, 184, 0.55); }
   .photo-select-checkbox {
     position: absolute; top: 10px; left: 10px; z-index: 10;
-    width: 20px; height: 20px; accent-color: var(--aurora-teal); cursor: pointer;
+    width: 22px; height: 22px; accent-color: var(--aurora-teal); cursor: pointer;
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.6));
   }
+  .card-download {
+    position: absolute; top: 8px; right: 8px; z-index: 10; width: 34px; height: 34px;
+    display: grid; place-items: center; border-radius: 10px; cursor: pointer;
+    background: rgba(5, 11, 18, 0.72); color: #ffffff; border: 1px solid rgba(127, 233, 240, 0.35);
+    opacity: 0; transition: opacity 0.2s ease, background 0.2s ease;
+  }
+  .card-download svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .photo-card:hover .card-download, .photo-card:focus-within .card-download, .photo-card.selected .card-download { opacity: 1; }
+  .card-download:hover { background: var(--aurora-teal); color: #04121c; }
+  @media (hover: none) { .card-download { opacity: 1; } }
 
   .photo-overlay {
     position: absolute; inset: 0;
@@ -209,6 +274,39 @@
   }
   .lightbox-img { max-width: 100%; max-height: 75vh; border-radius: 8px; object-fit: contain; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
   .lightbox-title { margin-top: 14px; font-size: 1.1rem; color: #ffffff; text-align: center; }
+  .lightbox-actions { margin-top: 14px; display: flex; gap: 10px; justify-content: center; }
+
+  /* Consent dialog */
+  .consent-modal {
+    position: fixed; inset: 0; z-index: 10100; padding: 20px;
+    background: rgba(5, 11, 18, 0.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: flex; justify-content: center; align-items: center;
+    opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+  .consent-modal.active { opacity: 1; visibility: visible; }
+  .consent-card {
+    width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+    background: var(--deep); border: 1px solid var(--glass-border); border-radius: 18px;
+    padding: 28px 26px 22px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+  .consent-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .consent-title { font-family: 'Cinzel', serif; font-size: 1.25rem; color: #ffffff; }
+  .consent-count { font-size: 0.82rem; color: var(--aurora-cyan); margin-bottom: 12px; }
+  .consent-intro { font-size: 0.9rem; line-height: 1.6; color: rgba(223, 246, 242, 0.85); margin-bottom: 14px; }
+  .consent-list { list-style: none; display: grid; gap: 10px; margin-bottom: 18px; }
+  .consent-list li {
+    display: flex; gap: 10px; font-size: 0.85rem; line-height: 1.55; color: rgba(223, 246, 242, 0.85);
+    background: rgba(127, 233, 240, 0.05); border: 1px solid rgba(127, 233, 240, 0.14);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  .consent-list .dot { flex: 0 0 auto; color: var(--aurora-teal); font-weight: 700; }
+  .consent-check {
+    display: flex; gap: 10px; align-items: flex-start; cursor: pointer; margin-bottom: 18px;
+    font-size: 0.88rem; font-weight: 600; color: #ffffff; line-height: 1.5;
+  }
+  .consent-check input { width: 20px; height: 20px; margin-top: 1px; accent-color: var(--aurora-teal); cursor: pointer; flex: 0 0 auto; }
+  .consent-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+
   .lightbox-close {
     position: absolute; top: 24px; right: 28px; background: transparent; border: none;
     color: #ffffff; font-size: 2rem; cursor: pointer; transition: color 0.2s ease;
@@ -308,14 +406,40 @@
         <button class="filter-btn active" data-folder-id="all">✨ All Photos</button>
       </div>
 
-      <!-- Toolbar for Multi-select Downloads -->
-      <div class="toolbar">
-        <span class="toolbar-info" id="selected-count">0 photos selected</span>
-        <button class="download-btn" id="download-zip-btn" disabled>
-          📥 Download Selected (ZIP)
-        </button>
+      <!-- Download notice -->
+      <div class="notice-card">
+        <div class="notice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div>
+          <div class="notice-title i18n" data-en="Protected &amp; audited downloads" data-zh="受保護及稽核的下載">Protected &amp; audited downloads</div>
+          <div class="notice-text i18n" data-en="Every download carries an invisible digital watermark and is recorded against your verified school account, the photo, the time, and limited device/network details. Records are kept for up to 365 days." data-zh="每次下載的相片均載有不可見的數碼水印，並記錄於你已驗證的學校帳戶、相片、時間及有限的裝置／網絡資料之下。紀錄最多保留 365 日。">Every download carries an invisible digital watermark and is recorded against your verified school account, the photo, the time, and limited device/network details. Records are kept for up to 365 days.</div>
+        </div>
       </div>
-      <p class="page-desc i18n" data-en="Downloads are personalized with a visible watermark and recorded against the verified school account, photo, time, and limited device/network metadata. Audit records are retained for up to 365 days." data-zh="下載的相片會加上個人化可見水印，並記錄已驗證的學校帳戶、相片、時間及有限的裝置／網絡資料。詳細紀錄最多保留 365 日。" style="font-size:0.78rem;margin:-10px auto 24px;">Downloads are personalized with a visible watermark and recorded against the verified school account, photo, time, and limited device/network metadata. Audit records are retained for up to 365 days.</p>
+
+      <!-- Download toolbar -->
+      <div class="toolbar" id="download-toolbar">
+        <div class="toolbar-left">
+          <label class="select-all">
+            <input type="checkbox" id="select-all-checkbox">
+            <span class="i18n" data-en="Select all" data-zh="全選">Select all</span>
+          </label>
+          <span class="count-chip" id="selected-count">0 selected</span>
+        </div>
+        <div class="toolbar-right">
+          <button type="button" class="ghost-btn i18n" id="clear-selection-btn" data-en="Clear" data-zh="清除" disabled>Clear</button>
+          <button type="button" class="download-btn" id="download-zip-btn" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span id="download-btn-label">Download selected</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="progress-panel" id="progress-panel" role="status" aria-live="polite">
+        <div class="progress-head"><span id="progress-label"></span><span id="progress-percent"></span></div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+      <div class="status-banner" id="status-banner" role="status" aria-live="polite"></div>
 
       <!-- Gallery Grid -->
       <div class="photos-grid" id="photos-grid">
@@ -332,348 +456,47 @@
     <div class="lightbox-content">
       <img id="lightbox-img" src="" alt="" class="lightbox-img">
       <div id="lightbox-title" class="lightbox-title"></div>
+      <div class="lightbox-actions">
+        <button type="button" class="download-btn" id="lightbox-download-btn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span id="lightbox-download-label">Download</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <script type="module">
-    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { db } from './js/firebase-config.js';
-    import { AuroraAuth } from './js/load-components.js';
-    import { API_BASE } from './js/api-config.js';
-
-    const authContainer = document.getElementById('auth-container');
-    const galleryContent = document.getElementById('gallery-content');
-    const gridEl = document.getElementById('photos-grid');
-    const filtersEl = document.getElementById('folder-filters');
-    const countEl = document.getElementById('selected-count');
-    const downloadBtn = document.getElementById('download-zip-btn');
-
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    const lightboxTitle = document.getElementById('lightbox-title');
-
-    let currentLang = localStorage.getItem('aurora_lang') || 'en';
-    let zipping = false;
-    let lastMessage = null; // { key, isError } so status text can be re-translated
-
-    const T = {
-      en: {
-        allPhotos: '✨ All Photos',
-        selected: (n) => `${n} photo(s) selected`,
-        download: '📥 Download Selected (ZIP)',
-        zipping: '⏳ Zipping...',
-        loading: 'Loading photos gallery...',
-        loadFail: 'Failed to load photos. Please refresh and try again.',
-        empty: 'No photos available in this folder.',
-        untitled: 'Untitled',
-        gallery: 'Gallery',
-        photo: 'Photo',
-        zipFail: (m) => 'Failed to download ZIP: ' + m
-      },
-      zh: {
-        allPhotos: '✨ 全部相片',
-        selected: (n) => `已選擇 ${n} 張相片`,
-        download: '📥 下載所選相片 (ZIP)',
-        zipping: '⏳ 正在壓縮...',
-        loading: '正在載入相片庫...',
-        loadFail: '載入相片失敗，請重新整理後再試。',
-        empty: '此資料夾暫無相片。',
-        untitled: '無標題',
-        gallery: '相片庫',
-        photo: '相片',
-        zipFail: (m) => '下載 ZIP 失敗：' + m
-      }
-    };
-    const t = () => T[currentLang];
-
-    let allImages = [];
-    let allFolders = [];
-    let activeFolderId = 'all';
-    let galleryLoaded = false;
-    const selectedImageIds = new Set();
-
-    const escapeHtml = (str) => String(str ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-
-    // ---- Access is enforced by Firestore rules and the authenticated photo APIs. ----
-    document.getElementById('google-signin-btn').addEventListener('click', () => AuroraAuth.signIn());
-
-    AuroraAuth.onChange((user) => {
-      if (user) {
-        authContainer.style.display = 'none';
-        galleryContent.style.display = 'block';
-        if (!galleryLoaded) initGallery();
-      } else {
-        galleryContent.style.display = 'none';
-        authContainer.style.display = 'block';
-        // Drop everything that was loaded for the previous user.
-        galleryLoaded = false;
-        allImages = [];
-        allFolders = [];
-        selectedImageIds.clear();
-        lightbox.classList.remove('active');
-        revokeImageObjectUrls();
-      }
-    });
-
-    function showMessage(key, isError) {
-      lastMessage = { key, isError };
-      const text = t()[key];
-      gridEl.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:${isError ? '#ff6b6b' : 'rgba(223,246,242,0.5)'}; padding:40px;">${escapeHtml(text)}</p>`;
-    }
-
-    const imageObjectUrls = new Set();
-    let lightboxObjectUrl = null;
-    let lightboxFetchSequence = 0;
-
-    function revokeImageObjectUrls() {
-      for (const url of imageObjectUrls) URL.revokeObjectURL(url);
-      imageObjectUrls.clear();
-      if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
-      lightboxObjectUrl = null;
-      lightboxImg.removeAttribute('src');
-    }
-
-    async function fetchProtectedImage(imageId, variant) {
-      const token = await AuroraAuth.getIdToken();
-      const response = await fetch(`${API_BASE}/api/photo-image?imageId=${encodeURIComponent(imageId)}&variant=${encodeURIComponent(variant)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store'
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `Could not load photo (${response.status})`);
-      }
-      return response.blob();
-    }
-
-    async function loadThumbnail(imageEl) {
-      if (imageEl.dataset.loading === 'true' || imageEl.dataset.loaded === 'true') return;
-      imageEl.dataset.loading = 'true';
-      try {
-        const blob = await fetchProtectedImage(imageEl.dataset.photoImage, 'thumb');
-        const objectUrl = URL.createObjectURL(blob);
-        if (!imageEl.isConnected) { URL.revokeObjectURL(objectUrl); return; }
-        imageObjectUrls.add(objectUrl);
-        imageEl.src = objectUrl;
-        imageEl.dataset.loaded = 'true';
-      } catch {
-        imageEl.alt = `${imageEl.alt} (unavailable)`;
-      } finally {
-        imageEl.dataset.loading = 'false';
-      }
-    }
-
-    const thumbnailObserver = 'IntersectionObserver' in window
-      ? new IntersectionObserver(entries => entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            thumbnailObserver.unobserve(entry.target);
-            loadThumbnail(entry.target);
-          }
-        }), { rootMargin: '400px' })
-      : null;
-
-    function observeThumbnails() {
-      gridEl.querySelectorAll('img[data-photo-image]').forEach(imageEl => {
-        if (thumbnailObserver) thumbnailObserver.observe(imageEl);
-        else loadThumbnail(imageEl);
-      });
-    }
-
-    async function initGallery() {
-      galleryLoaded = true;
-      showMessage('loading', false);
-      try {
-        const token = await AuroraAuth.getIdToken();
-        const [photosResponse, foldersSnap] = await Promise.all([
-          fetch(`${API_BASE}/api/list-photos`, {
-            headers: { Authorization: `Bearer ${token}` },
-            cache: 'no-store'
-          }),
-          getDocs(collection(db, "galleryFolders"))
-        ]);
-        if (!photosResponse.ok) {
-          const data = await photosResponse.json().catch(() => ({}));
-          throw new Error(data.error || `Could not load photos (${photosResponse.status})`);
-        }
-        const photoData = await photosResponse.json();
-        allImages = Array.isArray(photoData.images) ? photoData.images : [];
-        allFolders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        renderFilters();
-        renderGallery();
-      } catch (err) {
-        console.error("Failed to load gallery:", err);
-        galleryLoaded = false;
-        showMessage('loadFail', true);
-      }
-    }
-
-    function renderFilters() {
-      let html = `<button class="filter-btn ${activeFolderId === 'all' ? 'active' : ''}" data-folder-id="all">${t().allPhotos}</button>`;
-      allFolders.forEach(folder => {
-        html += `<button class="filter-btn ${activeFolderId === folder.id ? 'active' : ''}" data-folder-id="${escapeHtml(folder.id)}">📁 ${escapeHtml(folder.name)}</button>`;
-      });
-      filtersEl.innerHTML = html;
-
-      filtersEl.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          activeFolderId = btn.getAttribute('data-folder-id');
-          filtersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          renderGallery();
-        });
-      });
-    }
-
-    function renderGallery() {
-      revokeImageObjectUrls();
-      const filtered = activeFolderId === 'all'
-        ? allImages
-        : allImages.filter(img => img.folderId === activeFolderId);
-
-      if (filtered.length === 0) {
-        showMessage('empty', false);
-        return;
-      }
-
-      gridEl.innerHTML = filtered.map(img => `
-        <div class="photo-card" data-img-id="${escapeHtml(img.id)}">
-          <input type="checkbox" class="photo-select-checkbox" data-id="${escapeHtml(img.id)}" ${selectedImageIds.has(img.id) ? 'checked' : ''}>
-          <img data-photo-image="${escapeHtml(img.id)}" alt="${escapeHtml(img.title || img.name || t().photo)}" loading="lazy">
-          <div class="photo-overlay">
-            <span class="photo-title">${escapeHtml(img.title || img.name || t().untitled)}</span>
-            <span class="photo-folder">${escapeHtml(img.folderPath || t().gallery)}</span>
-          </div>
+  <!-- Download consent -->
+  <div class="consent-modal" id="consent-modal" role="dialog" aria-modal="true" aria-labelledby="consent-title">
+    <div class="consent-card">
+      <div class="consent-head">
+        <div class="notice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
         </div>
-      `).join('');
+        <h2 class="consent-title i18n" id="consent-title" data-en="Before you download" data-zh="下載前請確認">Before you download</h2>
+      </div>
+      <p class="consent-count" id="consent-count"></p>
+      <p class="consent-intro i18n" data-en="Photos from the Aurora gallery are protected so that every download can be traced. To continue you must agree that:" data-zh="Aurora 相片庫的相片設有保護，確保每次下載均可追溯。要繼續下載，你必須同意以下事項：">Photos from the Aurora gallery are protected so that every download can be traced. To continue you must agree that:</p>
+      <ul class="consent-list">
+        <li><span class="dot">✓</span><span class="i18n" data-en="Your download digital footprint will be audited: your verified school account, the photo, the date and time, and limited device and network information are recorded." data-zh="你的下載數碼足跡將會被稽核：系統會記錄你已驗證的學校帳戶、相片、日期與時間，以及有限的裝置和網絡資料。">Your download digital footprint will be audited: your verified school account, the photo, the date and time, and limited device and network information are recorded.</span></li>
+        <li><span class="dot">✓</span><span class="i18n" data-en="Each file carries an invisible digital watermark linked to your download record. It cannot be seen, but it can identify the download if the image is shared or edited." data-zh="每個檔案均載有與你下載紀錄連結的不可見數碼水印。水印肉眼看不見，但若相片被轉發或修改，仍可用作識別該次下載。">Each file carries an invisible digital watermark linked to your download record. It cannot be seen, but it can identify the download if the image is shared or edited.</span></li>
+        <li><span class="dot">✓</span><span class="i18n" data-en="Records are kept for up to 365 days and are accessible only to authorised administrators and the school for investigating misuse." data-zh="紀錄最多保留 365 日，僅限獲授權的管理員及校方為調查濫用事件而查閱。">Records are kept for up to 365 days and are accessible only to authorised administrators and the school for investigating misuse.</span></li>
+        <li><span class="dot">✓</span><span class="i18n" data-en="Photos are for personal, school-related use. Edits that harass, mock or misrepresent others breach the school's code of conduct." data-zh="相片只供個人及與學校相關的用途。以騷擾、嘲弄或扭曲他人形象為目的的修改，違反校規。">Photos are for personal, school-related use. Edits that harass, mock or misrepresent others breach the school's code of conduct.</span></li>
+      </ul>
+      <label class="consent-check">
+        <input type="checkbox" id="consent-checkbox">
+        <span class="i18n" data-en="I understand and agree that my download digital footprint will be audited." data-zh="我明白並同意我的下載數碼足跡將會被稽核。">I understand and agree that my download digital footprint will be audited.</span>
+      </label>
+      <div class="consent-actions">
+        <button type="button" class="ghost-btn i18n" id="consent-cancel" data-en="Cancel" data-zh="取消">Cancel</button>
+        <button type="button" class="download-btn" id="consent-accept" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span class="i18n" data-en="Agree &amp; Download" data-zh="同意並下載">Agree &amp; Download</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
-      observeThumbnails();
-
-      gridEl.querySelectorAll('.photo-select-checkbox').forEach(cb => {
-        cb.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const id = cb.getAttribute('data-id');
-          if (cb.checked) selectedImageIds.add(id); else selectedImageIds.delete(id);
-          updateToolbar();
-        });
-      });
-
-      gridEl.querySelectorAll('.photo-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const img = allImages.find(x => x.id === card.getAttribute('data-img-id'));
-          if (img) openLightbox(img);
-        });
-      });
-    }
-
-    function updateToolbar() {
-      countEl.textContent = t().selected(selectedImageIds.size);
-      if (!zipping) {
-        downloadBtn.textContent = t().download;
-        downloadBtn.disabled = selectedImageIds.size === 0;
-      }
-    }
-
-    async function openLightbox(img) {
-      const sequence = ++lightboxFetchSequence;
-      if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
-      lightboxObjectUrl = null;
-      lightboxImg.removeAttribute('src');
-      lightboxTitle.textContent = img.title || img.name || '';
-      lightbox.classList.add('active');
-      try {
-        const blob = await fetchProtectedImage(img.id, 'view');
-        if (sequence !== lightboxFetchSequence) return;
-        lightboxObjectUrl = URL.createObjectURL(blob);
-        lightboxImg.src = lightboxObjectUrl;
-      } catch {
-        if (sequence === lightboxFetchSequence) lightboxTitle.textContent = `${img.title || img.name || t().photo} — unavailable`;
-      }
-    }
-
-    const closeLightbox = () => {
-      lightboxFetchSequence++;
-      lightbox.classList.remove('active');
-      if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
-      lightboxObjectUrl = null;
-      lightboxImg.removeAttribute('src');
-    };
-    document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
-    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
-
-    downloadBtn.addEventListener('click', async () => {
-      if (selectedImageIds.size === 0) return;
-      zipping = true;
-      downloadBtn.disabled = true;
-      downloadBtn.textContent = t().zipping;
-
-      const zip = new JSZip();
-      const selected = allImages.filter(img => selectedImageIds.has(img.id));
-      const batchId = crypto.randomUUID();
-
-      try {
-        for (let i = 0; i < selected.length; i++) {
-          const img = selected[i];
-          const token = await AuroraAuth.getIdToken();
-          const response = await fetch(`${API_BASE}/api/photo-download`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ imageId: img.id, batchId }),
-            cache: 'no-store'
-          });
-          if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.error || `Could not download ${img.name || 'photo'} (${response.status})`);
-          }
-          const safeName = String(img.name || 'photo.jpg').replace(/[\\/:*?"<>|]/g, '_');
-          zip.file(`${String(i + 1).padStart(3, '0')}-${safeName.replace(/\.[^.]+$/, '')}-watermarked.jpg`, await response.blob());
-        }
-
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(zipBlob);
-        a.download = 'aurora-photos.zip';
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-      } catch (err) {
-        alert(t().zipFail(err.message));
-      } finally {
-        zipping = false;
-        updateToolbar();
-      }
-    });
-
-    // ---- Language (same mechanism as activities.html) ----
-    function setLanguage(lang) {
-      currentLang = lang;
-      localStorage.setItem('aurora_lang', lang);
-      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
-
-      document.querySelectorAll('.i18n').forEach(el => {
-        const text = el.getAttribute(`data-${lang}`);
-        if (text) el.innerHTML = text;
-      });
-
-      const langText = document.getElementById('lang-text');
-      if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
-
-      // Re-render the dynamic parts
-      updateToolbar();
-      if (allImages.length) {
-        renderFilters();
-        renderGallery();
-      } else {
-        filtersEl.innerHTML = `<button class="filter-btn active" data-folder-id="all">${t().allPhotos}</button>`;
-        if (lastMessage) showMessage(lastMessage.key, lastMessage.isError);
-      }
-    }
-
-    window.setLanguage = setLanguage; // used by the shared language button
-    setLanguage(currentLang);
-  </script>
+  <script type="module" src="js/photos.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const video = document.getElementById('bg-video');
