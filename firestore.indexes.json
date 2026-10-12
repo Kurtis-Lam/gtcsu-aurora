@@ -12,6 +12,12 @@
       "fieldPath": "expiresAt",
       "indexes": [],
       "ttl": true
+    },
+    {
+      "collectionGroup": "apiRateLimits",
+      "fieldPath": "expiresAt",
+      "indexes": [],
+      "ttl": true
     }
   ]
 }
