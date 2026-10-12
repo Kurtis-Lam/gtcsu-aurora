@@ -12,6 +12,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "extract-watermark": "node scripts/extract-watermark.js"
+    "extract-watermark": "node scripts/extract-watermark.js",
+    "clear-download-history": "node scripts/clear-download-history.js"
   }
 }
