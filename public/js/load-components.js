@@ -343,7 +343,9 @@ async function loadPanel() {
     navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('data-page') === currentPath));
     const dropdown = mountPoint.querySelector('#info-dropdown');
     const dropdownToggle = mountPoint.querySelector('#info-dropdown-toggle');
-    if (navLinks.length && [...navLinks].some(link => link.classList.contains('active'))) dropdown?.classList.add('open');
+    // In the mobile drawer, start expanded when the current page lives under "Info".
+    // On desktop the menu is a floating panel, so it only opens on hover/click.
+    if (dropdown?.querySelector('a.active') && window.matchMedia('(max-width: 768px)').matches) dropdown.classList.add('open');
     dropdownToggle?.addEventListener('click', () => {
       const open = dropdown.classList.toggle('open');
       dropdownToggle.setAttribute('aria-expanded', String(open));
