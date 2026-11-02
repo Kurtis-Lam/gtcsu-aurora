@@ -53,7 +53,7 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$KEY_FILE" >> "$GITHUB_ENV"
 
       - name: Firebase deploy
-        run: npx --yes firebase-tools@latest deploy --non-interactive
+        run: npx --yes firebase-tools@latest deploy --project gtcsu-aurora --non-interactive
 
       - name: Remove credentials
         if: always()
