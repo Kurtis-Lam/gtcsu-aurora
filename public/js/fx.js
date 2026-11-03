@@ -23,34 +23,29 @@ const el = (tag, className) => {
   return node;
 };
 
-const NAV_FLAG = 'aurora_fx_nav';
-const LOADER_MIN_SWITCH = 900;
-const LOADER_MIN_FIRST = 600;
-let holdTimer = 0;
+const root = document.documentElement;
 
-function holdLoader(duration) {
-  const preloader = document.getElementById('preloader');
-  if (!preloader || reducedMotion.matches) return;
-  const root = document.documentElement;
-  root.classList.remove('fx-hold');
-  void root.offsetWidth;
-  root.classList.add('fx-hold');
-  clearTimeout(holdTimer);
-  holdTimer = setTimeout(() => root.classList.remove('fx-hold'), duration);
+function detectLowEnd() {
+  const nav = navigator;
+  const cores = nav.hardwareConcurrency || 8;
+  const memory = nav.deviceMemory || 8;
+  const saveData = !!(nav.connection && nav.connection.saveData);
+  if (cores <= 4 || memory <= 4 || saveData) root.classList.add('fx-lite');
 }
 
-function startLoaderOnArrival() {
-  let switched = false;
-  try {
-    switched = sessionStorage.getItem(NAV_FLAG) === '1';
-    sessionStorage.removeItem(NAV_FLAG);
-  } catch {}
-  holdLoader(switched ? LOADER_MIN_SWITCH : LOADER_MIN_FIRST);
+// Spotlight coordinates must not inherit, otherwise every pointer move
+// restyles the whole subtree of the hovered card.
+function registerSpotlightVars() {
+  if (!window.CSS || !CSS.registerProperty) return;
+  ['--mx', '--my'].forEach(name => {
+    try {
+      CSS.registerProperty({ name, syntax: '<length-percentage>', inherits: false, initialValue: '50%' });
+    } catch {}
+  });
 }
 
 function watchPerformance() {
-  if (reducedMotion.matches) return;
-  const root = document.documentElement;
+  if (reducedMotion.matches || root.classList.contains('fx-lite')) return;
   let previous = 0;
   let count = 0;
   let total = 0;
@@ -199,7 +194,7 @@ function startStars(canvas) {
 
   resize();
   draw(performance.now());
-  start();
+  if (!root.classList.contains('fx-lite')) start();
 
   let resizeTimer = 0;
   window.addEventListener('resize', () => {
@@ -219,7 +214,7 @@ function buildAmbient() {
   if (document.querySelector('.fx-ambient')) return;
   const hasSky = !!document.getElementById('background-container');
 
-  if (hasSky) {
+  if (hasSky && !root.classList.contains('fx-lite')) {
     const ambient = el('div', 'fx-ambient');
     ambient.setAttribute('aria-hidden', 'true');
     const aurora = el('div', 'fx-aurora');
@@ -229,11 +224,9 @@ function buildAmbient() {
     startStars(canvas);
   }
 
-  const veil = el('div', 'fx-veil');
-  veil.setAttribute('aria-hidden', 'true');
   const progress = el('div', 'fx-progress');
   progress.setAttribute('aria-hidden', 'true');
-  document.body.append(veil, progress);
+  document.body.appendChild(progress);
 
   if (finePointer.matches) {
     const cursor = el('div', 'fx-cursor');
@@ -255,7 +248,7 @@ function wirePointer() {
     scheduled = false;
     const event = pending;
     pending = null;
-    if (!event) return;
+    if (!event || root.classList.contains('fx-lite')) return;
 
     if (!glow) glow = document.querySelector('.fx-cursor');
     if (glow) {
@@ -313,15 +306,16 @@ function wireRipple() {
 }
 
 function wireScroll() {
-  const root = document.documentElement;
   let ticking = false;
   let bar = null;
   let scrolled = false;
+  let max = 1;
+
+  const measure = () => { max = Math.max(1, root.scrollHeight - window.innerHeight); };
 
   const update = () => {
     ticking = false;
     if (!bar) bar = document.querySelector('.fx-progress');
-    const max = Math.max(1, root.scrollHeight - window.innerHeight);
     const progress = Math.min(1, Math.max(0, window.scrollY / max));
     if (bar) bar.style.transform = `scaleX(${progress.toFixed(4)})`;
     const nowScrolled = window.scrollY > 24;
@@ -331,66 +325,28 @@ function wireScroll() {
     }
   };
 
-  window.addEventListener('scroll', () => {
+  const schedule = () => {
     if (!ticking) {
       ticking = true;
       requestAnimationFrame(update);
     }
-  }, { passive: true });
-  window.addEventListener('resize', update, { passive: true });
+  };
+
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', () => { measure(); schedule(); }, { passive: true });
+  if ('ResizeObserver' in window) new ResizeObserver(() => { measure(); schedule(); }).observe(document.body);
+  measure();
   update();
 }
 
-function wirePageTransitions() {
-  const root = document.documentElement;
-
-  document.addEventListener('click', (event) => {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    if (reducedMotion.matches) return;
-    const link = event.target.closest ? event.target.closest('a[href]') : null;
-    if (!link || (link.target && link.target !== '_self') || link.hasAttribute('download')) return;
-
-    let url;
-    try { url = new URL(link.href, window.location.href); } catch { return; }
-    if (url.origin !== window.location.origin) return;
-    if (url.pathname === window.location.pathname && url.search === window.location.search) return;
-    if (/\.[a-z0-9]+$/i.test(url.pathname) && !/\.html?$/i.test(url.pathname)) return;
-
-    event.preventDefault();
-    if (root.classList.contains('fx-leaving')) return;
-    try { sessionStorage.setItem(NAV_FLAG, '1'); } catch {}
-    root.classList.add('fx-leaving');
-    setTimeout(() => { window.location.href = url.href; }, 320);
-  });
-
-  window.addEventListener('pageshow', (event) => {
-    root.classList.remove('fx-leaving');
-    if (event.persisted) holdLoader(LOADER_MIN_SWITCH);
-  });
-}
-
-function markBooted() {
-  const root = document.documentElement;
-  const done = () => setTimeout(() => root.classList.add('fx-booted'), 1800);
-  if (document.body.classList.contains('is-loaded')) return done();
-  const observer = new MutationObserver(() => {
-    if (document.body.classList.contains('is-loaded')) {
-      observer.disconnect();
-      done();
-    }
-  });
-  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-}
-
 function init() {
-  startLoaderOnArrival();
+  detectLowEnd();
+  registerSpotlightVars();
   watchPerformance();
-  markBooted();
   buildAmbient();
   wirePointer();
   wireRipple();
   wireScroll();
-  wirePageTransitions();
 }
 
 injectStyles();
