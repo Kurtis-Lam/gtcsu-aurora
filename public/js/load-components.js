@@ -74,22 +74,33 @@ function canPrefetch() {
   return !connection.saveData && !/(^|-)2g$/.test(connection.effectiveType || '');
 }
 
-// Shared components are cached per release: returning visits paint the navigation
-// instantly from the cache while a fresh copy is fetched in the background.
+// Shared components are cached per release: a cached copy is used as-is (the key
+// carries APP_VERSION, so a new release always refetches) and stale versions are purged.
+function purgeOldComponents() {
+  try {
+    const prefix = 'aurora_component:';
+    const current = `${prefix}${APP_VERSION}:`;
+    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix) && !key.startsWith(current)) localStorage.removeItem(key);
+    }
+  } catch {}
+}
+
 function fetchComponent(file) {
   const key = `aurora_component:${APP_VERSION}:${file}`;
-  let cached = null;
-  try { cached = localStorage.getItem(key); } catch {}
+  try {
+    const cached = localStorage.getItem(key);
+    if (cached) return Promise.resolve(cached);
+  } catch {}
 
-  const network = fetch(file)
+  return fetch(file)
     .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
     .then(text => {
       try { localStorage.setItem(key, text); } catch {}
       return text;
     })
     .catch(err => { console.error(`Error loading ${file} component:`, err); return null; });
-
-  return cached ? Promise.resolve(cached) : network;
 }
 
 const panelFetchPromise = fetchComponent('panel.html');
@@ -387,15 +398,89 @@ function syncLangButton() {
 function applyLanguageEverywhere(lang) {
   localStorage.setItem('aurora_lang', lang);
   document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+  // A page's own setLanguage already walks every .i18n node (panel and popups included),
+  // so the shared pass only runs for pages that do not define one.
   if (typeof window.setLanguage === 'function') window.setLanguage(lang);
-  applyLanguage(document); // covers pages without their own setLanguage + the popups
+  else applyLanguage(document);
   syncLangButton();
   refreshInfo();
   window.dispatchEvent(new CustomEvent('aurora:langchange', { detail: { lang } }));
 }
 
+const LANG_OUT_MS = 150;
+const LANG_IN_MS = 420;
+const LANG_EASE_IN = 'cubic-bezier(0.4, 0, 1, 1)';
+const LANG_EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const LANG_TARGETS = '.wrap, .page-container, main, #news-content, .header-section, footer';
+let langBusy = false;
+
+// Page regions that change with the language, minus any region nested inside another
+// (so a fade is never applied twice to the same pixels).
+function langRegions() {
+  const found = Array.from(document.querySelectorAll(LANG_TARGETS));
+  return found.filter(node => !found.some(other => other !== node && other.contains(node)));
+}
+
+// Fade the content out, swap the text while it is invisible, then fade it back in
+// with a short upward settle. Only opacity and transform are animated, so the whole
+// transition runs on the compositor and never repaints the page or the video.
 function switchLanguage() {
-  applyLanguageEverywhere(currentLang() === 'en' ? 'zh' : 'en');
+  if (langBusy) return;
+  const next = currentLang() === 'en' ? 'zh' : 'en';
+
+  if (reducedMotion.matches || typeof Element.prototype.animate !== 'function') {
+    applyLanguageEverywhere(next);
+    return;
+  }
+
+  langBusy = true;
+  root.classList.add('fx-lang-busy');
+
+  const lite = isLite();
+  const rise = lite ? 0 : 10;
+  const regions = langRegions().map(node => ({ node, move: true }));
+  const nav = document.querySelector('.nav-links');
+  if (nav) regions.push({ node: nav, move: false });
+
+  const frame = (opacity, y, move) => (move ? { opacity, transform: `translate3d(0, ${y}px, 0)` } : { opacity });
+  const outs = regions.map(({ node, move }) => node.animate(
+    [frame(1, 0, move), frame(0, -rise / 2, move)],
+    { duration: LANG_OUT_MS, easing: LANG_EASE_IN, fill: 'forwards' }
+  ));
+
+  const button = document.getElementById('lang-btn');
+  const icon = button?.querySelector('.lang-icon');
+  const label = document.getElementById('lang-text');
+  if (icon && !lite) {
+    icon.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 620, easing: LANG_EASE_OUT });
+  }
+
+  setTimeout(() => {
+    applyLanguageEverywhere(next);
+
+    const ins = regions.map(({ node, move }) => {
+      const anim = node.animate(
+        [frame(0, rise, move), frame(1, 0, move)],
+        { duration: LANG_IN_MS, easing: LANG_EASE_OUT }
+      );
+      return anim;
+    });
+    outs.forEach(anim => anim.cancel());
+
+    if (label) {
+      label.animate(
+        [{ opacity: 0, transform: 'translate3d(0, 6px, 0)' }, { opacity: 1, transform: 'translate3d(0, 0, 0)' }],
+        { duration: 320, easing: LANG_EASE_OUT }
+      );
+    }
+
+    const done = () => {
+      langBusy = false;
+      root.classList.remove('fx-lang-busy');
+    };
+    if (ins.length && ins[0].finished) ins[0].finished.then(done, done);
+    else setTimeout(done, LANG_IN_MS);
+  }, LANG_OUT_MS);
 }
 
 // ---------------------------------------------------------------------------
@@ -560,6 +645,7 @@ function warmUp() {
   runWhenQuiet(() => { loadFirebase().catch(() => {}); }, { quietMs: 600, timeout: 10000 });
 }
 
+purgeOldComponents();
 preconnectApi();
 afterPageLoad(() => runWhenIdle(warmUp, 2000));
 
