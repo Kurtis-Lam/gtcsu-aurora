@@ -1,7 +1,8 @@
 /* ==========================================================================
    Aurora FX: shared visual layer, loaded on every page by js/fx.js.
-   Sections: 1 tokens, 2 keyframes, 3 buttons, 4 floating buttons, 5 cards,
-   6 type, 7 navbar, 8 preloader off, 9 ambient, 10 page polish, 11 reduced motion
+   Every animated property is compositor-only (transform / opacity), all
+   transitions are short and carry no delay, so hover and press feedback
+   starts on the very next frame and never competes with the background video.
    ========================================================================== */
 
 /* ---------- 1. Tokens ---------- */
@@ -21,6 +22,9 @@
 ::selection { background: rgba(46, 230, 184, 0.38); color: #ffffff; }
 :focus-visible { outline: 2px solid var(--fx-cyan); outline-offset: 3px; }
 
+/* taps register instantly: no double-tap-zoom wait on touch screens */
+a, button, [role="button"], input, select, textarea, label, summary { touch-action: manipulation; }
+
 html { scrollbar-color: rgba(127, 233, 240, 0.5) rgba(5, 11, 18, 0.85); scrollbar-width: thin; }
 @supports selector(::-webkit-scrollbar) {
   html { scrollbar-color: auto; scrollbar-width: auto; }
@@ -35,33 +39,22 @@ html { scrollbar-color: rgba(127, 233, 240, 0.5) rgba(5, 11, 18, 0.85); scrollba
 
 /* ---------- 2. Keyframes ---------- */
 @keyframes fx-item-in {
-  from { opacity: 0; transform: translateX(-18px) scale(0.94); }
+  from { opacity: 0; transform: translate3d(-12px, 0, 0); }
   to   { opacity: 1; transform: none; }
 }
-@keyframes fx-flow { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
 @keyframes fx-ripple { from { transform: scale(0); opacity: 0.9; } to { transform: scale(1); opacity: 0; } }
 @keyframes fx-spin { to { transform: rotate(360deg); } }
-@keyframes fx-diamond {
-  0%, 100% { transform: rotate(45deg) scale(1); opacity: 0.85; }
-  50% { transform: rotate(225deg) scale(1.25); opacity: 1; }
+@keyframes fx-twinkle { from { opacity: 0.15; } to { opacity: 1; } }
+@keyframes fx-shoot {
+  from { transform: translate3d(0, 0, 0) rotate(var(--a)); opacity: 1; }
+  to   { transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--a)); opacity: 0; }
 }
-@keyframes fx-logo-glow {
-  0%, 100% { text-shadow: 0 0 18px rgba(127, 233, 240, 0.55), 0 0 46px rgba(46, 230, 184, 0.4), 0 0 90px rgba(46, 230, 184, 0.22); }
-  50% { text-shadow: 0 0 26px rgba(127, 233, 240, 0.8), 0 0 64px rgba(167, 139, 250, 0.5), 0 0 120px rgba(46, 230, 184, 0.32); }
-}
-@keyframes fx-twinkle { 0%, 100% { opacity: 0.35; transform: translateX(-50%) scale(0.8) rotate(0); } 50% { opacity: 1; transform: translateX(-50%) scale(1.25) rotate(90deg); } }
-@keyframes fx-pulse-ring { 0%, 100% { box-shadow: 0 0 10px rgba(46, 230, 184, 0.25); } 50% { box-shadow: 0 0 22px rgba(127, 233, 240, 0.55); } }
-@keyframes fx-drift-a { from { transform: translate3d(-6%, -4%, 0) scale(1); } to { transform: translate3d(14%, 10%, 0) scale(1.25); } }
-@keyframes fx-drift-b { from { transform: translate3d(8%, 2%, 0) scale(1.1); } to { transform: translate3d(-14%, 14%, 0) scale(0.9); } }
-@keyframes fx-drift-c { from { transform: translate3d(-10%, 6%, 0) scale(0.95); } to { transform: translate3d(12%, -10%, 1px) scale(1.2); } }
-@keyframes fx-divider { 0%, 100% { transform: scaleY(0.55); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } }
-@keyframes fx-sheen { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
+@keyframes fx-sheen { from { transform: translate3d(-120%, 0, 0); } to { transform: translate3d(220%, 0, 0); } }
 
-/* ---------- 3. Buttons: the info-dropdown treatment on every button ----------
-   Shimmer sweep (::before), glowing accent bar (::after), nudge, staggered
-   entrance, spring easing. Text buttons first, icon-only buttons after. */
+/* ---------- 3. Buttons ----------
+   Shimmer sweep (::before), accent bar (::after), nudge and press feedback.
+   Text buttons, floating buttons and icon-only buttons share one base. */
 
-/* base: clipping + stacking so the shimmer sits between background and label */
 body :is(
   .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
   .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
@@ -73,22 +66,25 @@ body :is(
   -webkit-tap-highlight-color: transparent;
 }
 
-/* anything that is not already fixed/absolute needs to anchor its pseudo-elements */
 :where(
   .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
   .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
   .btn, .dest-btn, .dz-btn, .expand-btn, .modal-close-btn
 ) { position: relative; }
 
-/* shared motion (floating buttons get their own below) */
+/* the always-visible controls are pre-promoted, so the first hover has no layer-creation hitch */
+body :is(.nav-btn, .nav-auth-btn, .cta, .submit-btn, .support-button, .lang-toggle, .info-toggle) { will-change: transform; }
+
+/* short transitions, never delayed */
 body :is(
   .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
   .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
   .btn, .dest-btn, .dz-btn, .expand-btn, .info-close, .card-download, .lightbox-close, .modal-close-btn
 ) {
   transition:
-    color .25s ease, background .25s ease, background-color .25s ease, border-color .25s ease,
-    box-shadow .35s ease, opacity .25s ease, filter .3s ease, transform .35s var(--fx-ease);
+    color .16s ease, background-color .16s ease, border-color .16s ease,
+    box-shadow .2s ease, opacity .16s ease, transform .22s var(--fx-ease);
+  transition-delay: 0s;
 }
 
 /* shimmer sweep */
@@ -100,63 +96,67 @@ body :is(
 )::before {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
   background: linear-gradient(100deg, transparent 15%, var(--fx-shine) 50%, transparent 85%);
-  transform: translateX(-110%);
-  transition: transform .7s var(--fx-ease);
+  transform: translate3d(-110%, 0, 0);
+  transition: transform .5s var(--fx-ease);
 }
 
-/* accent bar (left edge for pills, underline for tabs, none for icon buttons) */
+/* accent bar: fixed height, revealed with scaleY so it never triggers layout */
 body :is(
   .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
   .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn,
   .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle
 )::after {
-  content: ''; position: absolute; left: 6px; top: 50%; width: 3px; height: 0; border-radius: 3px;
-  transform: translateY(-50%); pointer-events: none;
+  content: ''; position: absolute; left: 6px; top: 50%; width: 3px; height: 55%; border-radius: 3px;
+  transform: translate3d(0, -50%, 0) scaleY(0); pointer-events: none;
   background: var(--fx-bar); box-shadow: 0 0 8px var(--fx-bar-glow);
-  transition: height .35s var(--fx-spring);
+  transition: transform .28s var(--fx-spring);
 }
 body .tab-btn::after {
   content: ''; position: absolute; left: 14%; right: 14%; bottom: 0; height: 2px; border-radius: 2px;
   background: var(--fx-aurora-line); background-size: 200% 100%; box-shadow: 0 0 10px var(--fx-bar-glow);
   transform: scaleX(0); transform-origin: center; pointer-events: none;
-  transition: transform .45s var(--fx-spring);
+  transition: transform .3s var(--fx-spring);
 }
-
-/* hover / keyboard focus: shimmer travels across, bar grows, button nudges */
-body :is(
-  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
-  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
-  .btn, .dest-btn, .dz-btn, .expand-btn, .info-close, .card-download, .lightbox-close, .modal-close-btn
-):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"]) {
-  transform: translateX(4px);
-  box-shadow: 0 0 16px rgba(46, 230, 184, 0.28);
-}
-body :is(
-  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
-  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
-  .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle,
-  .info-toggle, .info-close, .card-download, .lightbox-close, .modal-close-btn
-):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::before { transform: translateX(110%); }
-body :is(
-  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
-  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn,
-  .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle
-):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::after,
-body :is(.nav-btn, .filter-btn, .dest-btn, .nav-auth-btn).active::after { height: 55%; }
-body .tab-btn:is(:hover, :focus-visible):not(:disabled)::after,
+body :is(.nav-btn, .filter-btn, .dest-btn, .nav-auth-btn).active::after { transform: translate3d(0, -50%, 0) scaleY(1); }
 body .tab-btn.active::after { transform: scaleX(1); }
+
+/* hover: shimmer travels across, bar grows, button nudges (pointer devices only) */
+@media (hover: hover) {
+  body :is(
+    .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+    .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+    .btn, .dest-btn, .dz-btn, .expand-btn, .info-close, .card-download, .lightbox-close, .modal-close-btn
+  ):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"]) {
+    transform: translate3d(4px, 0, 0);
+    box-shadow: 0 0 14px rgba(46, 230, 184, 0.28);
+  }
+  body :is(
+    .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+    .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+    .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle,
+    .info-toggle, .info-close, .card-download, .lightbox-close, .modal-close-btn
+  ):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::before { transform: translate3d(110%, 0, 0); }
+  body :is(
+    .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+    .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn,
+    .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle
+  ):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::after { transform: translate3d(0, -50%, 0) scaleY(1); }
+  body .tab-btn:is(:hover, :focus-visible):not(:disabled)::after { transform: scaleX(1); }
+  body :is(.read-btn, .identity-toggle, .submit-btn, .aurora-modal-btn, .nav-auth-btn, .page-btn, .dest-btn, .ghost-btn, .filter-btn):is(:hover, :focus-visible):not(:disabled) {
+    border-color: rgba(127, 233, 240, 0.75);
+  }
+  body :is(.download-btn, .dz-btn, .support-button):is(:hover, :focus-visible):not(:disabled) { filter: brightness(1.08) saturate(1.08); }
+  body :is(.info-close, .card-download, .lightbox-close, .modal-close-btn):is(:hover, :focus-visible):not(:disabled) { transform: rotate(90deg) scale(1.08); }
+}
 
 /* press */
 body :is(
   .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
   .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
   .btn, .dest-btn, .dz-btn, .expand-btn, .info-close, .card-download, .lightbox-close, .modal-close-btn
-):active:not(:disabled):not([aria-disabled="true"]) { transform: translateX(2px) scale(0.965); transition-duration: .12s; }
-
-/* border response for outlined buttons */
-body :is(.read-btn, .identity-toggle, .submit-btn, .aurora-modal-btn, .nav-auth-btn, .page-btn, .dest-btn, .ghost-btn, .filter-btn):is(:hover, :focus-visible):not(:disabled) {
-  border-color: rgba(127, 233, 240, 0.75);
-}
+):active:not(:disabled):not([aria-disabled="true"]) { transform: translate3d(2px, 0, 0) scale(0.965); transition-duration: .1s; }
+body :is(.info-close, .lightbox-close, .modal-close-btn):active { transform: rotate(90deg) scale(0.92); }
+body :is(.info-close, .card-download, .lightbox-close, .modal-close-btn) { transition-timing-function: ease, ease, ease, ease, ease, var(--fx-spring); }
 
 /* solid / bright buttons need a dark bar and a white sheen */
 body :is(.download-btn, .dz-btn, .support-button, .dest-btn.active, .google-btn) {
@@ -165,75 +165,63 @@ body :is(.download-btn, .dz-btn, .support-button, .dest-btn.active, .google-btn)
   --fx-bar-glow: rgba(4, 18, 28, 0.35);
 }
 body .google-btn { --fx-shine: rgba(66, 133, 244, 0.22); --fx-bar: linear-gradient(180deg, #4285f4, #34a853); --fx-bar-glow: rgba(66, 133, 244, 0.5); }
-body :is(.download-btn, .dz-btn, .support-button):is(:hover, :focus-visible):not(:disabled) { filter: brightness(1.08) saturate(1.08); }
 body :is(.btn-spam, .btn-danger, .btn-delete) { --fx-shine: rgba(255, 107, 107, 0.3); --fx-bar: linear-gradient(180deg, #ff9a9a, #ff6b6b); --fx-bar-glow: rgba(255, 107, 107, 0.6); }
 
 /* disabled buttons stay calm */
 body :is(.submit-btn, .support-button, .ghost-btn, .download-btn, .page-btn, .nav-btn, .btn):disabled { transform: none; box-shadow: none; filter: none; }
 
-/* icon-only buttons: shimmer + glow + a spring spin instead of a bar */
-body :is(.info-close, .card-download, .lightbox-close, .modal-close-btn):is(:hover, :focus-visible):not(:disabled) { transform: rotate(90deg) scale(1.08); }
-body :is(.info-close, .card-download, .lightbox-close, .modal-close-btn) { transition-timing-function: var(--fx-spring); }
-body .card-download:is(:hover, :focus-visible) { transform: scale(1.12); }
-body :is(.info-close, .lightbox-close, .modal-close-btn):active { transform: rotate(90deg) scale(0.92); }
-
 /* click ripple (element added by fx.js) */
 .fx-ripple {
   position: absolute; z-index: -1; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.5), rgba(127, 233, 240, 0.28) 38%, transparent 68%);
-  transform: scale(0); animation: fx-ripple .75s var(--fx-ease) forwards;
+  transform: scale(0); will-change: transform, opacity; animation: fx-ripple .55s var(--fx-ease) forwards;
 }
 
-/* staggered entrance for popups only; page content shows immediately */
-body .info-popup.active :is(.info-title, .info-section, .info-footer) { animation: fx-item-in .7s var(--fx-ease) var(--fx-delay, .1s) backwards; }
-body .info-popup.active .info-title { --fx-delay: .12s; }
-body .info-popup.active .info-section:nth-of-type(1) { --fx-delay: .2s; }
-body .info-popup.active .info-section:nth-of-type(2) { --fx-delay: .28s; }
-body .info-popup.active .info-footer { --fx-delay: .36s; }
-body .aurora-modal.active .aurora-modal-btn { animation: fx-item-in .6s var(--fx-ease) .15s backwards; }
-body .aurora-modal.active .aurora-modal-btn + .aurora-modal-btn { animation-delay: .22s; }
+/* popup entrances: short and nearly simultaneous so nothing waits to appear */
+body .info-popup.active :is(.info-title, .info-section, .info-footer) { animation: fx-item-in .32s var(--fx-ease) var(--fx-delay, 0s) backwards; }
+body .info-popup.active .info-section:nth-of-type(1) { --fx-delay: .03s; }
+body .info-popup.active .info-section:nth-of-type(2) { --fx-delay: .06s; }
+body .info-popup.active .info-footer { --fx-delay: .09s; }
+body .aurora-modal.active .aurora-modal-btn { animation: fx-item-in .3s var(--fx-ease) backwards; }
+body .aurora-modal.active .aurora-modal-btn + .aurora-modal-btn { animation-delay: .05s; }
 
 /* ---------- 4. Floating language and info buttons ---------- */
+html body :is(.lang-toggle, .info-toggle),
 html body.is-loaded :is(.lang-toggle, .info-toggle) {
-  transition: color .25s ease, background .3s ease, border-color .3s ease, box-shadow .4s ease, filter .3s ease, transform .4s var(--fx-ease);
+  transition: color .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .2s ease, opacity .4s ease, transform .22s var(--fx-ease);
   transition-delay: 0s;
 }
-html body.is-loaded .lang-toggle:is(:hover, :focus-visible) { transform: translateX(-4px); border-color: rgba(127, 233, 240, 0.85); box-shadow: 0 0 20px rgba(46, 230, 184, 0.4); }
-html body.is-loaded .info-toggle:is(:hover, :focus-visible) { transform: translateX(4px) rotate(14deg); border-color: rgba(127, 233, 240, 0.85); box-shadow: 0 0 20px rgba(46, 230, 184, 0.4); }
-html body.is-loaded :is(.lang-toggle, .info-toggle):active { transform: scale(0.94); transition-duration: .12s; }
+@media (hover: hover) {
+  html body.is-loaded .lang-toggle:is(:hover, :focus-visible) { transform: translate3d(-4px, 0, 0); border-color: rgba(127, 233, 240, 0.85); box-shadow: 0 0 18px rgba(46, 230, 184, 0.4); }
+  html body.is-loaded .info-toggle:is(:hover, :focus-visible) { transform: translate3d(4px, 0, 0) rotate(14deg); border-color: rgba(127, 233, 240, 0.85); box-shadow: 0 0 18px rgba(46, 230, 184, 0.4); }
+  body .lang-toggle:is(:hover, :focus-visible) .lang-icon { transform: rotate(360deg); }
+}
+html body.is-loaded :is(.lang-toggle, .info-toggle):active { transform: scale(0.94); transition-duration: .1s; }
 body .info-toggle { box-shadow: 0 0 14px rgba(46, 230, 184, 0.4); }
-body .lang-toggle .lang-icon { display: inline-block; transition: transform .8s var(--fx-spring); }
-body .lang-toggle:is(:hover, :focus-visible) .lang-icon { transform: rotate(360deg); }
+body .lang-toggle .lang-icon { display: inline-block; transition: transform .5s var(--fx-ease); }
 
-/* ---------- 5. Cards: cursor spotlight + border shine ---------- */
+/* ---------- 5. Cards ---------- */
 :where(
   .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
   .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
   .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap
 ) { position: relative; }
 
-body :is(
-  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
-  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
-  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
-)::before {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
-  background: radial-gradient(300px circle at var(--mx, 50%) var(--my, 50%), rgba(127, 233, 240, 0.13), rgba(46, 230, 184, 0.04) 45%, transparent 70%);
-  opacity: 0; transition: opacity .45s ease;
+/* stagger delays from the page styles would otherwise delay every hover as well */
+body :is(.act-card, .offer-card, .month-card, .glass-card, .news-card, .glass-panel, .faq-item) {
+  transition: transform .3s var(--fx-ease), border-color .2s ease, box-shadow .25s ease, background-color .2s ease, opacity .5s var(--fx-ease);
+  transition-delay: 0s !important;
+  background-color: rgba(10, 26, 32, 0.86);
 }
-body :is(
-  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
-  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
-  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
-):hover::before { opacity: 1; }
-
-body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .glass-panel, .faq-item):hover {
-  border-color: rgba(127, 233, 240, 0.5);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
+@media (hover: hover) {
+  body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .glass-panel, .faq-item):hover {
+    border-color: rgba(127, 233, 240, 0.5);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+  }
+  body .team-card:hover .avatar-wrapper::after { opacity: 1; transform: scale(1) rotate(180deg); animation: fx-spin 6s linear .4s infinite; }
 }
-body :is(.act-card, .offer-card, .month-card, .glass-card, .news-card, .glass-panel, .faq-item) { transition-property: transform, border-color, box-shadow, opacity, background; }
 
-/* team cards: rotating aurora ring around the avatar */
+/* team cards: aurora ring around the avatar */
 body .avatar-wrapper { position: relative; }
 body .avatar-wrapper::after {
   content: ''; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
@@ -241,9 +229,8 @@ body .avatar-wrapper::after {
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
   opacity: 0; transform: scale(0.9) rotate(0deg);
-  transition: opacity .4s ease, transform .6s var(--fx-spring);
+  transition: opacity .25s ease, transform .4s var(--fx-ease);
 }
-body .team-card:hover .avatar-wrapper::after { opacity: 1; transform: scale(1) rotate(180deg); animation: fx-spin 6s linear .6s infinite; }
 
 /* ---------- 6. Type ---------- */
 body :is(.page-title, main > header > h1) {
@@ -261,32 +248,37 @@ body .section-heading::before {
 }
 body .section-heading::after { background: linear-gradient(90deg, rgba(46, 230, 184, 0.7), rgba(127, 233, 240, 0.32) 42%, transparent); }
 body .page-subtitle { text-shadow: 0 0 14px rgba(127, 233, 240, 0.45); }
-
-body .logo {
-  text-shadow: 0 0 18px rgba(127, 233, 240, 0.55), 0 0 46px rgba(46, 230, 184, 0.4);
-}
+body .logo { text-shadow: 0 0 18px rgba(127, 233, 240, 0.55), 0 0 46px rgba(46, 230, 184, 0.4); }
 body .logo .accent::after { opacity: 0.8; }
 body .quote .stars { display: inline-block; }
 body .divider { transform-origin: top center; }
 
 /* ---------- 7. Navbar ---------- */
+/* entrance: quick fade, no stagger delay */
+html body.is-loaded :is(.wrap, .page-container, .header-section, main > header, #news-content.notice, footer) {
+  transition-duration: .5s; transition-delay: 0s;
+}
 html body.is-loaded .navbar {
-  transition: opacity 1.2s var(--fx-ease), transform 1.2s var(--fx-ease), background .45s ease, box-shadow .45s ease;
+  transition: opacity .5s var(--fx-ease), transform .5s var(--fx-ease), background-color .25s ease, box-shadow .25s ease;
+  transition-delay: 0s;
 }
 body .navbar::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; pointer-events: none;
   background: var(--fx-aurora-line); background-size: 200% 100%; opacity: 0.75;
 }
 body.fx-scrolled .navbar { background: rgba(6, 13, 22, 0.82); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); }
-body .nav-logo { box-shadow: 0 0 14px rgba(46, 230, 184, 0.4); transition: transform .8s var(--fx-spring), border-color .3s ease; }
-body .nav-brand:hover .nav-logo { transform: rotate(360deg) scale(1.1); border-color: rgba(127, 233, 240, 0.9); }
+body .navbar { background: rgba(6, 13, 22, 0.82); }
+body .nav-logo { box-shadow: 0 0 14px rgba(46, 230, 184, 0.4); transition: transform .6s var(--fx-ease), border-color .2s ease; }
+@media (hover: hover) {
+  body .nav-brand:hover .nav-logo { transform: rotate(360deg) scale(1.1); border-color: rgba(127, 233, 240, 0.9); }
+  body .hamburger-btn:hover span { background-color: var(--fx-cyan); }
+}
 body .nav-title {
   background: linear-gradient(100deg, #eafffb, #7fe9f0 45%, #2fe6b8 70%, #eafffb);
   background-size: 220% 100%; -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
 }
-body .hamburger-btn span { transition: transform .3s var(--fx-ease), opacity .3s ease, background-color .25s ease, box-shadow .25s ease; }
-body .hamburger-btn:hover span { background-color: var(--fx-cyan); box-shadow: 0 0 8px rgba(46, 230, 184, 0.65); }
+body .hamburger-btn span { transition: transform .25s var(--fx-ease), opacity .2s ease, background-color .16s ease; }
 
 .fx-progress {
   position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 1200; pointer-events: none;
@@ -298,7 +290,7 @@ body .hamburger-btn:hover span { background-color: var(--fx-cyan); box-shadow: 0
 /* ---------- 8. Preloader: removed, pages show straight away ---------- */
 body #preloader { display: none !important; }
 
-/* ---------- 9. Ambient layers ---------- */
+/* ---------- 9. Ambient layers (DOM + CSS only: no canvas, no per-frame JS) ---------- */
 .fx-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; }
 .fx-aurora {
   position: absolute; inset: 0;
@@ -310,22 +302,29 @@ body #preloader { display: none !important; }
   background-position: 0 0, 100% 0, 30% 100%;
   background-repeat: no-repeat;
 }
-.fx-aurora i { display: none; }
-.fx-stars { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fx-star {
+  position: absolute; border-radius: 50%; background: #d4fbf6; opacity: 0.15;
+  animation: fx-twinkle var(--d, 4s) ease-in-out var(--o, 0s) infinite alternate;
+}
+.fx-shoot {
+  position: absolute; width: 140px; height: 1.6px; border-radius: 2px; opacity: 0;
+  background: linear-gradient(90deg, rgba(127, 233, 240, 0), rgba(234, 255, 251, 0.95));
+}
+.fx-shoot.go { animation: fx-shoot .9s linear forwards; }
 
 .fx-cursor {
   position: fixed; left: 0; top: 0; z-index: 2; width: 340px; height: 340px; margin: -170px 0 0 -170px;
-  border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform;
+  border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform, opacity; contain: strict;
   background: radial-gradient(closest-side, rgba(127, 233, 240, 0.12), rgba(46, 230, 184, 0.05) 46%, transparent 72%);
-  transition: opacity .5s ease;
+  transition: opacity .3s ease;
 }
 .fx-cursor.is-on { opacity: 1; }
 
 /* ---------- 10. Page polish ---------- */
-body :is(.form-input, .form-textarea) { transition: border-color .25s ease, box-shadow .35s ease, background .25s ease; }
+body :is(.form-input, .form-textarea) { transition: border-color .18s ease, box-shadow .2s ease, background-color .18s ease; }
 body :is(.form-input, .form-textarea):focus {
-  border-color: var(--fx-cyan); background: rgba(5, 11, 18, 0.85);
-  box-shadow: 0 0 0 3px rgba(127, 233, 240, 0.14), 0 0 26px rgba(46, 230, 184, 0.16);
+  border-color: var(--fx-cyan); background-color: rgba(5, 11, 18, 0.85);
+  box-shadow: 0 0 0 3px rgba(127, 233, 240, 0.14), 0 0 20px rgba(46, 230, 184, 0.16);
 }
 body .support-count { text-shadow: 0 0 18px rgba(127, 233, 240, 0.55); }
 
@@ -336,46 +335,34 @@ body :is(.progress-fill, .progress-bar-fill)::after {
   animation: fx-sheen 2.4s ease-in-out 2;
 }
 
-body .financial-table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--fx-teal); }
-body .financial-table tbody tr:hover { background: linear-gradient(90deg, rgba(46, 230, 184, 0.12), rgba(127, 233, 240, 0.04)); }
-
-body .event-item { transition: transform .35s var(--fx-ease), color .25s ease; }
-body .event-item:hover { transform: translateX(4px); color: #ffffff; }
-body .badge, body .month-badge { transition: box-shadow .3s ease, transform .35s var(--fx-spring); }
-body :is(.offer-card, .month-card):hover :is(.badge, .month-badge) { box-shadow: 0 0 14px rgba(46, 230, 184, 0.45); transform: scale(1.06); }
-
-body :is(.act-toggle, .expand-indicator) svg { transition: transform .45s var(--fx-spring); }
-body :is(.act-card, .offer-card):hover :is(.act-toggle, .expand-indicator) { text-shadow: 0 0 12px rgba(127, 233, 240, 0.55); }
-
-body .play-overlay:hover .play-button { box-shadow: 0 0 36px rgba(46, 230, 184, 0.7), 0 0 0 10px rgba(46, 230, 184, 0.12); }
+@media (hover: hover) {
+  body .financial-table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--fx-teal); }
+  body .financial-table tbody tr:hover { background: linear-gradient(90deg, rgba(46, 230, 184, 0.12), rgba(127, 233, 240, 0.04)); }
+  body .event-item:hover { transform: translate3d(4px, 0, 0); color: #ffffff; }
+  body :is(.offer-card, .month-card):hover :is(.badge, .month-badge) { box-shadow: 0 0 14px rgba(46, 230, 184, 0.45); transform: scale(1.06); }
+  body :is(.act-card, .offer-card):hover :is(.act-toggle, .expand-indicator) { text-shadow: 0 0 12px rgba(127, 233, 240, 0.55); }
+  body .play-overlay:hover .play-button { box-shadow: 0 0 36px rgba(46, 230, 184, 0.7), 0 0 0 10px rgba(46, 230, 184, 0.12); }
+}
+body .event-item { transition: transform .22s var(--fx-ease), color .16s ease; }
+body .badge, body .month-badge { transition: box-shadow .2s ease, transform .25s var(--fx-ease); }
+body :is(.act-toggle, .expand-indicator) svg { transition: transform .3s var(--fx-ease); }
 body .play-button { box-shadow: 0 0 16px rgba(46, 230, 184, 0.4); }
-
-body .photo-card:hover img { filter: saturate(1.15) contrast(1.04); }
-body .photo-card img { transition: transform .5s var(--fx-ease), filter .4s ease; }
-
+body .photo-card img { transition: transform .35s var(--fx-ease); }
 body footer { text-shadow: 0 0 12px rgba(127, 233, 240, 0.15); }
-
-/* info dialog gets the same entrance glow as the dropdown */
 body .info-sheet { box-shadow: 0 -14px 48px rgba(0, 0, 0, 0.55), 0 0 36px rgba(46, 230, 184, 0.12); }
 
+/* ---------- 10b. Background video: laid out without a transform so the browser can
+   hand every decoded frame straight to the GPU compositor ---------- */
+body .sky { transform: none; contain: strict; }
+body .sky .bg-video {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 0; min-height: 0;
+  object-fit: cover; transform: none; filter: none; will-change: auto; backface-visibility: visible;
+  pointer-events: none; background: #050b12;
+}
 
-/* the video wrapper must not be promoted to its own GPU layer stack */
-body .sky { transform: none; }
-body .bg-video { filter: none; will-change: auto; backface-visibility: visible; transform: translate(-50%, -50%); }
-
-/* ---------- 10b. Performance: no live backdrop blur over the background video ---------- */
-body, body *, body *::before, body *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-body .navbar { background: rgba(6, 13, 22, 0.82); }
-body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item) { background-color: rgba(10, 26, 32, 0.86); }
-
-/* ---------- 10c. Lite mode: switched on by fx.js when the frame rate stays low ---------- */
-html.fx-lite :is(.fx-ambient, .fx-stars, .fx-cursor, .fx-aurora) { display: none !important; }
+/* ---------- 10c. Lite mode: switched on by fx.js for weak devices ---------- */
+html.fx-lite :is(.fx-ambient, .fx-cursor) { display: none !important; }
 html.fx-lite body :is(.progress-fill, .progress-bar-fill)::after { display: none; }
-html.fx-lite body :is(
-  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
-  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
-  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
-)::before { display: none; }
 html.fx-lite body :is(
   .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
   .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
@@ -383,7 +370,6 @@ html.fx-lite body :is(
 )::before { display: none; }
 html.fx-lite .fx-ripple { display: none; }
 html.fx-lite body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .glass-panel, .faq-item):hover { box-shadow: none; }
-html.fx-lite body :is(.act-card, .offer-card, .month-card, .glass-card, .news-card, .glass-panel, .faq-item) { transition-property: transform, border-color, opacity; }
 html.fx-lite body :is(
   .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
   .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
@@ -394,9 +380,10 @@ html.fx-lite body .team-card:hover .avatar-wrapper::after { animation: none; }
 /* ---------- 11. Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   body *, body *::before, body *::after { animation: none !important; }
-  .fx-cursor, .fx-aurora { display: none !important; }
+  .fx-cursor, .fx-shoot { display: none !important; }
+  .fx-star { opacity: 0.6; }
   body :is(.nav-btn, .filter-btn, .cta, .submit-btn)::before { transition: none; }
-  html body.is-loaded :is(.lang-toggle, .info-toggle) { transition: none; }
+  html body :is(.lang-toggle, .info-toggle) { transition: none; }
 }
 
 /* touch screens have no hover: keep the press feedback only */
@@ -407,5 +394,4 @@ html.fx-lite body .team-card:hover .avatar-wrapper::after { animation: none; }
 /* small screens: lighter ambient layer */
 @media (max-width: 768px) {
   .fx-aurora { opacity: 0.45; }
-  body :is(.nav-btn, .filter-btn):is(:hover, :focus-visible):not(:disabled) { transform: translateX(3px); }
 }
