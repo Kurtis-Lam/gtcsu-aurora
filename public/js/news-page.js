@@ -181,4 +181,3 @@ function markRead(newsId) {
 
 updateLanguage(lang());
 AuroraAuth.onChange(loadNews);
-window.addEventListener('aurora:langchange', event => updateLanguage(event.detail.lang));
