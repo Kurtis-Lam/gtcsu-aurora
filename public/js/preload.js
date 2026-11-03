@@ -179,24 +179,3 @@ async function warmThumbnails(user, images) {
   };
   await Promise.all([worker(), worker(), worker()]);
 }
-
-// ------------------------------------------------------------ resources ----
-
-export function hintResources() {
-  const add = (rel, href, extra = {}) => {
-    if (document.head.querySelector(`link[rel="${rel}"][href="${href}"]`)) return;
-    const link = document.createElement('link');
-    link.rel = rel;
-    link.href = href;
-    Object.entries(extra).forEach(([key, value]) => link.setAttribute(key, value));
-    document.head.appendChild(link);
-  };
-  add('modulepreload', 'js/news-page.js');
-  add('modulepreload', 'js/photos.js');
-  add('preconnect', API_BASE, { crossorigin: '' });
-}
-
-export function runWhenIdle(task) {
-  if ('requestIdleCallback' in window) window.requestIdleCallback(task, { timeout: 2500 });
-  else setTimeout(task, 400);
-}
