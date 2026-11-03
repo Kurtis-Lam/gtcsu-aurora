@@ -59,7 +59,7 @@ function startStars(canvas) {
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const count = Math.min(80, Math.round((width * height) / 18000));
+    const count = Math.min(60, Math.round((width * height) / 24000));
     stars = Array.from({ length: count }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -124,7 +124,7 @@ function startStars(canvas) {
 
   function frame(now) {
     frameId = requestAnimationFrame(frame);
-    if (now - lastFrame < 50) return;
+    if (now - lastFrame < 66) return;
     lastFrame = now;
     draw(now);
   }
@@ -185,43 +185,62 @@ function buildAmbient() {
 }
 
 function wirePointer() {
-  const root = document.documentElement;
   let pending = null;
+  let scheduled = false;
+  let glow = null;
+  let logo = null;
+  let cachedCard = null;
+  let cachedRect = null;
+
+  const invalidate = () => { cachedCard = null; cachedRect = null; };
 
   const flush = () => {
+    scheduled = false;
     const event = pending;
     pending = null;
     if (!event) return;
 
-    const glow = document.querySelector('.fx-cursor');
+    if (!glow) glow = document.querySelector('.fx-cursor');
     if (glow) {
       glow.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
       glow.classList.add('is-on');
     }
 
-    root.style.setProperty('--fx-px', ((event.clientX / window.innerWidth - 0.5) * 2).toFixed(3));
-    root.style.setProperty('--fx-py', ((event.clientY / window.innerHeight - 0.5) * 2).toFixed(3));
+    if (!logo || !logo.isConnected) logo = document.querySelector('.logo');
+    if (logo) {
+      logo.style.setProperty('--fx-px', ((event.clientX / window.innerWidth - 0.5) * 2).toFixed(3));
+      logo.style.setProperty('--fx-py', ((event.clientY / window.innerHeight - 0.5) * 2).toFixed(3));
+    }
 
     const card = event.target.closest ? event.target.closest(CARD_SELECTOR) : null;
     if (card) {
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty('--mx', (event.clientX - rect.left).toFixed(1) + 'px');
-      card.style.setProperty('--my', (event.clientY - rect.top).toFixed(1) + 'px');
+      if (card !== cachedCard || !cachedRect) {
+        cachedCard = card;
+        cachedRect = card.getBoundingClientRect();
+      }
+      card.style.setProperty('--mx', (event.clientX - cachedRect.left).toFixed(1) + 'px');
+      card.style.setProperty('--my', (event.clientY - cachedRect.top).toFixed(1) + 'px');
     }
   };
 
   window.addEventListener('pointermove', (event) => {
     if (event.pointerType === 'touch' || reducedMotion.matches) return;
-    if (!pending) requestAnimationFrame(flush);
     pending = event;
+    if (!scheduled) {
+      scheduled = true;
+      requestAnimationFrame(flush);
+    }
   }, { passive: true });
 
-  document.addEventListener('pointerleave', () => {
-    document.querySelector('.fx-cursor')?.classList.remove('is-on');
-  });
-  document.documentElement.addEventListener('mouseleave', () => {
-    document.querySelector('.fx-cursor')?.classList.remove('is-on');
-  });
+  window.addEventListener('scroll', invalidate, { passive: true });
+  window.addEventListener('resize', invalidate, { passive: true });
+
+  const hideGlow = () => {
+    if (!glow) glow = document.querySelector('.fx-cursor');
+    glow?.classList.remove('is-on');
+  };
+  document.addEventListener('pointerleave', hideGlow);
+  document.documentElement.addEventListener('mouseleave', hideGlow);
 }
 
 function wireRipple() {
@@ -245,13 +264,20 @@ function wireRipple() {
 function wireScroll() {
   const root = document.documentElement;
   let ticking = false;
+  let bar = null;
+  let scrolled = false;
 
   const update = () => {
     ticking = false;
+    if (!bar) bar = document.querySelector('.fx-progress');
     const max = Math.max(1, root.scrollHeight - window.innerHeight);
     const progress = Math.min(1, Math.max(0, window.scrollY / max));
-    root.style.setProperty('--fx-progress', progress.toFixed(4));
-    document.body.classList.toggle('fx-scrolled', window.scrollY > 24);
+    if (bar) bar.style.transform = `scaleX(${progress.toFixed(4)})`;
+    const nowScrolled = window.scrollY > 24;
+    if (nowScrolled !== scrolled) {
+      scrolled = nowScrolled;
+      document.body.classList.toggle('fx-scrolled', scrolled);
+    }
   };
 
   window.addEventListener('scroll', () => {
@@ -281,7 +307,7 @@ function wirePageTransitions() {
 
     event.preventDefault();
     root.classList.add('fx-leaving');
-    setTimeout(() => { window.location.href = url.href; }, 280);
+    setTimeout(() => { window.location.href = url.href; }, 360);
   });
 
   window.addEventListener('pageshow', () => root.classList.remove('fx-leaving'));

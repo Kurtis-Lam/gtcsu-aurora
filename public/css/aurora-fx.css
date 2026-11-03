@@ -341,7 +341,7 @@ body .hamburger-btn:hover span { background-color: var(--fx-cyan); box-shadow: 0
 
 .fx-progress {
   position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 1200; pointer-events: none;
-  transform-origin: 0 50%; transform: scaleX(var(--fx-progress, 0)); will-change: transform;
+  transform-origin: 0 50%; transform: scaleX(0); will-change: transform;
   background: linear-gradient(90deg, #2fe6b8, #7fe9f0, #a78bfa);
   box-shadow: 0 0 12px rgba(46, 230, 184, 0.75);
 }
@@ -352,7 +352,8 @@ body #preloader::before {
   content: ''; position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px;
   border-radius: 50%; border: 2px solid transparent;
   border-top-color: #2fe6b8; border-right-color: #7fe9f0; border-bottom-color: #a78bfa;
-  filter: drop-shadow(0 0 10px rgba(46, 230, 184, 0.65));
+  box-shadow: 0 0 14px rgba(46, 230, 184, 0.35);
+  will-change: transform;
   animation: fx-spin 1.15s linear infinite;
 }
 body #preloader::after {
@@ -367,9 +368,21 @@ body #preloader::after {
     radial-gradient(65% 60% at 50% 105%, rgba(46, 230, 184, 0.38), transparent 70%),
     radial-gradient(55% 55% at 85% -5%, rgba(167, 139, 250, 0.32), transparent 70%),
     #02070c;
-  transition: opacity .28s ease;
+  transition: opacity .22s ease;
 }
 html.fx-leaving .fx-veil { opacity: 1; }
+.fx-veil::before, .fx-veil::after { content: ''; position: absolute; left: 50%; top: 50%; border-radius: 50%; opacity: 0; transition: opacity .2s ease; }
+.fx-veil::before {
+  width: 84px; height: 84px; margin: -42px 0 0 -42px; border: 2px solid transparent;
+  border-top-color: #2fe6b8; border-right-color: #7fe9f0; border-bottom-color: #a78bfa;
+  box-shadow: 0 0 14px rgba(46, 230, 184, 0.35); will-change: transform;
+}
+.fx-veil::after {
+  width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  background: radial-gradient(circle, #eafffb 0%, #7fe9f0 38%, rgba(46, 230, 184, 0) 70%);
+}
+html.fx-leaving .fx-veil::before { opacity: 1; animation: fx-spin 1.15s linear infinite; }
+html.fx-leaving .fx-veil::after { opacity: 1; animation: fx-orb 1.7s ease-in-out infinite; }
 
 /* ---------- 9. Ambient layers ---------- */
 .fx-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; }
@@ -406,7 +419,7 @@ body :is(.progress-fill, .progress-bar-fill) { position: relative; overflow: hid
 body :is(.progress-fill, .progress-bar-fill)::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.5) 50%, transparent 80%);
-  animation: fx-sheen 1.8s ease-in-out infinite;
+  animation: fx-sheen 2.4s ease-in-out infinite; will-change: transform;
 }
 
 body .financial-table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--fx-teal); }
