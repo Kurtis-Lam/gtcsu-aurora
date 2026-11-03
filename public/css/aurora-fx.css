@@ -244,34 +244,18 @@ body :is(
   .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
 )::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
-  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(127, 233, 240, 0.13), rgba(46, 230, 184, 0.05) 45%, transparent 70%);
+  background: radial-gradient(300px circle at var(--mx, 50%) var(--my, 50%), rgba(127, 233, 240, 0.13), rgba(46, 230, 184, 0.04) 45%, transparent 70%);
   opacity: 0; transition: opacity .45s ease;
 }
 body :is(
   .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
   .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
   .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
-)::after {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 1;
-  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(127, 233, 240, 0.95), rgba(167, 139, 250, 0.55) 42%, transparent 70%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  opacity: 0; transition: opacity .45s ease;
-}
-body :is(
-  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
-  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
-  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
-):hover::before,
-body :is(
-  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
-  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
-  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
-):hover::after { opacity: 1; }
+):hover::before { opacity: 1; }
 
 body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .glass-panel, .faq-item):hover {
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38), 0 0 34px rgba(46, 230, 184, 0.13);
+  border-color: rgba(127, 233, 240, 0.5);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
 }
 body :is(.act-card, .offer-card, .month-card, .glass-card, .news-card, .glass-panel, .faq-item) { transition-property: transform, border-color, box-shadow, opacity, background; }
 
@@ -313,8 +297,6 @@ body .page-subtitle { text-shadow: 0 0 14px rgba(127, 233, 240, 0.45); }
 
 body .logo {
   text-shadow: 0 0 18px rgba(127, 233, 240, 0.55), 0 0 46px rgba(46, 230, 184, 0.4);
-  transform: translate3d(calc(var(--fx-px, 0) * -12px), calc(var(--fx-py, 0) * -8px), 0);
-  transition: transform .6s ease-out;
 }
 body .logo .accent::after { opacity: 0.8; }
 body .quote .stars { display: inline-block; }
@@ -352,7 +334,6 @@ body #preloader::before {
   content: ''; position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px;
   border-radius: 50%; border: 2px solid transparent;
   border-top-color: #2fe6b8; border-right-color: #7fe9f0; border-bottom-color: #a78bfa;
-  box-shadow: 0 0 14px rgba(46, 230, 184, 0.35);
   will-change: transform;
   animation: fx-spin 1.15s linear infinite;
 }
@@ -375,7 +356,7 @@ html.fx-leaving .fx-veil { opacity: 1; }
 .fx-veil::before {
   width: 84px; height: 84px; margin: -42px 0 0 -42px; border: 2px solid transparent;
   border-top-color: #2fe6b8; border-right-color: #7fe9f0; border-bottom-color: #a78bfa;
-  box-shadow: 0 0 14px rgba(46, 230, 184, 0.35); will-change: transform;
+  will-change: transform;
 }
 .fx-veil::after {
   width: 40px; height: 40px; margin: -20px 0 0 -20px;
@@ -383,6 +364,10 @@ html.fx-leaving .fx-veil { opacity: 1; }
 }
 html.fx-leaving .fx-veil::before { opacity: 1; animation: fx-spin 1.15s linear infinite; }
 html.fx-leaving .fx-veil::after { opacity: 1; animation: fx-orb 1.7s ease-in-out infinite; }
+
+html.fx-hold body #preloader { opacity: 1 !important; visibility: visible !important; transition: none !important; }
+html.fx-hold body #preloader::before,
+html.fx-hold body #preloader::after { animation-play-state: running; }
 
 /* ---------- 9. Ambient layers ---------- */
 .fx-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; }
@@ -400,7 +385,7 @@ html.fx-leaving .fx-veil::after { opacity: 1; animation: fx-orb 1.7s ease-in-out
 .fx-stars { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 .fx-cursor {
-  position: fixed; left: 0; top: 0; z-index: 2; width: 520px; height: 520px; margin: -260px 0 0 -260px;
+  position: fixed; left: 0; top: 0; z-index: 2; width: 340px; height: 340px; margin: -170px 0 0 -170px;
   border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform;
   background: radial-gradient(closest-side, rgba(127, 233, 240, 0.12), rgba(46, 230, 184, 0.05) 46%, transparent 72%);
   transition: opacity .5s ease;
@@ -419,7 +404,7 @@ body :is(.progress-fill, .progress-bar-fill) { position: relative; overflow: hid
 body :is(.progress-fill, .progress-bar-fill)::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.5) 50%, transparent 80%);
-  animation: fx-sheen 2.4s ease-in-out infinite; will-change: transform;
+  animation: fx-sheen 2.4s ease-in-out 2;
 }
 
 body .financial-table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--fx-teal); }
@@ -455,6 +440,22 @@ body .bg-video { filter: none; will-change: auto; backface-visibility: visible; 
 body, body *, body *::before, body *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 body .navbar { background: rgba(6, 13, 22, 0.82); }
 body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item) { background-color: rgba(10, 26, 32, 0.86); }
+
+/* ---------- 10c. Lite mode: switched on by fx.js when the frame rate stays low ---------- */
+html.fx-lite :is(.fx-stars, .fx-cursor, .fx-aurora) { display: none !important; }
+html.fx-lite body :is(.news-card, .photo-card, .filter-btn) { animation: none !important; }
+html.fx-lite body :is(.progress-fill, .progress-bar-fill)::after { display: none; }
+html.fx-lite body :is(
+  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
+  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
+  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
+)::before { display: none; }
+html.fx-lite body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle, .info-toggle
+)::before { display: none; }
+html.fx-lite .fx-ripple { display: none; }
 
 /* ---------- 11. Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
