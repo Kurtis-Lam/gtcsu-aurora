@@ -407,6 +407,10 @@ function applyLanguageEverywhere(lang) {
   window.dispatchEvent(new CustomEvent('aurora:langchange', { detail: { lang } }));
 }
 
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const htmlRoot = document.documentElement;
+const isLite = () => htmlRoot.classList.contains('fx-lite');
+
 const LANG_OUT_MS = 150;
 const LANG_IN_MS = 420;
 const LANG_EASE_IN = 'cubic-bezier(0.4, 0, 1, 1)';
@@ -434,7 +438,7 @@ function switchLanguage() {
   }
 
   langBusy = true;
-  root.classList.add('fx-lang-busy');
+  htmlRoot.classList.add('fx-lang-busy');
 
   const lite = isLite();
   const rise = lite ? 0 : 10;
@@ -476,7 +480,7 @@ function switchLanguage() {
 
     const done = () => {
       langBusy = false;
-      root.classList.remove('fx-lang-busy');
+      htmlRoot.classList.remove('fx-lang-busy');
     };
     if (ins.length && ins[0].finished) ins[0].finished.then(done, done);
     else setTimeout(done, LANG_IN_MS);
