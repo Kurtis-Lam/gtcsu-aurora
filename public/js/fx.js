@@ -23,6 +23,62 @@ const el = (tag, className) => {
   return node;
 };
 
+const NAV_FLAG = 'aurora_fx_nav';
+const LOADER_MIN_SWITCH = 900;
+const LOADER_MIN_FIRST = 600;
+let holdTimer = 0;
+
+function holdLoader(duration) {
+  const preloader = document.getElementById('preloader');
+  if (!preloader || reducedMotion.matches) return;
+  const root = document.documentElement;
+  root.classList.remove('fx-hold');
+  void root.offsetWidth;
+  root.classList.add('fx-hold');
+  clearTimeout(holdTimer);
+  holdTimer = setTimeout(() => root.classList.remove('fx-hold'), duration);
+}
+
+function startLoaderOnArrival() {
+  let switched = false;
+  try {
+    switched = sessionStorage.getItem(NAV_FLAG) === '1';
+    sessionStorage.removeItem(NAV_FLAG);
+  } catch {}
+  holdLoader(switched ? LOADER_MIN_SWITCH : LOADER_MIN_FIRST);
+}
+
+function watchPerformance() {
+  if (reducedMotion.matches) return;
+  const root = document.documentElement;
+  let previous = 0;
+  let count = 0;
+  let total = 0;
+
+  const sample = (now) => {
+    if (document.hidden) {
+      previous = 0;
+      requestAnimationFrame(sample);
+      return;
+    }
+    if (previous) {
+      const delta = now - previous;
+      if (delta < 250) {
+        total += delta;
+        count += 1;
+      }
+    }
+    previous = now;
+    if (count < 90) {
+      requestAnimationFrame(sample);
+      return;
+    }
+    if (total / count > 26) root.classList.add('fx-lite');
+  };
+
+  setTimeout(() => requestAnimationFrame(sample), 2600);
+}
+
 function injectStyles() {
   if (document.querySelector('link[data-aurora-fx]')) return;
   const link = el('link');
@@ -59,7 +115,7 @@ function startStars(canvas) {
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const count = Math.min(60, Math.round((width * height) / 24000));
+    const count = Math.min(36, Math.round((width * height) / 40000));
     stars = Array.from({ length: count }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -82,6 +138,7 @@ function startStars(canvas) {
 
   function draw(now) {
     ctx.clearRect(0, 0, width, height);
+    if (document.documentElement.classList.contains('fx-lite')) return;
     parallaxX += (targetX - parallaxX) * 0.05;
     parallaxY += (targetY - parallaxY) * 0.05;
 
@@ -125,6 +182,7 @@ function startStars(canvas) {
   function frame(now) {
     frameId = requestAnimationFrame(frame);
     if (now - lastFrame < 66) return;
+    if (document.documentElement.classList.contains('fx-lite')) { stop(); return; }
     lastFrame = now;
     draw(now);
   }
@@ -188,7 +246,6 @@ function wirePointer() {
   let pending = null;
   let scheduled = false;
   let glow = null;
-  let logo = null;
   let cachedCard = null;
   let cachedRect = null;
 
@@ -204,12 +261,6 @@ function wirePointer() {
     if (glow) {
       glow.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
       glow.classList.add('is-on');
-    }
-
-    if (!logo || !logo.isConnected) logo = document.querySelector('.logo');
-    if (logo) {
-      logo.style.setProperty('--fx-px', ((event.clientX / window.innerWidth - 0.5) * 2).toFixed(3));
-      logo.style.setProperty('--fx-py', ((event.clientY / window.innerHeight - 0.5) * 2).toFixed(3));
     }
 
     const card = event.target.closest ? event.target.closest(CARD_SELECTOR) : null;
@@ -306,11 +357,16 @@ function wirePageTransitions() {
     if (/\.[a-z0-9]+$/i.test(url.pathname) && !/\.html?$/i.test(url.pathname)) return;
 
     event.preventDefault();
+    if (root.classList.contains('fx-leaving')) return;
+    try { sessionStorage.setItem(NAV_FLAG, '1'); } catch {}
     root.classList.add('fx-leaving');
-    setTimeout(() => { window.location.href = url.href; }, 360);
+    setTimeout(() => { window.location.href = url.href; }, 320);
   });
 
-  window.addEventListener('pageshow', () => root.classList.remove('fx-leaving'));
+  window.addEventListener('pageshow', (event) => {
+    root.classList.remove('fx-leaving');
+    if (event.persisted) holdLoader(LOADER_MIN_SWITCH);
+  });
 }
 
 function markBooted() {
@@ -327,6 +383,8 @@ function markBooted() {
 }
 
 function init() {
+  startLoaderOnArrival();
+  watchPerformance();
   markBooted();
   buildAmbient();
   wirePointer();
