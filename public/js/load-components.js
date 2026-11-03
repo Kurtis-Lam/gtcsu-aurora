@@ -1,5 +1,5 @@
 import { APP_VERSION, initInfo, refreshInfo } from './info.js';
-import './fx.js';
+import { freezeBackgroundVideo } from './fx.js';
 import { NEWS_READ_EVENT, getLocalReads, readRevision } from './news-reads.js';
 import { API_BASE } from './api-config.js';
 
@@ -45,6 +45,7 @@ function afterPageLoad(task) {
 }
 
 function canPrefetch() {
+  if (document.documentElement.classList.contains('fx-lite')) return false;
   const connection = navigator.connection;
   if (!connection) return true;
   return !connection.saveData && !/(^|-)2g$/.test(connection.effectiveType || '');
@@ -110,7 +111,7 @@ function ensureModal() {
   const style = document.createElement('style');
   style.textContent = `
     .aurora-modal { position:fixed; inset:0; z-index:5000; display:flex; align-items:center; justify-content:center;
-      padding:20px; background:rgba(5,11,18,0.82); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      padding:20px; background:rgba(5,11,18,0.82);
       opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease; }
     .aurora-modal.active { opacity:1; visibility:visible; }
     .aurora-modal-card { width:100%; max-width:420px; text-align:center; padding:28px 26px;
@@ -372,7 +373,20 @@ function wireBackgroundVideo() {
   const video = document.getElementById('bg-video');
   if (!video) return;
 
-  const tryPlay = () => { if (document.visibilityState === 'visible') video.play().catch(() => {}); };
+  // A previous page already measured this device as too slow for live video:
+  // keep the poster, skip the download and never start playback.
+  if (document.documentElement.classList.contains('fx-still')) {
+    freezeBackgroundVideo();
+    video.preload = 'none';
+    video.load();
+    return;
+  }
+
+  const tryPlay = () => {
+    if (document.visibilityState !== 'visible') return;
+    if (document.documentElement.classList.contains('fx-still')) return;
+    video.play().catch(() => {});
+  };
 
   tryPlay();
   ['stalled', 'suspend', 'waiting', 'error'].forEach(evt => video.addEventListener(evt, tryPlay));
