@@ -369,7 +369,7 @@ body .navbar { background: rgba(6, 13, 22, 0.82); }
 body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item) { background-color: rgba(10, 26, 32, 0.86); }
 
 /* ---------- 10c. Lite mode: switched on by fx.js when the frame rate stays low ---------- */
-html.fx-lite :is(.fx-stars, .fx-cursor, .fx-aurora) { display: none !important; }
+html.fx-lite :is(.fx-ambient, .fx-stars, .fx-cursor, .fx-aurora) { display: none !important; }
 html.fx-lite body :is(.progress-fill, .progress-bar-fill)::after { display: none; }
 html.fx-lite body :is(
   .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
@@ -382,6 +382,14 @@ html.fx-lite body :is(
   .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle, .info-toggle
 )::before { display: none; }
 html.fx-lite .fx-ripple { display: none; }
+html.fx-lite body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .glass-panel, .faq-item):hover { box-shadow: none; }
+html.fx-lite body :is(.act-card, .offer-card, .month-card, .glass-card, .news-card, .glass-panel, .faq-item) { transition-property: transform, border-color, opacity; }
+html.fx-lite body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .info-close, .card-download, .lightbox-close, .modal-close-btn
+):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"]) { box-shadow: none; }
+html.fx-lite body .team-card:hover .avatar-wrapper::after { animation: none; }
 
 /* ---------- 11. Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
