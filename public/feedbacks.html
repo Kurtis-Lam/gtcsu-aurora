@@ -42,19 +42,6 @@
     overflow-x: hidden;
   }
 
-  #preloader {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: #000000;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
-  }
-
-  body.is-loaded #preloader {
-    opacity: 0;
-    visibility: hidden;
-  }
-
   .navbar, .page-container, footer, .lang-toggle {
     opacity: 0;
     transform: translateY(16px);
@@ -368,7 +355,7 @@
   }
 </style>
 </head>
-<body>
+<body class="is-loaded">
 
 
   <!-- Dynamic Navigation Panel Mount Point -->
@@ -803,7 +790,6 @@
     // ---- Init ----
     setLanguage(currentLang);
     validateForm();
-    setTimeout(() => document.body.classList.add('is-loaded'), 300);
   </script>
 </body>
 </html>
