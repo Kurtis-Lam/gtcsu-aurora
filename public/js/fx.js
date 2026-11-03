@@ -45,8 +45,8 @@ function detectLowEnd() {
 function watchPerformance() {
   if (reducedMotion.matches || isLite()) return;
 
-  const WINDOW = 90;
-  const SLOW_MS = 30;
+  const WINDOW = 60;
+  const SLOW_MS = 24;
   const SETTLE_FRAMES = 20;
   let lastActive = 0;
   let running = false;
@@ -115,7 +115,7 @@ function injectStyles() {
 // Stars are plain elements twinkling through a CSS opacity animation, so the
 // compositor runs them and the main thread (and the video) never pays for a frame.
 function buildStars(layer) {
-  const count = Math.max(10, Math.min(26, Math.round((window.innerWidth * window.innerHeight) / 60000)));
+  const count = Math.max(8, Math.min(14, Math.round((window.innerWidth * window.innerHeight) / 90000)));
   const fragment = document.createDocumentFragment();
   for (let i = 0; i < count; i += 1) {
     const star = el('i', 'fx-star');
@@ -240,7 +240,13 @@ function wireScroll() {
   let scrolled = false;
   let max = 1;
 
+  let measureQueued = false;
   const measure = () => { max = Math.max(1, root.scrollHeight - window.innerHeight); };
+  const queueMeasure = () => {
+    if (measureQueued) return;
+    measureQueued = true;
+    requestAnimationFrame(() => { measureQueued = false; measure(); schedule(); });
+  };
 
   const update = () => {
     ticking = false;
@@ -262,8 +268,8 @@ function wireScroll() {
   };
 
   window.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', () => { measure(); schedule(); }, { passive: true });
-  if ('ResizeObserver' in window) new ResizeObserver(() => { measure(); schedule(); }).observe(document.body);
+  window.addEventListener('resize', queueMeasure, { passive: true });
+  if ('ResizeObserver' in window) new ResizeObserver(queueMeasure).observe(document.body);
   measure();
   update();
 }
