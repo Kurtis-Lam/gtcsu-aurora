@@ -51,7 +51,7 @@ function startStars(canvas) {
   const random = (min, max) => min + Math.random() * (max - min);
 
   function resize() {
-    const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+    const ratio = 1;
     width = window.innerWidth;
     height = window.innerHeight;
     canvas.width = Math.round(width * ratio);
@@ -59,7 +59,7 @@ function startStars(canvas) {
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const count = Math.min(150, Math.round((width * height) / 11000));
+    const count = Math.min(80, Math.round((width * height) / 18000));
     stars = Array.from({ length: count }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -67,7 +67,7 @@ function startStars(canvas) {
       phase: random(0, Math.PI * 2),
       speed: random(0.5, 1.8),
       depth: random(0.2, 1),
-      hue: Math.random() < 0.3 ? 165 : 190
+      color: Math.random() < 0.3 ? 'hsl(165 90% 86%)' : 'hsl(190 90% 86%)'
     }));
   }
 
@@ -88,10 +88,9 @@ function startStars(canvas) {
     for (const star of stars) {
       const twinkle = 0.5 + 0.5 * Math.sin((now / 1000) * star.speed + star.phase);
       ctx.globalAlpha = 0.18 + 0.8 * twinkle;
-      ctx.fillStyle = `hsl(${star.hue} 90% 86%)`;
-      ctx.beginPath();
-      ctx.arc(star.x + parallaxX * star.depth * 14, star.y + parallaxY * star.depth * 14, star.radius, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = star.color;
+      const size = star.radius * 2;
+      ctx.fillRect(star.x + parallaxX * star.depth * 14 - star.radius, star.y + parallaxY * star.depth * 14 - star.radius, size, size);
     }
 
     if (!shooter && now > nextShooter) spawnShooter(now);
@@ -125,7 +124,7 @@ function startStars(canvas) {
 
   function frame(now) {
     frameId = requestAnimationFrame(frame);
-    if (now - lastFrame < 32) return;
+    if (now - lastFrame < 50) return;
     lastFrame = now;
     draw(now);
   }
@@ -144,7 +143,11 @@ function startStars(canvas) {
   draw(performance.now());
   start();
 
-  window.addEventListener('resize', () => { resize(); draw(performance.now()); }, { passive: true });
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { resize(); draw(performance.now()); }, 150);
+  }, { passive: true });
   document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
   reducedMotion.addEventListener?.('change', () => (reducedMotion.matches ? stop() : start()));
   window.addEventListener('pointermove', (event) => {
