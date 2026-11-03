@@ -42,20 +42,6 @@
     overflow-x:hidden;
   }
 
-  /* ---------- Solid Black Preloader Overlay ---------- */
-  #preloader {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: #000000;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
-  }
-
-  body.is-loaded #preloader {
-    opacity: 0;
-    visibility: hidden;
-  }
-
   /* ---------- Initial Hidden UI States ---------- */
   .navbar, 
   .wrap, 
@@ -65,7 +51,7 @@
     line-height: 1;
   }
 
-  /* Reveal sequence after preloader fades / on language switch */
+  /* Reveal state (the page starts loaded) */
   body.is-loaded .navbar,
   body.is-loaded .wrap,
   body.is-loaded footer,
@@ -453,10 +439,7 @@
   }
 </style>
 </head>
-<body>
-
-  <!-- Black Preloader Overlay -->
-  <div id="preloader"></div>
+<body class="is-loaded">
 
 
   <!-- Dynamic Navigation Panel Mount Point -->
@@ -521,7 +504,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(revealPage, 300);
+      revealPage();
 
       const video = document.getElementById('bg-video');
       if (video) {
@@ -541,9 +524,6 @@
       }
     });
 
-    window.addEventListener('load', () => {
-      revealPage();
-    });
   </script>
 </body>
 </html>
