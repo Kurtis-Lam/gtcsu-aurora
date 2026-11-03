@@ -1,0 +1,452 @@
+/* ==========================================================================
+   Aurora FX: shared visual layer, loaded on every page by js/fx.js.
+   Sections: 1 tokens, 2 keyframes, 3 buttons, 4 floating buttons, 5 cards,
+   6 type, 7 navbar, 8 loader, 9 ambient, 10 page polish, 11 reduced motion
+   ========================================================================== */
+
+/* ---------- 1. Tokens ---------- */
+:root {
+  --fx-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --fx-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --fx-teal: #2fe6b8;
+  --fx-cyan: #7fe9f0;
+  --fx-violet: #a78bfa;
+  --fx-ink: #eafffb;
+  --fx-shine: rgba(127, 233, 240, 0.28);
+  --fx-bar: linear-gradient(180deg, #7fe9f0, #2fe6b8);
+  --fx-bar-glow: rgba(46, 230, 184, 0.7);
+  --fx-aurora-line: linear-gradient(90deg, transparent, #2fe6b8, #7fe9f0, #a78bfa, #2fe6b8, transparent);
+}
+
+::selection { background: rgba(46, 230, 184, 0.38); color: #ffffff; }
+:focus-visible { outline: 2px solid var(--fx-cyan); outline-offset: 3px; }
+
+html { scrollbar-color: rgba(127, 233, 240, 0.5) rgba(5, 11, 18, 0.85); scrollbar-width: thin; }
+@supports selector(::-webkit-scrollbar) {
+  html { scrollbar-color: auto; scrollbar-width: auto; }
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-track { background: rgba(5, 11, 18, 0.85); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #2fe6b8, #7fe9f0 55%, #a78bfa);
+    border: 2px solid rgba(5, 11, 18, 0.9); border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #6ee89a, #7fe9f0 55%, #c4b5fd); }
+}
+
+/* ---------- 2. Keyframes ---------- */
+@keyframes fx-item-in {
+  from { opacity: 0; transform: translateX(-18px) scale(0.94); filter: blur(4px); }
+  60%  { filter: blur(0); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes fx-rise {
+  from { opacity: 0; transform: translateY(26px) scale(0.97); filter: blur(5px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes fx-float-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.9); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fx-flow { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+@keyframes fx-ripple { from { transform: scale(0); opacity: 0.9; } to { transform: scale(1); opacity: 0; } }
+@keyframes fx-spin { to { transform: rotate(360deg); } }
+@keyframes fx-orb {
+  0%, 100% { transform: scale(0.55); opacity: 0.55; }
+  50% { transform: scale(1); opacity: 1; }
+}
+@keyframes fx-diamond {
+  0%, 100% { transform: rotate(45deg) scale(1); opacity: 0.85; }
+  50% { transform: rotate(225deg) scale(1.25); opacity: 1; }
+}
+@keyframes fx-logo-glow {
+  0%, 100% { text-shadow: 0 0 18px rgba(127, 233, 240, 0.55), 0 0 46px rgba(46, 230, 184, 0.4), 0 0 90px rgba(46, 230, 184, 0.22); }
+  50% { text-shadow: 0 0 26px rgba(127, 233, 240, 0.8), 0 0 64px rgba(167, 139, 250, 0.5), 0 0 120px rgba(46, 230, 184, 0.32); }
+}
+@keyframes fx-twinkle { 0%, 100% { opacity: 0.35; transform: translateX(-50%) scale(0.8) rotate(0); } 50% { opacity: 1; transform: translateX(-50%) scale(1.25) rotate(90deg); } }
+@keyframes fx-pulse-ring { 0%, 100% { box-shadow: 0 0 10px rgba(46, 230, 184, 0.25); } 50% { box-shadow: 0 0 22px rgba(127, 233, 240, 0.55); } }
+@keyframes fx-drift-a { from { transform: translate3d(-6%, -4%, 0) scale(1); } to { transform: translate3d(14%, 10%, 0) scale(1.25); } }
+@keyframes fx-drift-b { from { transform: translate3d(8%, 2%, 0) scale(1.1); } to { transform: translate3d(-14%, 14%, 0) scale(0.9); } }
+@keyframes fx-drift-c { from { transform: translate3d(-10%, 6%, 0) scale(0.95); } to { transform: translate3d(12%, -10%, 1px) scale(1.2); } }
+@keyframes fx-divider { 0%, 100% { transform: scaleY(0.55); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } }
+@keyframes fx-sheen { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
+
+/* ---------- 3. Buttons: the info-dropdown treatment on every button ----------
+   Shimmer sweep (::before), glowing accent bar (::after), nudge, staggered
+   entrance, spring easing. Text buttons first, icon-only buttons after. */
+
+/* base: clipping + stacking so the shimmer sits between background and label */
+body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle,
+  .info-toggle, .info-close, .card-download, .lightbox-close, .modal-close-btn
+) {
+  isolation: isolate;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* anything that is not already fixed/absolute needs to anchor its pseudo-elements */
+:where(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .modal-close-btn
+) { position: relative; }
+
+/* shared motion (floating buttons get their own below) */
+body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .info-close, .card-download, .lightbox-close, .modal-close-btn
+) {
+  transition:
+    color .25s ease, background .25s ease, background-color .25s ease, border-color .25s ease,
+    box-shadow .35s ease, opacity .25s ease, filter .3s ease, transform .35s var(--fx-ease);
+}
+
+/* shimmer sweep */
+body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle,
+  .info-toggle, .info-close, .card-download, .lightbox-close, .modal-close-btn
+)::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(100deg, transparent 15%, var(--fx-shine) 50%, transparent 85%);
+  transform: translateX(-110%);
+  transition: transform .7s var(--fx-ease);
+}
+
+/* accent bar (left edge for pills, underline for tabs, none for icon buttons) */
+body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle
+)::after {
+  content: ''; position: absolute; left: 6px; top: 50%; width: 3px; height: 0; border-radius: 3px;
+  transform: translateY(-50%); pointer-events: none;
+  background: var(--fx-bar); box-shadow: 0 0 8px var(--fx-bar-glow);
+  transition: height .35s var(--fx-spring);
+}
+body .tab-btn::after {
+  content: ''; position: absolute; left: 14%; right: 14%; bottom: 0; height: 2px; border-radius: 2px;
+  background: var(--fx-aurora-line); background-size: 200% 100%; box-shadow: 0 0 10px var(--fx-bar-glow);
+  transform: scaleX(0); transform-origin: center; pointer-events: none;
+  transition: transform .45s var(--fx-spring);
+}
+
+/* hover / keyboard focus: shimmer travels across, bar grows, button nudges */
+body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .info-close, .card-download, .lightbox-close, .modal-close-btn
+):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"]) {
+  transform: translateX(4px);
+  box-shadow: 0 0 16px rgba(46, 230, 184, 0.28);
+}
+body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle,
+  .info-toggle, .info-close, .card-download, .lightbox-close, .modal-close-btn
+):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::before { transform: translateX(110%); }
+body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle
+):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::after,
+body :is(.nav-btn, .filter-btn, .dest-btn, .nav-auth-btn).active::after { height: 55%; }
+body .tab-btn:is(:hover, :focus-visible):not(:disabled)::after,
+body .tab-btn.active::after { transform: scaleX(1); animation: fx-flow 5s linear infinite; }
+
+/* press */
+body :is(
+  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn, .tab-btn,
+  .btn, .dest-btn, .dz-btn, .expand-btn, .info-close, .card-download, .lightbox-close, .modal-close-btn
+):active:not(:disabled):not([aria-disabled="true"]) { transform: translateX(2px) scale(0.965); transition-duration: .12s; }
+
+/* border response for outlined buttons */
+body :is(.read-btn, .identity-toggle, .submit-btn, .aurora-modal-btn, .nav-auth-btn, .page-btn, .dest-btn, .ghost-btn, .filter-btn):is(:hover, :focus-visible):not(:disabled) {
+  border-color: rgba(127, 233, 240, 0.75);
+}
+
+/* solid / bright buttons need a dark bar and a white sheen */
+body :is(.download-btn, .dz-btn, .support-button, .dest-btn.active, .google-btn) {
+  --fx-shine: rgba(255, 255, 255, 0.55);
+  --fx-bar: linear-gradient(180deg, #04121c, #0b4a45);
+  --fx-bar-glow: rgba(4, 18, 28, 0.35);
+}
+body .google-btn { --fx-shine: rgba(66, 133, 244, 0.22); --fx-bar: linear-gradient(180deg, #4285f4, #34a853); --fx-bar-glow: rgba(66, 133, 244, 0.5); }
+body :is(.download-btn, .dz-btn, .support-button):is(:hover, :focus-visible):not(:disabled) { filter: brightness(1.08) saturate(1.08); }
+body :is(.btn-spam, .btn-danger, .btn-delete) { --fx-shine: rgba(255, 107, 107, 0.3); --fx-bar: linear-gradient(180deg, #ff9a9a, #ff6b6b); --fx-bar-glow: rgba(255, 107, 107, 0.6); }
+
+/* disabled buttons stay calm */
+body :is(.submit-btn, .support-button, .ghost-btn, .download-btn, .page-btn, .nav-btn, .btn):disabled { transform: none; box-shadow: none; filter: none; }
+
+/* icon-only buttons: shimmer + glow + a spring spin instead of a bar */
+body :is(.info-close, .card-download, .lightbox-close, .modal-close-btn):is(:hover, :focus-visible):not(:disabled) { transform: rotate(90deg) scale(1.08); }
+body :is(.info-close, .card-download, .lightbox-close, .modal-close-btn) { transition-timing-function: var(--fx-spring); }
+body .card-download:is(:hover, :focus-visible) { transform: scale(1.12); }
+body :is(.info-close, .lightbox-close, .modal-close-btn):active { transform: rotate(90deg) scale(0.92); }
+
+/* click ripple (element added by fx.js) */
+.fx-ripple {
+  position: absolute; z-index: -1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.5), rgba(127, 233, 240, 0.28) 38%, transparent 68%);
+  transform: scale(0); animation: fx-ripple .75s var(--fx-ease) forwards;
+}
+
+/* staggered entrance, same recipe as the dropdown items */
+html:not(.fx-booted) body.is-loaded .nav-links > * { animation: fx-item-in .7s var(--fx-ease) var(--fx-delay, .4s) backwards; }
+html:not(.fx-booted) body.is-loaded .nav-links > :nth-child(1) { --fx-delay: .40s; }
+html:not(.fx-booted) body.is-loaded .nav-links > :nth-child(2) { --fx-delay: .47s; }
+html:not(.fx-booted) body.is-loaded .nav-links > :nth-child(3) { --fx-delay: .54s; }
+html:not(.fx-booted) body.is-loaded .nav-links > :nth-child(4) { --fx-delay: .61s; }
+html:not(.fx-booted) body.is-loaded .nav-links > :nth-child(5) { --fx-delay: .68s; }
+html:not(.fx-booted) body.is-loaded .nav-links > :nth-child(6) { --fx-delay: .75s; }
+html:not(.fx-booted) body.is-loaded .cta { animation: fx-item-in .9s var(--fx-ease) 1.05s backwards; }
+body .filter-btn { animation: fx-item-in .6s var(--fx-ease) var(--fx-delay, 0s) backwards; }
+body .filter-btn:nth-child(2) { --fx-delay: .06s; } body .filter-btn:nth-child(3) { --fx-delay: .12s; }
+body .filter-btn:nth-child(4) { --fx-delay: .18s; } body .filter-btn:nth-child(5) { --fx-delay: .24s; }
+body .filter-btn:nth-child(6) { --fx-delay: .30s; } body .filter-btn:nth-child(7) { --fx-delay: .36s; }
+body .filter-btn:nth-child(n+8) { --fx-delay: .42s; }
+body .info-popup.active :is(.info-title, .info-section, .info-footer) { animation: fx-item-in .7s var(--fx-ease) var(--fx-delay, .1s) backwards; }
+body .info-popup.active .info-title { --fx-delay: .12s; }
+body .info-popup.active .info-section:nth-of-type(1) { --fx-delay: .2s; }
+body .info-popup.active .info-section:nth-of-type(2) { --fx-delay: .28s; }
+body .info-popup.active .info-footer { --fx-delay: .36s; }
+body .aurora-modal.active .aurora-modal-btn { animation: fx-item-in .6s var(--fx-ease) .15s backwards; }
+body .aurora-modal.active .aurora-modal-btn + .aurora-modal-btn { animation-delay: .22s; }
+
+/* ---------- 4. Floating language and info buttons ---------- */
+html body.is-loaded :is(.lang-toggle, .info-toggle) {
+  transition: color .25s ease, background .3s ease, border-color .3s ease, box-shadow .4s ease, filter .3s ease, transform .4s var(--fx-ease);
+  transition-delay: 0s;
+}
+html:not(.fx-booted) body.is-loaded :is(.lang-toggle, .info-toggle) { animation: fx-float-in 1s var(--fx-ease) .55s backwards; }
+html body.is-loaded .lang-toggle:is(:hover, :focus-visible) { transform: translateX(-4px); border-color: rgba(127, 233, 240, 0.85); box-shadow: 0 0 20px rgba(46, 230, 184, 0.4); }
+html body.is-loaded .info-toggle:is(:hover, :focus-visible) { transform: translateX(4px) rotate(14deg); border-color: rgba(127, 233, 240, 0.85); box-shadow: 0 0 20px rgba(46, 230, 184, 0.4); }
+html body.is-loaded :is(.lang-toggle, .info-toggle):active { transform: scale(0.94); transition-duration: .12s; }
+body .info-toggle { animation: fx-pulse-ring 4.5s ease-in-out infinite; }
+body .lang-toggle .lang-icon { display: inline-block; transition: transform .8s var(--fx-spring); }
+body .lang-toggle:is(:hover, :focus-visible) .lang-icon { transform: rotate(360deg); }
+
+/* ---------- 5. Cards: cursor spotlight + border shine ---------- */
+:where(
+  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
+  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
+  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap
+) { position: relative; }
+
+body :is(
+  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
+  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
+  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
+)::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(127, 233, 240, 0.13), rgba(46, 230, 184, 0.05) 45%, transparent 70%);
+  opacity: 0; transition: opacity .45s ease;
+}
+body :is(
+  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
+  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
+  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
+)::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 1;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(127, 233, 240, 0.95), rgba(167, 139, 250, 0.55) 42%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0; transition: opacity .45s ease;
+}
+body :is(
+  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
+  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
+  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
+):hover::before,
+body :is(
+  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
+  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
+  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet
+):hover::after { opacity: 1; }
+
+body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .glass-panel, .faq-item):hover {
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38), 0 0 34px rgba(46, 230, 184, 0.13);
+}
+body :is(.act-card, .offer-card, .month-card, .glass-card, .news-card, .glass-panel, .faq-item) { transition-property: transform, border-color, box-shadow, opacity, background; }
+
+/* dynamic cards rise in one after another */
+body :is(.news-card, .photo-card) { animation: fx-rise .8s var(--fx-ease) var(--fx-delay, 0s) backwards; }
+body :is(.news-card, .photo-card):nth-child(2) { --fx-delay: .06s; } body :is(.news-card, .photo-card):nth-child(3) { --fx-delay: .12s; }
+body :is(.news-card, .photo-card):nth-child(4) { --fx-delay: .18s; } body :is(.news-card, .photo-card):nth-child(5) { --fx-delay: .24s; }
+body :is(.news-card, .photo-card):nth-child(6) { --fx-delay: .30s; } body :is(.news-card, .photo-card):nth-child(7) { --fx-delay: .36s; }
+body :is(.news-card, .photo-card):nth-child(8) { --fx-delay: .42s; } body :is(.news-card, .photo-card):nth-child(n+9) { --fx-delay: .48s; }
+
+/* team cards: rotating aurora ring around the avatar */
+body .avatar-wrapper { position: relative; }
+body .avatar-wrapper::after {
+  content: ''; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 0deg, #2fe6b8, #7fe9f0, #a78bfa, #2fe6b8);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  opacity: 0; transform: scale(0.9) rotate(0deg);
+  transition: opacity .4s ease, transform .6s var(--fx-spring);
+}
+body .team-card:hover .avatar-wrapper::after { opacity: 1; transform: scale(1) rotate(180deg); animation: fx-spin 6s linear .6s infinite; }
+
+/* ---------- 6. Type ---------- */
+body :is(.page-title, main > header > h1) {
+  background: linear-gradient(100deg, #eafffb 0%, #7fe9f0 28%, #2fe6b8 52%, #a78bfa 76%, #eafffb 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 18px rgba(127, 233, 240, 0.32));
+  animation: fx-flow 10s linear infinite;
+}
+body .section-heading { text-shadow: 0 0 22px rgba(46, 230, 184, 0.35); }
+body .section-heading::before {
+  content: ''; flex: none; width: 9px; height: 9px; border-radius: 2px;
+  background: linear-gradient(135deg, #7fe9f0, #2fe6b8); box-shadow: 0 0 12px rgba(46, 230, 184, 0.85);
+  transform: rotate(45deg); animation: fx-diamond 3.6s ease-in-out infinite;
+}
+body .section-heading::after { background: linear-gradient(90deg, rgba(46, 230, 184, 0.7), rgba(127, 233, 240, 0.32) 42%, transparent); }
+body .page-subtitle { text-shadow: 0 0 14px rgba(127, 233, 240, 0.45); }
+
+body .logo {
+  animation: fx-logo-glow 7s ease-in-out infinite;
+  transform: translate3d(calc(var(--fx-px, 0) * -12px), calc(var(--fx-py, 0) * -8px), 0);
+  transition: transform .6s ease-out;
+}
+body .logo .accent::after { animation: fx-twinkle 3.4s ease-in-out infinite; }
+body .quote .stars { display: inline-block; animation: fx-pulse-ring 0s; }
+body .divider { transform-origin: top center; animation: fx-divider 3.2s ease-in-out infinite; }
+
+/* ---------- 7. Navbar ---------- */
+html body.is-loaded .navbar {
+  transition: opacity 1.2s var(--fx-ease), transform 1.2s var(--fx-ease), background .45s ease, box-shadow .45s ease;
+}
+body .navbar::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; pointer-events: none;
+  background: var(--fx-aurora-line); background-size: 200% 100%; opacity: 0.75;
+  animation: fx-flow 9s linear infinite;
+}
+body.fx-scrolled .navbar { background: rgba(6, 13, 22, 0.82); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); }
+body .nav-logo { animation: fx-pulse-ring 4.5s ease-in-out infinite; transition: transform .8s var(--fx-spring), border-color .3s ease; }
+body .nav-brand:hover .nav-logo { transform: rotate(360deg) scale(1.1); border-color: rgba(127, 233, 240, 0.9); }
+body .nav-title {
+  background: linear-gradient(100deg, #eafffb, #7fe9f0 45%, #2fe6b8 70%, #eafffb);
+  background-size: 220% 100%; -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent; animation: fx-flow 8s linear infinite;
+}
+body .hamburger-btn span { transition: transform .3s var(--fx-ease), opacity .3s ease, background-color .25s ease, box-shadow .25s ease; }
+body .hamburger-btn:hover span { background-color: var(--fx-cyan); box-shadow: 0 0 8px rgba(46, 230, 184, 0.65); }
+
+.fx-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 1200; pointer-events: none;
+  transform-origin: 0 50%; transform: scaleX(var(--fx-progress, 0)); will-change: transform;
+  background: linear-gradient(90deg, #2fe6b8, #7fe9f0, #a78bfa);
+  box-shadow: 0 0 12px rgba(46, 230, 184, 0.75);
+}
+
+/* ---------- 8. Loader and page-to-page veil ---------- */
+body #preloader { background: radial-gradient(55% 45% at 50% 50%, #0a2430 0%, #02070c 62%, #000 100%); }
+body #preloader::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px;
+  border-radius: 50%; border: 2px solid transparent;
+  border-top-color: #2fe6b8; border-right-color: #7fe9f0; border-bottom-color: #a78bfa;
+  filter: drop-shadow(0 0 10px rgba(46, 230, 184, 0.65));
+  animation: fx-spin 1.15s linear infinite;
+}
+body #preloader::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #eafffb 0%, #7fe9f0 38%, rgba(46, 230, 184, 0) 70%);
+  animation: fx-orb 1.7s ease-in-out infinite;
+}
+.fx-veil {
+  position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0;
+  background:
+    radial-gradient(65% 60% at 50% 105%, rgba(46, 230, 184, 0.38), transparent 70%),
+    radial-gradient(55% 55% at 85% -5%, rgba(167, 139, 250, 0.32), transparent 70%),
+    #02070c;
+  transition: opacity .28s ease;
+}
+html.fx-leaving .fx-veil { opacity: 1; }
+
+/* ---------- 9. Ambient layers ---------- */
+.fx-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.fx-aurora { position: absolute; inset: -15%; mix-blend-mode: screen; opacity: 0.6; }
+.fx-aurora i { position: absolute; border-radius: 50%; will-change: transform; }
+.fx-aurora i:nth-child(1) { left: -8%; top: -12%; width: 72%; height: 62%; background: radial-gradient(closest-side, rgba(46, 230, 184, 0.40), transparent); animation: fx-drift-a 26s ease-in-out infinite alternate; }
+.fx-aurora i:nth-child(2) { right: -10%; top: 4%; width: 62%; height: 58%; background: radial-gradient(closest-side, rgba(167, 139, 250, 0.34), transparent); animation: fx-drift-b 33s ease-in-out infinite alternate; }
+.fx-aurora i:nth-child(3) { left: 18%; bottom: -18%; width: 78%; height: 56%; background: radial-gradient(closest-side, rgba(127, 233, 240, 0.28), transparent); animation: fx-drift-c 39s ease-in-out infinite alternate; }
+.fx-stars { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.fx-cursor {
+  position: fixed; left: 0; top: 0; z-index: 2; width: 520px; height: 520px; margin: -260px 0 0 -260px;
+  border-radius: 50%; pointer-events: none; opacity: 0; mix-blend-mode: screen; will-change: transform;
+  background: radial-gradient(closest-side, rgba(127, 233, 240, 0.12), rgba(46, 230, 184, 0.05) 46%, transparent 72%);
+  transition: opacity .5s ease, transform .35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.fx-cursor.is-on { opacity: 1; }
+
+/* ---------- 10. Page polish ---------- */
+body :is(.form-input, .form-textarea) { transition: border-color .25s ease, box-shadow .35s ease, background .25s ease; }
+body :is(.form-input, .form-textarea):focus {
+  border-color: var(--fx-cyan); background: rgba(5, 11, 18, 0.85);
+  box-shadow: 0 0 0 3px rgba(127, 233, 240, 0.14), 0 0 26px rgba(46, 230, 184, 0.16);
+}
+body .support-count { animation: fx-logo-glow 5s ease-in-out infinite; }
+
+body :is(.progress-fill, .progress-bar-fill) { position: relative; overflow: hidden; }
+body :is(.progress-fill, .progress-bar-fill)::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.5) 50%, transparent 80%);
+  animation: fx-sheen 1.8s ease-in-out infinite;
+}
+
+body .financial-table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--fx-teal); }
+body .financial-table tbody tr:hover { background: linear-gradient(90deg, rgba(46, 230, 184, 0.12), rgba(127, 233, 240, 0.04)); }
+
+body .event-item { transition: transform .35s var(--fx-ease), color .25s ease; }
+body .event-item:hover { transform: translateX(4px); color: #ffffff; }
+body .badge, body .month-badge { transition: box-shadow .3s ease, transform .35s var(--fx-spring); }
+body :is(.offer-card, .month-card):hover :is(.badge, .month-badge) { box-shadow: 0 0 14px rgba(46, 230, 184, 0.45); transform: scale(1.06); }
+
+body :is(.act-toggle, .expand-indicator) svg { transition: transform .45s var(--fx-spring); }
+body :is(.act-card, .offer-card):hover :is(.act-toggle, .expand-indicator) { text-shadow: 0 0 12px rgba(127, 233, 240, 0.55); }
+
+body .play-overlay:hover .play-button { box-shadow: 0 0 36px rgba(46, 230, 184, 0.7), 0 0 0 10px rgba(46, 230, 184, 0.12); }
+body .play-button { animation: fx-pulse-ring 3s ease-in-out infinite; }
+
+body .photo-card:hover img { filter: saturate(1.15) contrast(1.04); }
+body .photo-card img { transition: transform .5s var(--fx-ease), filter .4s ease; }
+
+body footer { text-shadow: 0 0 12px rgba(127, 233, 240, 0.15); }
+
+/* info dialog gets the same entrance glow as the dropdown */
+body .info-sheet { box-shadow: 0 -14px 48px rgba(0, 0, 0, 0.55), 0 0 36px rgba(46, 230, 184, 0.12); }
+
+/* leaving state must never trap clicks if the browser restores the page */
+html.fx-leaving body { cursor: progress; }
+
+/* ---------- 11. Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  body *, body *::before, body *::after { animation: none !important; }
+  .fx-cursor, .fx-veil, .fx-aurora { display: none !important; }
+  body :is(.nav-btn, .filter-btn, .cta, .submit-btn)::before { transition: none; }
+  html body.is-loaded :is(.lang-toggle, .info-toggle) { transition: none; }
+}
+
+/* touch screens have no hover: keep the press feedback only */
+@media (hover: none) {
+  .fx-cursor { display: none !important; }
+}
+
+/* small screens: lighter ambient layer */
+@media (max-width: 768px) {
+  .fx-aurora { opacity: 0.45; }
+  body :is(.nav-btn, .filter-btn):is(:hover, :focus-visible):not(:disabled) { transform: translateX(3px); }
+}
