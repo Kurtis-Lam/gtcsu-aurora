@@ -1,23 +1,76 @@
-import { auth, db, isSchoolUser, ALLOWED_DOMAIN } from './firebase-config.js';
-import { initInfo, refreshInfo } from './info.js';
+import { APP_VERSION, initInfo, refreshInfo } from './info.js';
 import './fx.js';
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { NEWS_READ_EVENT, getLocalReads, readRevision } from './news-reads.js';
-import { preloadNews, preloadPhotos, clearPhotoCaches, hintResources, runWhenIdle } from './preload.js';
+import { API_BASE } from './api-config.js';
 
-// Start fetching shared components immediately; they are mounted once the DOM is ready.
-const panelFetchPromise = fetch('panel.html')
-  .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
-  .catch(err => { console.error('Error loading panel component:', err); return null; });
+const FIREBASE_AUTH_URL = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+const FIREBASE_FIRESTORE_URL = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-const backgroundFetchPromise = fetch('background.html')
-  .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
-  .catch(err => { console.error('Error loading background component:', err); return null; });
+// Firebase is large, so it is loaded on demand and never blocks the page shell
+// (navigation, background and floating buttons mount without waiting for it).
+let fb = null;
+let firebasePromise = null;
+let siteProvider = null;
 
-const infoFetchPromise = fetch('info.html')
-  .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
-  .catch(err => { console.error('Error loading info component:', err); return null; });
+function loadFirebase() {
+  if (!firebasePromise) {
+    firebasePromise = Promise.all([
+      import('./firebase-config.js'),
+      import(FIREBASE_AUTH_URL),
+      import(FIREBASE_FIRESTORE_URL),
+      import('./preload.js')
+    ]).then(([config, authApi, firestoreApi, preload]) => {
+      fb = { config, authApi, firestoreApi, preload };
+      siteProvider = new authApi.GoogleAuthProvider();
+      siteProvider.setCustomParameters({ hd: config.ALLOWED_DOMAIN, prompt: 'select_account' });
+      startAuthWatch();
+      return fb;
+    }).catch(error => {
+      firebasePromise = null;
+      console.error('Could not load Firebase:', error);
+      throw error;
+    });
+  }
+  return firebasePromise;
+}
+
+function runWhenIdle(task, timeout = 3000) {
+  if ('requestIdleCallback' in window) window.requestIdleCallback(task, { timeout });
+  else setTimeout(task, 400);
+}
+
+function afterPageLoad(task) {
+  if (document.readyState === 'complete') task();
+  else window.addEventListener('load', task, { once: true });
+}
+
+function canPrefetch() {
+  const connection = navigator.connection;
+  if (!connection) return true;
+  return !connection.saveData && !/(^|-)2g$/.test(connection.effectiveType || '');
+}
+
+// Shared components are cached per release: returning visits paint the navigation
+// instantly from the cache while a fresh copy is fetched in the background.
+function fetchComponent(file) {
+  const key = `aurora_component:${APP_VERSION}:${file}`;
+  let cached = null;
+  try { cached = localStorage.getItem(key); } catch {}
+
+  const network = fetch(file)
+    .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+    .then(text => {
+      try { localStorage.setItem(key, text); } catch {}
+      return text;
+    })
+    .catch(err => { console.error(`Error loading ${file} component:`, err); return null; });
+
+  return cached ? Promise.resolve(cached) : network;
+}
+
+const panelFetchPromise = fetchComponent('panel.html');
+const backgroundFetchPromise = fetchComponent('background.html');
+const infoFetchPromise = fetchComponent('info.html');
 
 const currentLang = () => (localStorage.getItem('aurora_lang') === 'zh' ? 'zh' : 'en');
 
@@ -101,11 +154,12 @@ function ensureModal() {
   return modalEl;
 }
 
-function showSchoolEmailModal(attemptedEmail) {
+async function showSchoolEmailModal(attemptedEmail) {
+  const { config } = fb || await loadFirebase();
   const t = MODAL_TEXT[currentLang()];
   const el = ensureModal();
   el.querySelector('.aurora-modal-title').textContent = t.title;
-  el.querySelector('.aurora-modal-body').textContent = t.body(ALLOWED_DOMAIN);
+  el.querySelector('.aurora-modal-body').textContent = t.body(config.ALLOWED_DOMAIN);
   el.querySelector('.aurora-modal-attempt').textContent = attemptedEmail ? `${t.attempted} ${attemptedEmail}` : '';
   el.querySelector('[data-act="retry"]').textContent = t.retry;
   el.querySelector('[data-act="close"]').textContent = t.close;
@@ -134,7 +188,7 @@ function watchUnreadNews(user) {
   const badge = document.querySelector('.news-unread-dot');
   if (!badge) return;
   badge.classList.remove('visible');
-  if (!user) return;
+  if (!user || !fb) return;
 
   let news = [];
   let reads = new Map();
@@ -162,6 +216,9 @@ function watchUnreadNews(user) {
   window.addEventListener(NEWS_READ_EVENT, onLocalRead);
   stopLocalReadWatch = () => window.removeEventListener(NEWS_READ_EVENT, onLocalRead);
 
+  const { collection, onSnapshot, query, where } = fb.firestoreApi;
+  const { db } = fb.config;
+
   newsUnsubscribers = [
     onSnapshot(query(collection(db, 'news'), where('status', '==', 'published'), where('deleted', '==', false)), snapshot => {
       news = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
@@ -185,7 +242,8 @@ function watchUnreadNews(user) {
 }
 
 async function createNewsSubscription(user) {
-  const subscriptionRef = doc(db, 'newsSubscriptions', user.uid);
+  const { doc, getDoc, serverTimestamp, setDoc } = fb.firestoreApi;
+  const subscriptionRef = doc(fb.config.db, 'newsSubscriptions', user.uid);
   try {
     const existing = await getDoc(subscriptionRef);
     if (existing.exists()) return;
@@ -201,22 +259,24 @@ async function createNewsSubscription(user) {
   }
 }
 
-const siteProvider = new GoogleAuthProvider();
-siteProvider.setCustomParameters({ hd: ALLOWED_DOMAIN, prompt: 'select_account' });
-
-onAuthStateChanged(auth, (user) => {
-  currentUser = isSchoolUser(user) ? user : null;
-  authResolved = true;
-  authListeners.forEach(cb => { try { cb(currentUser); } catch (e) { console.error(e); } });
-  updateNavAuthUI(currentUser);
-  watchUnreadNews(currentUser);
-  if (currentUser) createNewsSubscription(currentUser);
-  else if (authResolved) clearPhotoCaches();
-  runWhenIdle(() => {
-    preloadNews();
-    if (currentUser) preloadPhotos(currentUser);
+function startAuthWatch() {
+  const { auth, isSchoolUser } = fb.config;
+  fb.authApi.onAuthStateChanged(auth, (user) => {
+    currentUser = isSchoolUser(user) ? user : null;
+    authResolved = true;
+    authListeners.forEach(cb => { try { cb(currentUser); } catch (e) { console.error(e); } });
+    updateNavAuthUI(currentUser);
+    watchUnreadNews(currentUser);
+    if (currentUser) createNewsSubscription(currentUser);
+    else fb.preload.clearPhotoCaches();
+    if (canPrefetch()) {
+      runWhenIdle(() => {
+        fb.preload.preloadNews();
+        if (currentUser) fb.preload.preloadPhotos(currentUser);
+      }, 4000);
+    }
   });
-});
+}
 
 export const AuroraAuth = {
   getUser: () => currentUser,
@@ -225,14 +285,19 @@ export const AuroraAuth = {
   onChange(cb) {
     authListeners.add(cb);
     if (authResolved) cb(currentUser);
+    loadFirebase().catch(() => {});
     return () => authListeners.delete(cb);
   },
   async signIn() {
     try {
-      const { user } = await signInWithPopup(auth, siteProvider);
+      // When Firebase is already loaded there is no await before the popup,
+      // so the browser still treats it as a direct result of the click.
+      const loaded = fb || await loadFirebase();
+      const { auth, isSchoolUser } = loaded.config;
+      const { user } = await loaded.authApi.signInWithPopup(auth, siteProvider);
       if (!isSchoolUser(user)) {
         const attempted = user.email || '';
-        await signOut(auth);
+        await loaded.authApi.signOut(auth);
         showSchoolEmailModal(attempted);
         return null;
       }
@@ -244,7 +309,10 @@ export const AuroraAuth = {
       return null;
     }
   },
-  signOut: () => signOut(auth),
+  async signOut() {
+    const loaded = fb || await loadFirebase();
+    return loaded.authApi.signOut(loaded.config.auth);
+  },
   showSchoolEmailModal
 };
 
@@ -278,8 +346,6 @@ function updateNavAuthUI(user) {
 // A page may define window.setLanguage(lang) to re-render its own dynamic
 // content; it is called if present. A 'aurora:langchange' event is also fired.
 // ---------------------------------------------------------------------------
-let isSwitching = false;
-
 function syncLangButton() {
   const langText = document.getElementById('lang-text');
   if (langText) langText.textContent = currentLang() === 'en' ? '繁體中文' : 'English';
@@ -296,16 +362,7 @@ function applyLanguageEverywhere(lang) {
 }
 
 function switchLanguage() {
-  if (isSwitching) return;
-  isSwitching = true;
-  document.body.classList.remove('is-loaded');
-  setTimeout(() => {
-    applyLanguageEverywhere(currentLang() === 'en' ? 'zh' : 'en');
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      document.body.classList.add('is-loaded');
-      setTimeout(() => { isSwitching = false; }, 1200);
-    }));
-  }, 350);
+  applyLanguageEverywhere(currentLang() === 'en' ? 'zh' : 'en');
 }
 
 // ---------------------------------------------------------------------------
@@ -328,84 +385,121 @@ function wireBackgroundVideo() {
 // ---------------------------------------------------------------------------
 // Mount navigation panel + background
 // ---------------------------------------------------------------------------
-async function loadPanel() {
+async function mountPanel() {
   const mountPoint = document.getElementById('panel-container');
-  const bgMountPoint = document.getElementById('background-container');
+  const panelHtml = await panelFetchPromise;
+  if (!mountPoint || !panelHtml) return;
 
-  const [panelHtml, backgroundHtml, infoHtml] = await Promise.all([panelFetchPromise, backgroundFetchPromise, infoFetchPromise]);
+  mountPoint.innerHTML = panelHtml;
+  applyLanguage(mountPoint);
 
-  if (mountPoint && panelHtml) {
-    mountPoint.innerHTML = panelHtml;
-    applyLanguage(mountPoint);
+  // Highlight the active route
+  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+  const navLinks = mountPoint.querySelectorAll('.nav-links a[data-page]');
+  navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('data-page') === currentPath));
+  const dropdown = mountPoint.querySelector('#info-dropdown');
+  const dropdownToggle = mountPoint.querySelector('#info-dropdown-toggle');
+  // In the mobile drawer, start expanded when the current page lives under "Info".
+  // On desktop the menu is a floating panel, so it only opens on hover/click.
+  if (dropdown?.querySelector('a.active') && window.matchMedia('(max-width: 768px)').matches) dropdown.classList.add('open');
+  dropdownToggle?.addEventListener('click', () => {
+    const open = dropdown.classList.toggle('open');
+    dropdownToggle.setAttribute('aria-expanded', String(open));
+  });
+  document.addEventListener('click', event => {
+    if (!dropdown?.contains(event.target)) {
+      dropdown?.classList.remove('open');
+      dropdownToggle?.setAttribute('aria-expanded', 'false');
+    }
+  });
+  dropdown?.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      dropdown.classList.remove('open');
+      dropdownToggle?.setAttribute('aria-expanded', 'false');
+      dropdownToggle?.focus();
+    }
+  });
 
-    // Highlight the active route
-    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-    const navLinks = mountPoint.querySelectorAll('.nav-links a[data-page]');
-    navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('data-page') === currentPath));
-    const dropdown = mountPoint.querySelector('#info-dropdown');
-    const dropdownToggle = mountPoint.querySelector('#info-dropdown-toggle');
-    // In the mobile drawer, start expanded when the current page lives under "Info".
-    // On desktop the menu is a floating panel, so it only opens on hover/click.
-    if (dropdown?.querySelector('a.active') && window.matchMedia('(max-width: 768px)').matches) dropdown.classList.add('open');
-    dropdownToggle?.addEventListener('click', () => {
-      const open = dropdown.classList.toggle('open');
-      dropdownToggle.setAttribute('aria-expanded', String(open));
-    });
-    document.addEventListener('click', event => {
-      if (!dropdown?.contains(event.target)) {
-        dropdown?.classList.remove('open');
-        dropdownToggle?.setAttribute('aria-expanded', 'false');
-      }
-    });
-    dropdown?.addEventListener('keydown', event => {
-      if (event.key === 'Escape') {
-        dropdown.classList.remove('open');
-        dropdownToggle?.setAttribute('aria-expanded', 'false');
-        dropdownToggle?.focus();
-      }
-    });
+  // Mobile hamburger drawer
+  const hamburger = mountPoint.querySelector('#hamburger-btn');
+  const drawer = mountPoint.querySelector('#nav-links');
+  const overlay = mountPoint.querySelector('#nav-overlay');
 
-    // Mobile hamburger drawer
-    const hamburger = mountPoint.querySelector('#hamburger-btn');
-    const drawer = mountPoint.querySelector('#nav-links');
-    const overlay = mountPoint.querySelector('#nav-overlay');
+  const setMenu = (open) => {
+    drawer?.classList.toggle('active', open);
+    hamburger?.classList.toggle('open', open);
+    overlay?.classList.toggle('active', open);
+  };
+  hamburger?.addEventListener('click', () => setMenu(!drawer.classList.contains('active')));
+  overlay?.addEventListener('click', () => setMenu(false));
+  navLinks.forEach(link => link.addEventListener('click', () => setMenu(false)));
 
-    const setMenu = (open) => {
-      drawer?.classList.toggle('active', open);
-      hamburger?.classList.toggle('open', open);
-      overlay?.classList.toggle('active', open);
-    };
-    hamburger?.addEventListener('click', () => setMenu(!drawer.classList.contains('active')));
-    overlay?.addEventListener('click', () => setMenu(false));
-    navLinks.forEach(link => link.addEventListener('click', () => setMenu(false)));
+  // Sign-in / sign-out
+  const signInButton = document.getElementById('nav-signin-btn');
+  signInButton?.addEventListener('click', () => AuroraAuth.signIn());
+  ['pointerenter', 'touchstart', 'focus'].forEach(type => signInButton?.addEventListener(type, () => { loadFirebase().catch(() => {}); }, { once: true, passive: true }));
+  document.getElementById('nav-signout-btn')?.addEventListener('click', () => AuroraAuth.signOut());
+  updateNavAuthUI(currentUser);
+  watchUnreadNews(currentUser);
 
-    // Sign-in / sign-out
-    document.getElementById('nav-signin-btn')?.addEventListener('click', () => AuroraAuth.signIn());
-    document.getElementById('nav-signout-btn')?.addEventListener('click', () => AuroraAuth.signOut());
-    updateNavAuthUI(currentUser);
-    watchUnreadNews(currentUser);
-
-    // Language toggle
-    document.getElementById('lang-btn')?.addEventListener('click', switchLanguage);
-    syncLangButton();
-  }
-
-  if (infoHtml) {
-    const infoMount = document.createElement('div');
-    infoMount.id = 'info-container';
-    infoMount.innerHTML = infoHtml;
-    document.body.appendChild(infoMount);
-    applyLanguage(infoMount);
-    initInfo(infoMount, document.getElementById('info-btn'));
-  }
-
-  if (bgMountPoint && backgroundHtml) {
-    bgMountPoint.innerHTML = backgroundHtml;
-    wireBackgroundVideo();
-  }
+  // Language toggle
+  document.getElementById('lang-btn')?.addEventListener('click', switchLanguage);
+  syncLangButton();
 }
 
-hintResources();
+async function mountInfo() {
+  const infoHtml = await infoFetchPromise;
+  if (!infoHtml) return;
+  const infoMount = document.createElement('div');
+  infoMount.id = 'info-container';
+  infoMount.innerHTML = infoHtml;
+  document.body.appendChild(infoMount);
+  applyLanguage(infoMount);
+  // The floating info button comes from panel.html, so wait for it to be mounted.
+  await panelFetchPromise;
+  initInfo(infoMount, document.getElementById('info-btn'));
+}
+
+async function mountBackground() {
+  const bgMountPoint = document.getElementById('background-container');
+  const backgroundHtml = await backgroundFetchPromise;
+  if (!bgMountPoint || !backgroundHtml) return;
+  bgMountPoint.innerHTML = backgroundHtml;
+  wireBackgroundVideo();
+}
+
+function loadPanel() {
+  mountPanel();
+  mountBackground();
+  mountInfo();
+}
+
+// Cheap hint, safe to run immediately: the API host is contacted by analytics on every page.
+function preconnectApi() {
+  if (document.head.querySelector('link[rel="preconnect"][href="' + API_BASE + '"]')) return;
+  const link = document.createElement('link');
+  link.rel = 'preconnect';
+  link.href = API_BASE;
+  link.crossOrigin = '';
+  document.head.appendChild(link);
+}
+
+// Everything below is optional warm-up and only runs once the page is idle.
+function warmUp() {
+  if (canPrefetch()) {
+    ['js/news-page.js', 'js/photos.js'].forEach(href => {
+      if (document.head.querySelector('link[rel="modulepreload"][href="' + href + '"]')) return;
+      const link = document.createElement('link');
+      link.rel = 'modulepreload';
+      link.href = href;
+      document.head.appendChild(link);
+    });
+  }
+  runWhenIdle(() => { loadFirebase().catch(() => {}); }, 1500);
+}
+
+preconnectApi();
+afterPageLoad(() => runWhenIdle(warmUp, 2000));
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', loadPanel);
