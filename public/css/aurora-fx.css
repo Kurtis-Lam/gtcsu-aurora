@@ -35,13 +35,12 @@ html { scrollbar-color: rgba(127, 233, 240, 0.5) rgba(5, 11, 18, 0.85); scrollba
 
 /* ---------- 2. Keyframes ---------- */
 @keyframes fx-item-in {
-  from { opacity: 0; transform: translateX(-18px) scale(0.94); filter: blur(4px); }
-  60%  { filter: blur(0); }
-  to   { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateX(-18px) scale(0.94); }
+  to   { opacity: 1; transform: none; }
 }
 @keyframes fx-rise {
-  from { opacity: 0; transform: translateY(26px) scale(0.97); filter: blur(5px); }
-  to   { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(26px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
 }
 @keyframes fx-float-in {
   from { opacity: 0; transform: translateY(24px) scale(0.9); }
@@ -157,7 +156,7 @@ body :is(
 ):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::after,
 body :is(.nav-btn, .filter-btn, .dest-btn, .nav-auth-btn).active::after { height: 55%; }
 body .tab-btn:is(:hover, :focus-visible):not(:disabled)::after,
-body .tab-btn.active::after { transform: scaleX(1); animation: fx-flow 5s linear infinite; }
+body .tab-btn.active::after { transform: scaleX(1); }
 
 /* press */
 body :is(
@@ -228,7 +227,7 @@ html:not(.fx-booted) body.is-loaded :is(.lang-toggle, .info-toggle) { animation:
 html body.is-loaded .lang-toggle:is(:hover, :focus-visible) { transform: translateX(-4px); border-color: rgba(127, 233, 240, 0.85); box-shadow: 0 0 20px rgba(46, 230, 184, 0.4); }
 html body.is-loaded .info-toggle:is(:hover, :focus-visible) { transform: translateX(4px) rotate(14deg); border-color: rgba(127, 233, 240, 0.85); box-shadow: 0 0 20px rgba(46, 230, 184, 0.4); }
 html body.is-loaded :is(.lang-toggle, .info-toggle):active { transform: scale(0.94); transition-duration: .12s; }
-body .info-toggle { animation: fx-pulse-ring 4.5s ease-in-out infinite; }
+body .info-toggle { box-shadow: 0 0 14px rgba(46, 230, 184, 0.4); }
 body .lang-toggle .lang-icon { display: inline-block; transition: transform .8s var(--fx-spring); }
 body .lang-toggle:is(:hover, :focus-visible) .lang-icon { transform: rotate(360deg); }
 
@@ -302,26 +301,24 @@ body :is(.page-title, main > header > h1) {
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
   text-shadow: none;
-  filter: drop-shadow(0 0 18px rgba(127, 233, 240, 0.32));
-  animation: fx-flow 10s linear infinite;
 }
 body .section-heading { text-shadow: 0 0 22px rgba(46, 230, 184, 0.35); }
 body .section-heading::before {
   content: ''; flex: none; width: 9px; height: 9px; border-radius: 2px;
   background: linear-gradient(135deg, #7fe9f0, #2fe6b8); box-shadow: 0 0 12px rgba(46, 230, 184, 0.85);
-  transform: rotate(45deg); animation: fx-diamond 3.6s ease-in-out infinite;
+  transform: rotate(45deg);
 }
 body .section-heading::after { background: linear-gradient(90deg, rgba(46, 230, 184, 0.7), rgba(127, 233, 240, 0.32) 42%, transparent); }
 body .page-subtitle { text-shadow: 0 0 14px rgba(127, 233, 240, 0.45); }
 
 body .logo {
-  animation: fx-logo-glow 7s ease-in-out infinite;
+  text-shadow: 0 0 18px rgba(127, 233, 240, 0.55), 0 0 46px rgba(46, 230, 184, 0.4);
   transform: translate3d(calc(var(--fx-px, 0) * -12px), calc(var(--fx-py, 0) * -8px), 0);
   transition: transform .6s ease-out;
 }
-body .logo .accent::after { animation: fx-twinkle 3.4s ease-in-out infinite; }
-body .quote .stars { display: inline-block; animation: fx-pulse-ring 0s; }
-body .divider { transform-origin: top center; animation: fx-divider 3.2s ease-in-out infinite; }
+body .logo .accent::after { opacity: 0.8; }
+body .quote .stars { display: inline-block; }
+body .divider { transform-origin: top center; }
 
 /* ---------- 7. Navbar ---------- */
 html body.is-loaded .navbar {
@@ -330,15 +327,14 @@ html body.is-loaded .navbar {
 body .navbar::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; pointer-events: none;
   background: var(--fx-aurora-line); background-size: 200% 100%; opacity: 0.75;
-  animation: fx-flow 9s linear infinite;
 }
 body.fx-scrolled .navbar { background: rgba(6, 13, 22, 0.82); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); }
-body .nav-logo { animation: fx-pulse-ring 4.5s ease-in-out infinite; transition: transform .8s var(--fx-spring), border-color .3s ease; }
+body .nav-logo { box-shadow: 0 0 14px rgba(46, 230, 184, 0.4); transition: transform .8s var(--fx-spring), border-color .3s ease; }
 body .nav-brand:hover .nav-logo { transform: rotate(360deg) scale(1.1); border-color: rgba(127, 233, 240, 0.9); }
 body .nav-title {
   background: linear-gradient(100deg, #eafffb, #7fe9f0 45%, #2fe6b8 70%, #eafffb);
   background-size: 220% 100%; -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent; animation: fx-flow 8s linear infinite;
+  -webkit-text-fill-color: transparent; color: transparent;
 }
 body .hamburger-btn span { transition: transform .3s var(--fx-ease), opacity .3s ease, background-color .25s ease, box-shadow .25s ease; }
 body .hamburger-btn:hover span { background-color: var(--fx-cyan); box-shadow: 0 0 8px rgba(46, 230, 184, 0.65); }
@@ -376,8 +372,8 @@ body #preloader::after {
 html.fx-leaving .fx-veil { opacity: 1; }
 
 /* ---------- 9. Ambient layers ---------- */
-.fx-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-.fx-aurora { position: absolute; inset: -15%; mix-blend-mode: screen; opacity: 0.6; }
+.fx-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; }
+.fx-aurora { position: absolute; inset: -15%; opacity: 0.6; }
 .fx-aurora i { position: absolute; border-radius: 50%; will-change: transform; }
 .fx-aurora i:nth-child(1) { left: -8%; top: -12%; width: 72%; height: 62%; background: radial-gradient(closest-side, rgba(46, 230, 184, 0.40), transparent); animation: fx-drift-a 26s ease-in-out infinite alternate; }
 .fx-aurora i:nth-child(2) { right: -10%; top: 4%; width: 62%; height: 58%; background: radial-gradient(closest-side, rgba(167, 139, 250, 0.34), transparent); animation: fx-drift-b 33s ease-in-out infinite alternate; }
@@ -386,9 +382,9 @@ html.fx-leaving .fx-veil { opacity: 1; }
 
 .fx-cursor {
   position: fixed; left: 0; top: 0; z-index: 2; width: 520px; height: 520px; margin: -260px 0 0 -260px;
-  border-radius: 50%; pointer-events: none; opacity: 0; mix-blend-mode: screen; will-change: transform;
+  border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform;
   background: radial-gradient(closest-side, rgba(127, 233, 240, 0.12), rgba(46, 230, 184, 0.05) 46%, transparent 72%);
-  transition: opacity .5s ease, transform .35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity .5s ease;
 }
 .fx-cursor.is-on { opacity: 1; }
 
@@ -398,7 +394,7 @@ body :is(.form-input, .form-textarea):focus {
   border-color: var(--fx-cyan); background: rgba(5, 11, 18, 0.85);
   box-shadow: 0 0 0 3px rgba(127, 233, 240, 0.14), 0 0 26px rgba(46, 230, 184, 0.16);
 }
-body .support-count { animation: fx-logo-glow 5s ease-in-out infinite; }
+body .support-count { text-shadow: 0 0 18px rgba(127, 233, 240, 0.55); }
 
 body :is(.progress-fill, .progress-bar-fill) { position: relative; overflow: hidden; }
 body :is(.progress-fill, .progress-bar-fill)::after {
@@ -419,7 +415,7 @@ body :is(.act-toggle, .expand-indicator) svg { transition: transform .45s var(--
 body :is(.act-card, .offer-card):hover :is(.act-toggle, .expand-indicator) { text-shadow: 0 0 12px rgba(127, 233, 240, 0.55); }
 
 body .play-overlay:hover .play-button { box-shadow: 0 0 36px rgba(46, 230, 184, 0.7), 0 0 0 10px rgba(46, 230, 184, 0.12); }
-body .play-button { animation: fx-pulse-ring 3s ease-in-out infinite; }
+body .play-button { box-shadow: 0 0 16px rgba(46, 230, 184, 0.4); }
 
 body .photo-card:hover img { filter: saturate(1.15) contrast(1.04); }
 body .photo-card img { transition: transform .5s var(--fx-ease), filter .4s ease; }
@@ -431,6 +427,16 @@ body .info-sheet { box-shadow: 0 -14px 48px rgba(0, 0, 0, 0.55), 0 0 36px rgba(4
 
 /* leaving state must never trap clicks if the browser restores the page */
 html.fx-leaving body { cursor: progress; }
+
+/* ---------- 10b. Performance: no live backdrop blur over the background video ---------- */
+body :is(
+  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
+  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
+  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet,
+  .navbar, .nav-links, .nav-overlay, .lang-toggle, .info-toggle
+) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+body .navbar { background: rgba(6, 13, 22, 0.82); }
+body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item) { background-color: rgba(10, 26, 32, 0.86); }
 
 /* ---------- 11. Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
