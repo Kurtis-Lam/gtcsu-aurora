@@ -165,7 +165,6 @@ function buildAmbient() {
     const ambient = el('div', 'fx-ambient');
     ambient.setAttribute('aria-hidden', 'true');
     const aurora = el('div', 'fx-aurora');
-    for (let i = 0; i < 3; i++) aurora.appendChild(el('i'));
     const canvas = el('canvas', 'fx-stars');
     ambient.append(aurora, canvas);
     document.body.appendChild(ambient);
