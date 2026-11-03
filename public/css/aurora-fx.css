@@ -373,11 +373,17 @@ html.fx-leaving .fx-veil { opacity: 1; }
 
 /* ---------- 9. Ambient layers ---------- */
 .fx-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; }
-.fx-aurora { position: absolute; inset: -15%; opacity: 0.6; }
-.fx-aurora i { position: absolute; border-radius: 50%; will-change: transform; }
-.fx-aurora i:nth-child(1) { left: -8%; top: -12%; width: 72%; height: 62%; background: radial-gradient(closest-side, rgba(46, 230, 184, 0.40), transparent); animation: fx-drift-a 26s ease-in-out infinite alternate; }
-.fx-aurora i:nth-child(2) { right: -10%; top: 4%; width: 62%; height: 58%; background: radial-gradient(closest-side, rgba(167, 139, 250, 0.34), transparent); animation: fx-drift-b 33s ease-in-out infinite alternate; }
-.fx-aurora i:nth-child(3) { left: 18%; bottom: -18%; width: 78%; height: 56%; background: radial-gradient(closest-side, rgba(127, 233, 240, 0.28), transparent); animation: fx-drift-c 39s ease-in-out infinite alternate; }
+.fx-aurora {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(closest-side at 28% 22%, rgba(46, 230, 184, 0.24), transparent),
+    radial-gradient(closest-side at 82% 30%, rgba(167, 139, 250, 0.20), transparent),
+    radial-gradient(closest-side at 45% 95%, rgba(127, 233, 240, 0.17), transparent);
+  background-size: 80% 70%, 70% 65%, 85% 60%;
+  background-position: 0 0, 100% 0, 30% 100%;
+  background-repeat: no-repeat;
+}
+.fx-aurora i { display: none; }
 .fx-stars { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 .fx-cursor {
@@ -428,13 +434,12 @@ body .info-sheet { box-shadow: 0 -14px 48px rgba(0, 0, 0, 0.55), 0 0 36px rgba(4
 /* leaving state must never trap clicks if the browser restores the page */
 html.fx-leaving body { cursor: progress; }
 
+/* the video wrapper must not be promoted to its own GPU layer stack */
+body .sky { transform: none; }
+body .bg-video { filter: none; will-change: auto; backface-visibility: visible; transform: translate(-50%, -50%); }
+
 /* ---------- 10b. Performance: no live backdrop blur over the background video ---------- */
-body :is(
-  .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
-  .auth-card, .notice-card, .photo-card, .consent-card, .modal-card, .aurora-modal-card,
-  .kpi-card, .chart-card, .card, .news-admin-card, .sl-panel, .supporters-table-wrap, .info-sheet,
-  .navbar, .nav-links, .nav-overlay, .lang-toggle, .info-toggle
-) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+body, body *, body *::before, body *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 body .navbar { background: rgba(6, 13, 22, 0.82); }
 body :is(.glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item) { background-color: rgba(10, 26, 32, 0.86); }
 
