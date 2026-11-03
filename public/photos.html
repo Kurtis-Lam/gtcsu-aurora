@@ -45,14 +45,6 @@
     overflow-x: hidden;
   }
 
-  /* Preloader */
-  #preloader {
-    position: fixed; inset: 0; z-index: 9999;
-    background: #000000;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
-  }
-  body.is-loaded #preloader { opacity: 0; visibility: hidden; }
-
   /* Top Navigation Panel */
   .navbar {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -365,9 +357,7 @@
 </style>
 </head>
 
-<body>
-  <div id="preloader"></div>
-
+<body class="is-loaded">
 
   <!-- Dynamic Navigation Panel Mount Point -->
   <div id="panel-container"></div>
@@ -525,22 +515,7 @@
         pending.clear();
       }
 
-      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
-      const logoLoaded = new Promise(resolve => {
-        const img = new Image();
-        img.onload = img.onerror = resolve;
-        img.src = 'assets/aurora-logo.png';
-        if (img.complete) resolve();
-      });
-      const videoLoaded = new Promise(resolve => {
-        if (!video || video.readyState >= 3) return resolve();
-        const done = () => resolve();
-        video.addEventListener('canplaythrough', done, { once: true });
-        video.addEventListener('loadeddata', done, { once: true });
-      });
-      const fallbackTimer = new Promise(resolve => setTimeout(resolve, 3000));
-
-      Promise.race([Promise.all([fontsLoaded, logoLoaded, videoLoaded]), fallbackTimer]).then(revealPage);
+      revealPage();
     });
   </script>
 </body>
