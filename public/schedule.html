@@ -49,13 +49,6 @@
     position: relative;
   }
 
-  #preloader {
-    position: fixed; inset: 0; z-index: 9999; background: #000000;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
-  }
-
-  body.is-loaded #preloader { opacity: 0; visibility: hidden; }
-
   .navbar, .page-container, footer, .lang-toggle {
     opacity: 0; transform: translateY(16px);
     transition: opacity 0.35s ease-in, transform 0.35s ease-in; pointer-events: none;
@@ -265,7 +258,7 @@
   }
 </style>
 </head>
-<body>
+<body class="is-loaded">
 
   <!-- Replaced inline header/nav components with panel container -->
   <div id="panel-container"></div>
@@ -475,18 +468,7 @@
         document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
       }
 
-      const fallbackTimer = setTimeout(revealPage, 2500);
-
-      Promise.all([
-        document.fonts ? document.fonts.ready : Promise.resolve(),
-        new Promise(res => {
-          if (!video || video.readyState >= 3) res();
-          else { video.addEventListener('canplaythrough', res, {once:true}); }
-        })
-      ]).then(() => {
-        clearTimeout(fallbackTimer);
-        revealPage();
-      });
+      revealPage();
     });
   </script>
 </body>
