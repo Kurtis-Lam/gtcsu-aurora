@@ -35,10 +35,6 @@
     html { background:var(--void); overflow-x:hidden; }
     body { overflow-x:hidden; }
 
-    /* ---------- Preloader + bottom-to-top reveal (same as aboutus.html) ---------- */
-    #preloader { position:fixed; inset:0; z-index:9999; background:#000; transition:opacity .8s ease, visibility .8s ease; }
-    body.is-loaded #preloader { opacity:0; visibility:hidden; }
-
     .navbar, main > header, #news-content.notice, .lang-toggle {
       opacity:0; transform:translateY(16px);
       transition:opacity .35s ease-in, transform .35s ease-in; pointer-events:none;
@@ -94,8 +90,7 @@
     }
   </style>
 </head>
-<body>
-  <div id="preloader"></div>
+<body class="is-loaded">
   <div id="panel-container"></div>
   <div id="background-container"></div>
   <main>
@@ -134,22 +129,7 @@
         pending.clear();
       }
 
-      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
-      const logoLoaded = new Promise(resolve => {
-        const img = new Image();
-        img.onload = img.onerror = resolve;
-        img.src = 'assets/aurora-logo.png';
-        if (img.complete) resolve();
-      });
-      const videoLoaded = new Promise(resolve => {
-        if (!video || video.readyState >= 3) return resolve();
-        const done = () => resolve();
-        video.addEventListener('canplaythrough', done, { once: true });
-        video.addEventListener('loadeddata', done, { once: true });
-      });
-      const fallbackTimer = new Promise(resolve => setTimeout(resolve, 3000));
-
-      Promise.race([Promise.all([fontsLoaded, logoLoaded, videoLoaded]), fallbackTimer]).then(revealPage);
+      revealPage();
     });
   </script>
 </body>
