@@ -44,20 +44,6 @@
     overflow-x:hidden;
   }
 
-  /* ---------- Solid Black Preloader Overlay ---------- */
-  #preloader {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: #000000;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
-  }
-
-  body.is-loaded #preloader {
-    opacity: 0;
-    visibility: hidden;
-  }
-
   /* ---------- Header / Navbar Component Styling ---------- */
   .navbar {
     position: fixed;
@@ -186,7 +172,7 @@
     pointer-events: none;
   }
 
-  /* Reveal sequence after preloader fades */
+  /* Reveal state (the page starts loaded) */
   body.is-loaded .navbar,
   body.is-loaded .header-section,
   body.is-loaded footer,
@@ -522,10 +508,7 @@
   }
 </style>
 </head>
-<body>
-
-  <!-- Black Preloader Overlay -->
-  <div id="preloader"></div>
+<body class="is-loaded">
 
 
   <!-- Dynamic Navigation Panel Mount Point -->
@@ -968,41 +951,7 @@
         document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
       }
 
-      const fontsLoaded = document.fonts ? document.fonts.ready : Promise.resolve();
-
-      const logoImage = new Image();
-      logoImage.src = 'assets/aurora-logo.png';
-      const logoLoaded = new Promise((resolve) => {
-        if (logoImage.complete) resolve();
-        else {
-          logoImage.onload = resolve;
-          logoImage.onerror = resolve;
-        }
-      });
-
-      const videoLoaded = new Promise((resolve) => {
-        if (!video) return resolve();
-        if (video.readyState >= 3) {
-          resolve();
-        } else {
-          const onCanPlay = () => {
-            video.removeEventListener('canplaythrough', onCanPlay);
-            video.removeEventListener('loadeddata', onCanPlay);
-            resolve();
-          };
-          video.addEventListener('canplaythrough', onCanPlay);
-          video.addEventListener('loadeddata', onCanPlay);
-        }
-      });
-
-      const fallbackTimer = new Promise((resolve) => setTimeout(resolve, 3000));
-
-      Promise.race([
-        Promise.all([fontsLoaded, logoLoaded, videoLoaded]),
-        fallbackTimer
-      ]).then(() => {
-        revealPage();
-      });
+      revealPage();
     });
   </script>
 </body>
