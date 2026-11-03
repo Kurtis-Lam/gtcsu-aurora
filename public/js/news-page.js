@@ -26,7 +26,7 @@ const updateLanguage = language => {
   document.documentElement.lang = language === 'zh' ? 'zh-Hant' : 'en';
   document.querySelectorAll('.i18n').forEach(el => {
     const translated = el.getAttribute(`data-${language}`);
-    if (translated) el.textContent = translated;
+    if (translated) el.innerHTML = translated;
   });
   render();
 };
