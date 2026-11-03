@@ -25,12 +25,48 @@ const el = (tag, className) => {
 
 const root = document.documentElement;
 
+const LEVEL_KEY = 'aurora_fx_level';
+
+function readLevel() {
+  try { return Number(sessionStorage.getItem(LEVEL_KEY)) || 0; } catch { return 0; }
+}
+
+function saveLevel(level) {
+  try { sessionStorage.setItem(LEVEL_KEY, String(level)); } catch {}
+}
+
+function currentLevel() {
+  if (root.classList.contains('fx-still')) return 2;
+  return root.classList.contains('fx-lite') ? 1 : 0;
+}
+
+// Once the background video is frozen nothing else may restart it: the inline
+// page scripts call video.play() on their own, so play() is neutralised on the
+// element itself.
+export function freezeBackgroundVideo() {
+  const video = document.getElementById('bg-video');
+  if (!video || video.dataset.frozen === 'true') return;
+  video.dataset.frozen = 'true';
+  video.play = () => Promise.resolve();
+  video.pause();
+}
+
+// level 1 = decorative effects off, level 2 = background video frozen as well
+function applyLevel(level) {
+  if (level >= 1) root.classList.add('fx-lite');
+  if (level >= 2) {
+    root.classList.add('fx-still');
+    freezeBackgroundVideo();
+  }
+}
+
 function detectLowEnd() {
   const nav = navigator;
   const cores = nav.hardwareConcurrency || 8;
   const memory = nav.deviceMemory || 8;
   const saveData = !!(nav.connection && nav.connection.saveData);
   if (cores <= 4 || memory <= 4 || saveData) root.classList.add('fx-lite');
+  applyLevel(readLevel());
 }
 
 // Spotlight coordinates must not inherit, otherwise every pointer move
@@ -44,34 +80,74 @@ function registerSpotlightVars() {
   });
 }
 
+// Frame times are only sampled while the visitor is scrolling or moving the
+// pointer, because an idle page always looks smooth. A slow window first turns
+// the decorative effects off, a second slow window freezes the video too. The
+// level is remembered for the tab session so later pages start in that state.
 function watchPerformance() {
-  if (reducedMotion.matches || root.classList.contains('fx-lite')) return;
+  if (reducedMotion.matches || currentLevel() >= 2) return;
+
+  const WINDOW = 80;
+  const SLOW_MS = 26;
+  const SETTLE_FRAMES = 20;
+  let lastActive = 0;
+  let running = false;
   let previous = 0;
   let count = 0;
   let total = 0;
+  let settle = 0;
 
-  const sample = (now) => {
-    if (document.hidden) {
+  function tick(now) {
+    if (document.hidden || now - lastActive > 600) {
+      running = false;
       previous = 0;
-      requestAnimationFrame(sample);
       return;
     }
     if (previous) {
       const delta = now - previous;
       if (delta < 250) {
-        total += delta;
-        count += 1;
+        if (settle > 0) {
+          settle -= 1;
+        } else {
+          total += delta;
+          count += 1;
+        }
       }
     }
     previous = now;
-    if (count < 90) {
-      requestAnimationFrame(sample);
-      return;
-    }
-    if (total / count > 26) root.classList.add('fx-lite');
-  };
 
-  setTimeout(() => requestAnimationFrame(sample), 2600);
+    if (count >= WINDOW) {
+      const slow = total / count > SLOW_MS;
+      count = 0;
+      total = 0;
+      if (slow) {
+        const next = currentLevel() + 1;
+        applyLevel(next);
+        saveLevel(next);
+        settle = SETTLE_FRAMES;
+        if (next >= 2) {
+          running = false;
+          window.removeEventListener('scroll', wake);
+          window.removeEventListener('pointermove', wake);
+          return;
+        }
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function wake() {
+    lastActive = performance.now();
+    if (running) return;
+    running = true;
+    previous = 0;
+    requestAnimationFrame(tick);
+  }
+
+  setTimeout(() => {
+    window.addEventListener('scroll', wake, { passive: true });
+    window.addEventListener('pointermove', wake, { passive: true });
+  }, 2600);
 }
 
 function injectStyles() {
