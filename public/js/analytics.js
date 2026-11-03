@@ -1,6 +1,6 @@
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { auth } from './firebase-config.js';
 import { API_BASE } from './api-config.js';
+
+const FIREBASE_AUTH_URL = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
 const VALID_ROUTES = new Set([
   '/', '/aboutus', '/news', '/activities', '/financial', '/schedule',
@@ -147,9 +147,21 @@ if (path) {
 
   openSession();
 
-  onAuthStateChanged(auth, user => {
-    knownUser = user || null;
-    if (!user) identitySentFor = null;
-    sendIdentity();
-  });
+  // Identity is attached after the page has finished loading, so Firebase never competes with first paint.
+  const watchIdentity = async () => {
+    try {
+      const [{ onAuthStateChanged }, { auth }] = await Promise.all([
+        import(FIREBASE_AUTH_URL),
+        import('./firebase-config.js')
+      ]);
+      onAuthStateChanged(auth, user => {
+        knownUser = user || null;
+        if (!user) identitySentFor = null;
+        sendIdentity();
+      });
+    } catch {}
+  };
+
+  if (document.readyState === 'complete') watchIdentity();
+  else window.addEventListener('load', watchIdentity, { once: true });
 }
