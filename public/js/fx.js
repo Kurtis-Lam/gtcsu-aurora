@@ -2,13 +2,7 @@ import { APP_VERSION } from './info.js';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
-
-const CARD_SELECTOR = [
-  '.glass-card', '.act-card', '.offer-card', '.month-card', '.news-card', '.notice',
-  '.glass-panel', '.faq-item', '.auth-card', '.notice-card', '.photo-card', '.consent-card',
-  '.modal-card', '.aurora-modal-card', '.kpi-card', '.chart-card', '.card', '.news-admin-card',
-  '.sl-panel', '.supporters-table-wrap', '.info-sheet'
-].join(',');
+const root = document.documentElement;
 
 const RIPPLE_SELECTOR = [
   '.nav-btn', '.nav-auth-btn', '.lang-toggle', '.info-toggle', '.info-close', '.cta', '.submit-btn',
@@ -23,79 +17,43 @@ const el = (tag, className) => {
   return node;
 };
 
-const root = document.documentElement;
+const LITE_KEY = 'aurora_fx_lite_v2';
 
-const LEVEL_KEY = 'aurora_fx_level';
+const isLite = () => root.classList.contains('fx-lite');
 
-function readLevel() {
-  try { return Number(sessionStorage.getItem(LEVEL_KEY)) || 0; } catch { return 0; }
+function enableLite() {
+  if (isLite()) return;
+  root.classList.add('fx-lite');
+  try { sessionStorage.setItem(LITE_KEY, '1'); } catch {}
 }
 
-function saveLevel(level) {
-  try { sessionStorage.setItem(LEVEL_KEY, String(level)); } catch {}
-}
-
-function currentLevel() {
-  if (root.classList.contains('fx-still')) return 2;
-  return root.classList.contains('fx-lite') ? 1 : 0;
-}
-
-// Once the background video is frozen nothing else may restart it: the inline
-// page scripts call video.play() on their own, so play() is neutralised on the
-// element itself.
-export function freezeBackgroundVideo() {
-  const video = document.getElementById('bg-video');
-  if (!video || video.dataset.frozen === 'true') return;
-  video.dataset.frozen = 'true';
-  video.play = () => Promise.resolve();
-  video.pause();
-}
-
-// level 1 = decorative effects off, level 2 = background video frozen as well
-function applyLevel(level) {
-  if (level >= 1) root.classList.add('fx-lite');
-  if (level >= 2) {
-    root.classList.add('fx-still');
-    freezeBackgroundVideo();
-  }
-}
-
+// Decorative effects are switched off only on genuinely weak devices or when the
+// visitor asked for reduced data. The background video is never touched.
 function detectLowEnd() {
   const nav = navigator;
   const cores = nav.hardwareConcurrency || 8;
   const memory = nav.deviceMemory || 8;
   const saveData = !!(nav.connection && nav.connection.saveData);
-  if (cores <= 4 || memory <= 4 || saveData) root.classList.add('fx-lite');
-  applyLevel(readLevel());
+  let remembered = false;
+  try { remembered = sessionStorage.getItem(LITE_KEY) === '1'; } catch {}
+  if (cores <= 2 || memory <= 2 || saveData || remembered) root.classList.add('fx-lite');
 }
 
-// Spotlight coordinates must not inherit, otherwise every pointer move
-// restyles the whole subtree of the hovered card.
-function registerSpotlightVars() {
-  if (!window.CSS || !CSS.registerProperty) return;
-  ['--mx', '--my'].forEach(name => {
-    try {
-      CSS.registerProperty({ name, syntax: '<length-percentage>', inherits: false, initialValue: '50%' });
-    } catch {}
-  });
-}
-
-// Frame times are only sampled while the visitor is scrolling or moving the
-// pointer, because an idle page always looks smooth. A slow window first turns
-// the decorative effects off, a second slow window freezes the video too. The
-// level is remembered for the tab session so later pages start in that state.
+// Frame times are sampled only while the visitor scrolls or moves the pointer,
+// because an idle page always looks smooth. A sustained slow window switches the
+// decorative layer off for the rest of the tab session.
 function watchPerformance() {
-  if (reducedMotion.matches || currentLevel() >= 2) return;
+  if (reducedMotion.matches || isLite()) return;
 
-  const WINDOW = 80;
-  const SLOW_MS = 26;
+  const WINDOW = 90;
+  const SLOW_MS = 30;
   const SETTLE_FRAMES = 20;
   let lastActive = 0;
   let running = false;
   let previous = 0;
   let count = 0;
   let total = 0;
-  let settle = 0;
+  let settle = SETTLE_FRAMES;
 
   function tick(now) {
     if (document.hidden || now - lastActive > 600) {
@@ -117,21 +75,15 @@ function watchPerformance() {
     previous = now;
 
     if (count >= WINDOW) {
-      const slow = total / count > SLOW_MS;
+      if (total / count > SLOW_MS) {
+        enableLite();
+        window.removeEventListener('scroll', wake);
+        window.removeEventListener('pointermove', wake);
+        running = false;
+        return;
+      }
       count = 0;
       total = 0;
-      if (slow) {
-        const next = currentLevel() + 1;
-        applyLevel(next);
-        saveLevel(next);
-        settle = SETTLE_FRAMES;
-        if (next >= 2) {
-          running = false;
-          window.removeEventListener('scroll', wake);
-          window.removeEventListener('pointermove', wake);
-          return;
-        }
-      }
     }
     requestAnimationFrame(tick);
   }
@@ -141,6 +93,7 @@ function watchPerformance() {
     if (running) return;
     running = true;
     previous = 0;
+    settle = SETTLE_FRAMES;
     requestAnimationFrame(tick);
   }
 
@@ -159,145 +112,61 @@ function injectStyles() {
   document.head.appendChild(link);
 }
 
-function startStars(canvas) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  let width = 0;
-  let height = 0;
-  let stars = [];
-  let shooter = null;
-  let nextShooter = performance.now() + 4500;
-  let frameId = 0;
-  let lastFrame = 0;
-  let parallaxX = 0;
-  let parallaxY = 0;
-  let targetX = 0;
-  let targetY = 0;
-
-  const random = (min, max) => min + Math.random() * (max - min);
-
-  function resize() {
-    const ratio = 1;
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = Math.round(width * ratio);
-    canvas.height = Math.round(height * ratio);
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const count = Math.min(36, Math.round((width * height) / 40000));
-    stars = Array.from({ length: count }, () => ({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      radius: random(0.3, 1.4),
-      phase: random(0, Math.PI * 2),
-      speed: random(0.5, 1.8),
-      depth: random(0.2, 1),
-      color: Math.random() < 0.3 ? 'hsl(165 90% 86%)' : 'hsl(190 90% 86%)'
-    }));
+// Stars are plain elements twinkling through a CSS opacity animation, so the
+// compositor runs them and the main thread (and the video) never pays for a frame.
+function buildStars(layer) {
+  const count = Math.max(10, Math.min(26, Math.round((window.innerWidth * window.innerHeight) / 60000)));
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < count; i += 1) {
+    const star = el('i', 'fx-star');
+    const size = (0.8 + Math.random() * 1.6).toFixed(1);
+    star.style.cssText =
+      `left:${(Math.random() * 100).toFixed(1)}%;top:${(Math.random() * 100).toFixed(1)}%;` +
+      `width:${size}px;height:${size}px;` +
+      `--d:${(2.5 + Math.random() * 3.5).toFixed(1)}s;--o:-${(Math.random() * 6).toFixed(1)}s`;
+    fragment.appendChild(star);
   }
+  layer.appendChild(fragment);
+}
 
-  function spawnShooter(now) {
-    const startX = random(width * 0.15, width * 0.95);
-    const startY = random(0, height * 0.35);
-    const angle = random(Math.PI * 0.62, Math.PI * 0.78);
-    const speed = random(0.9, 1.4);
-    shooter = { x: startX, y: startY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, born: now, life: 900 };
-    nextShooter = now + random(7000, 15000);
+function startShooter(layer) {
+  if (reducedMotion.matches) return;
+  const star = el('i', 'fx-shoot');
+  layer.appendChild(star);
+  star.addEventListener('animationend', () => star.classList.remove('go'));
+
+  const schedule = () => setTimeout(fire, 7000 + Math.random() * 8000);
+  function fire() {
+    if (document.hidden || isLite()) { schedule(); return; }
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const angle = 111 + Math.random() * 29;
+    const rad = (angle * Math.PI) / 180;
+    const distance = 420 + Math.random() * 260;
+    star.style.left = `${(width * (0.15 + Math.random() * 0.8)).toFixed(0)}px`;
+    star.style.top = `${(height * Math.random() * 0.35).toFixed(0)}px`;
+    star.style.setProperty('--a', `${angle.toFixed(1)}deg`);
+    star.style.setProperty('--dx', `${(Math.cos(rad) * distance).toFixed(0)}px`);
+    star.style.setProperty('--dy', `${(Math.sin(rad) * distance).toFixed(0)}px`);
+    star.classList.remove('go');
+    void star.offsetWidth;
+    star.classList.add('go');
+    schedule();
   }
-
-  function draw(now) {
-    ctx.clearRect(0, 0, width, height);
-    if (document.documentElement.classList.contains('fx-lite')) return;
-    parallaxX += (targetX - parallaxX) * 0.05;
-    parallaxY += (targetY - parallaxY) * 0.05;
-
-    for (const star of stars) {
-      const twinkle = 0.5 + 0.5 * Math.sin((now / 1000) * star.speed + star.phase);
-      ctx.globalAlpha = 0.18 + 0.8 * twinkle;
-      ctx.fillStyle = star.color;
-      const size = star.radius * 2;
-      ctx.fillRect(star.x + parallaxX * star.depth * 14 - star.radius, star.y + parallaxY * star.depth * 14 - star.radius, size, size);
-    }
-
-    if (!shooter && now > nextShooter) spawnShooter(now);
-    if (shooter) {
-      const age = now - shooter.born;
-      if (age > shooter.life) {
-        shooter = null;
-      } else {
-        const headX = shooter.x + shooter.vx * age * 0.55;
-        const headY = shooter.y + shooter.vy * age * 0.55;
-        const tail = 140;
-        const mag = Math.hypot(shooter.vx, shooter.vy);
-        const tailX = headX - (shooter.vx / mag) * tail;
-        const tailY = headY - (shooter.vy / mag) * tail;
-        const fade = 1 - age / shooter.life;
-        const gradient = ctx.createLinearGradient(tailX, tailY, headX, headY);
-        gradient.addColorStop(0, 'rgba(127,233,240,0)');
-        gradient.addColorStop(1, 'rgba(234,255,251,0.95)');
-        ctx.globalAlpha = fade;
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 1.6;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
-        ctx.lineTo(headX, headY);
-        ctx.stroke();
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  function frame(now) {
-    frameId = requestAnimationFrame(frame);
-    if (now - lastFrame < 66) return;
-    if (document.documentElement.classList.contains('fx-lite')) { stop(); return; }
-    lastFrame = now;
-    draw(now);
-  }
-
-  function start() {
-    if (frameId || reducedMotion.matches || document.hidden) return;
-    frameId = requestAnimationFrame(frame);
-  }
-
-  function stop() {
-    if (frameId) cancelAnimationFrame(frameId);
-    frameId = 0;
-  }
-
-  resize();
-  draw(performance.now());
-  if (!root.classList.contains('fx-lite')) start();
-
-  let resizeTimer = 0;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { resize(); draw(performance.now()); }, 150);
-  }, { passive: true });
-  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
-  reducedMotion.addEventListener?.('change', () => (reducedMotion.matches ? stop() : start()));
-  window.addEventListener('pointermove', (event) => {
-    if (event.pointerType === 'touch') return;
-    targetX = event.clientX / window.innerWidth - 0.5;
-    targetY = event.clientY / window.innerHeight - 0.5;
-  }, { passive: true });
+  schedule();
 }
 
 function buildAmbient() {
   if (document.querySelector('.fx-ambient')) return;
   const hasSky = !!document.getElementById('background-container');
 
-  if (hasSky && !root.classList.contains('fx-lite')) {
+  if (hasSky && !isLite()) {
     const ambient = el('div', 'fx-ambient');
     ambient.setAttribute('aria-hidden', 'true');
-    const aurora = el('div', 'fx-aurora');
-    const canvas = el('canvas', 'fx-stars');
-    ambient.append(aurora, canvas);
+    ambient.appendChild(el('div', 'fx-aurora'));
     document.body.appendChild(ambient);
-    startStars(canvas);
+    buildStars(ambient);
+    startShooter(ambient);
   }
 
   const progress = el('div', 'fx-progress');
@@ -311,73 +180,57 @@ function buildAmbient() {
   }
 }
 
+// The cursor glow is one element moved with a transform: no per-element hit
+// testing, no gradient repaint, no style recalculation of the page.
 function wirePointer() {
-  let pending = null;
-  let scheduled = false;
-  let glow = null;
-  let cachedCard = null;
-  let cachedRect = null;
+  const glow = document.querySelector('.fx-cursor');
+  if (!glow) return;
 
-  const invalidate = () => { cachedCard = null; cachedRect = null; };
+  let x = 0;
+  let y = 0;
+  let queued = false;
+  let visible = false;
 
-  const flush = () => {
-    scheduled = false;
-    const event = pending;
-    pending = null;
-    if (!event || root.classList.contains('fx-lite')) return;
-
-    if (!glow) glow = document.querySelector('.fx-cursor');
-    if (glow) {
-      glow.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
+  const paint = () => {
+    queued = false;
+    glow.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    if (!visible) {
+      visible = true;
       glow.classList.add('is-on');
-    }
-
-    const card = event.target.closest ? event.target.closest(CARD_SELECTOR) : null;
-    if (card) {
-      if (card !== cachedCard || !cachedRect) {
-        cachedCard = card;
-        cachedRect = card.getBoundingClientRect();
-      }
-      card.style.setProperty('--mx', (event.clientX - cachedRect.left).toFixed(1) + 'px');
-      card.style.setProperty('--my', (event.clientY - cachedRect.top).toFixed(1) + 'px');
     }
   };
 
   window.addEventListener('pointermove', (event) => {
-    if (event.pointerType === 'touch' || reducedMotion.matches) return;
-    pending = event;
-    if (!scheduled) {
-      scheduled = true;
-      requestAnimationFrame(flush);
+    if (event.pointerType === 'touch' || isLite() || reducedMotion.matches) return;
+    x = event.clientX;
+    y = event.clientY;
+    if (!queued) {
+      queued = true;
+      requestAnimationFrame(paint);
     }
   }, { passive: true });
 
-  window.addEventListener('scroll', invalidate, { passive: true });
-  window.addEventListener('resize', invalidate, { passive: true });
-
-  const hideGlow = () => {
-    if (!glow) glow = document.querySelector('.fx-cursor');
-    glow?.classList.remove('is-on');
-  };
-  document.addEventListener('pointerleave', hideGlow);
-  document.documentElement.addEventListener('mouseleave', hideGlow);
+  root.addEventListener('mouseleave', () => {
+    visible = false;
+    glow.classList.remove('is-on');
+  });
 }
 
 function wireRipple() {
   document.addEventListener('pointerdown', (event) => {
-    if (reducedMotion.matches || event.button > 0) return;
+    if (reducedMotion.matches || isLite() || event.button > 0) return;
     const target = event.target.closest ? event.target.closest(RIPPLE_SELECTOR) : null;
     if (!target || target.disabled || target.getAttribute('aria-disabled') === 'true') return;
 
     const rect = target.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height) * 2.2;
     const ripple = el('span', 'fx-ripple');
-    ripple.style.width = ripple.style.height = size + 'px';
-    ripple.style.left = (event.clientX - rect.left - size / 2) + 'px';
-    ripple.style.top = (event.clientY - rect.top - size / 2) + 'px';
+    ripple.style.cssText =
+      `width:${size}px;height:${size}px;left:${(event.clientX - rect.left - size / 2).toFixed(1)}px;` +
+      `top:${(event.clientY - rect.top - size / 2).toFixed(1)}px`;
     target.appendChild(ripple);
     ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
-    setTimeout(() => ripple.remove(), 1200);
+    setTimeout(() => ripple.remove(), 900);
   }, { passive: true });
 }
 
@@ -392,9 +245,9 @@ function wireScroll() {
   const update = () => {
     ticking = false;
     if (!bar) bar = document.querySelector('.fx-progress');
-    const progress = Math.min(1, Math.max(0, window.scrollY / max));
-    if (bar) bar.style.transform = `scaleX(${progress.toFixed(4)})`;
-    const nowScrolled = window.scrollY > 24;
+    const y = window.scrollY;
+    if (bar) bar.style.transform = `scaleX(${Math.min(1, Math.max(0, y / max)).toFixed(4)})`;
+    const nowScrolled = y > 24;
     if (nowScrolled !== scrolled) {
       scrolled = nowScrolled;
       document.body.classList.toggle('fx-scrolled', scrolled);
@@ -417,7 +270,6 @@ function wireScroll() {
 
 function init() {
   detectLowEnd();
-  registerSpotlightVars();
   watchPerformance();
   buildAmbient();
   wirePointer();
