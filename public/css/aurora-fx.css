@@ -73,7 +73,7 @@ body :is(
 ) { position: relative; }
 
 /* the always-visible controls are pre-promoted, so the first hover has no layer-creation hitch */
-body :is(.nav-btn, .nav-auth-btn, .cta, .submit-btn, .support-button, .lang-toggle, .info-toggle) { will-change: transform; }
+body :is(.lang-toggle, .info-toggle) { will-change: transform; }
 
 /* short transitions, never delayed */
 body :is(
@@ -102,7 +102,7 @@ body :is(
 
 /* accent bar: fixed height, revealed with scaleY so it never triggers layout */
 body :is(
-  .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+  .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
   .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn,
   .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle
 )::after {
@@ -117,7 +117,7 @@ body .tab-btn::after {
   transform: scaleX(0); transform-origin: center; pointer-events: none;
   transition: transform .3s var(--fx-spring);
 }
-body :is(.nav-btn, .filter-btn, .dest-btn, .nav-auth-btn).active::after { transform: translate3d(0, -50%, 0) scaleY(1); }
+body :is(.filter-btn, .dest-btn).active::after { transform: translate3d(0, -50%, 0) scaleY(1); }
 body .tab-btn.active::after { transform: scaleX(1); }
 
 /* hover: shimmer travels across, bar grows, button nudges (pointer devices only) */
@@ -137,7 +137,7 @@ body .tab-btn.active::after { transform: scaleX(1); }
     .info-toggle, .info-close, .card-download, .lightbox-close, .modal-close-btn
   ):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::before { transform: translate3d(110%, 0, 0); }
   body :is(
-    .nav-btn, .nav-auth-btn, .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
+    .cta, .submit-btn, .identity-toggle, .support-button, .read-btn,
     .google-btn, .filter-btn, .ghost-btn, .download-btn, .aurora-modal-btn, .page-btn,
     .btn, .dest-btn, .dz-btn, .expand-btn, .lang-toggle
   ):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"])::after { transform: translate3d(0, -50%, 0) scaleY(1); }
@@ -200,6 +200,9 @@ html body.is-loaded :is(.lang-toggle, .info-toggle):active { transform: scale(0.
 body .info-toggle { box-shadow: 0 0 14px rgba(46, 230, 184, 0.4); }
 body .lang-toggle .lang-icon { display: inline-block; transition: transform .5s var(--fx-ease); }
 
+body .lang-toggle #lang-text { display: inline-block; }
+html.fx-lang-busy .lang-toggle { pointer-events: none; }
+
 /* ---------- 5. Cards ---------- */
 :where(
   .glass-card, .act-card, .offer-card, .month-card, .news-card, .notice, .glass-panel, .faq-item,
@@ -209,7 +212,7 @@ body .lang-toggle .lang-icon { display: inline-block; transition: transform .5s 
 
 /* stagger delays from the page styles would otherwise delay every hover as well */
 body :is(.act-card, .offer-card, .month-card, .glass-card, .news-card, .glass-panel, .faq-item) {
-  transition: transform .3s var(--fx-ease), border-color .2s ease, box-shadow .25s ease, background-color .2s ease, opacity .5s var(--fx-ease);
+  transition: transform .3s var(--fx-ease), border-color .2s ease, background-color .2s ease, opacity .5s var(--fx-ease);
   transition-delay: 0s !important;
   background-color: rgba(10, 26, 32, 0.86);
 }
@@ -262,12 +265,8 @@ html body.is-loaded .navbar {
   transition: opacity .5s var(--fx-ease), transform .5s var(--fx-ease), background-color .25s ease, box-shadow .25s ease;
   transition-delay: 0s;
 }
-body .navbar::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; pointer-events: none;
-  background: var(--fx-aurora-line); background-size: 200% 100%; opacity: 0.75;
-}
-body.fx-scrolled .navbar { background: rgba(6, 13, 22, 0.82); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); }
-body .navbar { background: rgba(6, 13, 22, 0.82); }
+body .navbar { background: rgba(6, 13, 22, 0.82); border-bottom: 0; }
+body.fx-scrolled .navbar { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4); }
 body .nav-logo { box-shadow: 0 0 14px rgba(46, 230, 184, 0.4); transition: transform .6s var(--fx-ease), border-color .2s ease; }
 @media (hover: hover) {
   body .nav-brand:hover .nav-logo { transform: rotate(360deg) scale(1.1); border-color: rgba(127, 233, 240, 0.9); }
