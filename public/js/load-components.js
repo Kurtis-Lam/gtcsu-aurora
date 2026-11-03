@@ -1,5 +1,6 @@
 import { auth, db, isSchoolUser, ALLOWED_DOMAIN } from './firebase-config.js';
 import { initInfo, refreshInfo } from './info.js';
+import './fx.js';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { NEWS_READ_EVENT, getLocalReads, readRevision } from './news-reads.js';
