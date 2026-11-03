@@ -1,5 +1,5 @@
 import { APP_VERSION, initInfo, refreshInfo } from './info.js';
-import { freezeBackgroundVideo } from './fx.js';
+import './fx.js';
 import { NEWS_READ_EVENT, getLocalReads, readRevision } from './news-reads.js';
 import { API_BASE } from './api-config.js';
 
@@ -39,6 +39,29 @@ function runWhenIdle(task, timeout = 3000) {
   else setTimeout(task, 400);
 }
 
+// Heavy warm-up work (Firebase parsing, prefetching) must never land while the
+// visitor is hovering or clicking, or the first interaction after load stutters.
+// It waits for a short quiet spell and gives up waiting after `timeout`.
+let lastInteraction = 0;
+['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart'].forEach(type => {
+  window.addEventListener(type, () => { lastInteraction = performance.now(); }, { passive: true, capture: true });
+});
+
+function runWhenQuiet(task, { quietMs = 450, timeout = 8000 } = {}) {
+  const started = performance.now();
+  const attempt = () => {
+    const now = performance.now();
+    const busy = now - lastInteraction < quietMs || navigator.scheduling?.isInputPending?.();
+    if (busy && now - started < timeout) schedule();
+    else task();
+  };
+  const schedule = () => {
+    if ('requestIdleCallback' in window) window.requestIdleCallback(attempt, { timeout: quietMs });
+    else setTimeout(attempt, quietMs);
+  };
+  schedule();
+}
+
 function afterPageLoad(task) {
   if (document.readyState === 'complete') task();
   else window.addEventListener('load', task, { once: true });
@@ -75,12 +98,21 @@ const infoFetchPromise = fetchComponent('info.html');
 
 const currentLang = () => (localStorage.getItem('aurora_lang') === 'zh' ? 'zh' : 'en');
 
+// Plain-text entries are only written when they actually differ (the page's own
+// setLanguage usually ran first), which avoids a second full pass of DOM writes.
 function applyLanguage(root) {
-  const lang = currentLang();
-  root.querySelectorAll('.i18n').forEach(el => {
-    const text = el.getAttribute(`data-${lang}`);
-    if (text) el.innerHTML = text;
-  });
+  const attr = `data-${currentLang()}`;
+  const nodes = root.querySelectorAll('.i18n');
+  for (let i = 0; i < nodes.length; i += 1) {
+    const el = nodes[i];
+    const text = el.getAttribute(attr);
+    if (!text) continue;
+    if (text.indexOf('<') === -1 && text.indexOf('&') === -1) {
+      if (el.textContent !== text) el.textContent = text;
+    } else {
+      el.innerHTML = text;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -271,10 +303,10 @@ function startAuthWatch() {
     if (currentUser) createNewsSubscription(currentUser);
     else fb.preload.clearPhotoCaches();
     if (canPrefetch()) {
-      runWhenIdle(() => {
+      runWhenQuiet(() => {
         fb.preload.preloadNews();
         if (currentUser) fb.preload.preloadPhotos(currentUser);
-      }, 4000);
+      });
     }
   });
 }
@@ -367,33 +399,49 @@ function switchLanguage() {
 }
 
 // ---------------------------------------------------------------------------
-// Background video: pause while the tab is hidden to cut CPU/GPU load
+// Background video: always playing. The file is a short, seamlessly looping,
+// keyframe-dense H.264 clip, so playback never needs throttling. This only
+// makes sure it starts as early as possible and recovers if a browser pauses it
+// (autoplay policies, low-power mode, a page script) without fighting the page.
 // ---------------------------------------------------------------------------
 function wireBackgroundVideo() {
   const video = document.getElementById('bg-video');
   if (!video) return;
 
-  // A previous page already measured this device as too slow for live video:
-  // keep the poster, skip the download and never start playback.
-  if (document.documentElement.classList.contains('fx-still')) {
-    freezeBackgroundVideo();
-    video.preload = 'none';
-    video.load();
-    return;
-  }
+  video.muted = true;
+  video.defaultMuted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.disablePictureInPicture = true;
+  video.disableRemotePlayback = true;
+  video.setAttribute('aria-hidden', 'true');
+  video.tabIndex = -1;
 
+  let resumeTimer = 0;
   const tryPlay = () => {
-    if (document.visibilityState !== 'visible') return;
-    if (document.documentElement.classList.contains('fx-still')) return;
-    video.play().catch(() => {});
+    if (document.visibilityState !== 'visible' || !video.paused || video.ended) return;
+    const attempt = video.play();
+    if (attempt && attempt.catch) attempt.catch(() => {});
+  };
+  const scheduleResume = () => {
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(tryPlay, 120);
   };
 
   tryPlay();
-  ['stalled', 'suspend', 'waiting', 'error'].forEach(evt => video.addEventListener(evt, tryPlay));
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') tryPlay();
-    else video.pause();
-  });
+  video.addEventListener('canplay', tryPlay);
+  video.addEventListener('loadeddata', tryPlay);
+  video.addEventListener('pause', scheduleResume);
+  video.addEventListener('stalled', scheduleResume);
+  video.addEventListener('suspend', scheduleResume);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tryPlay(); });
+
+  // Some mobile browsers refuse autoplay until the first gesture.
+  const onGesture = () => {
+    tryPlay();
+    ['pointerdown', 'touchstart', 'keydown', 'scroll'].forEach(type => window.removeEventListener(type, onGesture));
+  };
+  ['pointerdown', 'touchstart', 'keydown', 'scroll'].forEach(type => window.addEventListener(type, onGesture, { passive: true }));
 }
 
 // ---------------------------------------------------------------------------
@@ -483,8 +531,8 @@ async function mountBackground() {
 }
 
 function loadPanel() {
-  mountPanel();
   mountBackground();
+  mountPanel();
   mountInfo();
 }
 
@@ -509,7 +557,7 @@ function warmUp() {
       document.head.appendChild(link);
     });
   }
-  runWhenIdle(() => { loadFirebase().catch(() => {}); }, 1500);
+  runWhenQuiet(() => { loadFirebase().catch(() => {}); }, { quietMs: 600, timeout: 10000 });
 }
 
 preconnectApi();
