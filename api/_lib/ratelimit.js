@@ -16,6 +16,7 @@ export const RATE_LIMITS = {
   deletePhoto: { scope: 'delete-photo', limit: 10, windowMs: MINUTE_MS },
   listAdmins: { scope: 'list-admins', limit: 10, windowMs: MINUTE_MS },
   translateNews: { scope: 'translate-news', limit: 10, windowMs: MINUTE_MS },
+  publishNews: { scope: 'publish-news', limit: 5, windowMs: HOUR_MS },
   supportRead: { scope: 'support-read', limit: 300, windowMs: MINUTE_MS },
   supportVote: { scope: 'support-vote', limit: 60, windowMs: MINUTE_MS }
 };

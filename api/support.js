@@ -20,9 +20,9 @@
 // A signed-in vote also stores the account's email so admins can see who
 // supported.
 import { FieldValue } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
 import { getServices } from './_lib/firebase.js';
-import { guard, body, hashIp, clientIp } from './_lib/http.js';
+import { guard, body, hashIp, clientIp, bearerToken } from './_lib/http.js';
+import { verifySchoolUser } from './_lib/auth.js';
 import { encryptField } from './_lib/crypto.js';
 import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
@@ -57,19 +57,16 @@ function collectDeviceInfo(req) {
   };
 }
 
-// Returns { user } (user is null for anonymous visitors) or { error } if a
-// token was sent but is invalid/expired.
+// Anonymous visitors may vote. A supplied token must belong to a verified
+// Google account on the school domain; invalid or ineligible tokens are rejected.
 async function getUser(req) {
-  const header = req.headers.authorization;
-  if (!header) return { user: null };
-  const match = /^Bearer (.+)$/i.exec(header);
-  if (!match) return { error: true };
-  try {
-    const decoded = await getAuth().verifyIdToken(match[1], true);
-    return { user: { uid: decoded.uid, email: decoded.email ?? null } };
-  } catch {
-    return { error: true };
-  }
+  if (!req.headers.authorization) return { user: null };
+  const token = bearerToken(req);
+  if (!token) return { error: true };
+  const decoded = await verifySchoolUser(token);
+  return decoded
+    ? { user: { uid: decoded.uid, email: decoded.email ?? null } }
+    : { error: true };
 }
 
 export default async function handler(req, res) {
@@ -78,7 +75,7 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   try {
-    const { db } = getServices(); // also initialises firebase-admin for getAuth()
+    const { db } = getServices();
     const ipIdentity = hashIp(clientIp(req));
     const readQuota = await takeRateLimit(db, RATE_LIMITS.supportRead, ipIdentity);
     if (!readQuota.allowed) {

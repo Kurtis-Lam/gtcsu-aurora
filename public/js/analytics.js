@@ -1,6 +1,6 @@
 import { API_BASE } from './api-config.js';
 
-const FIREBASE_AUTH_URL = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+const FIREBASE_AUTH_URL = 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 
 const VALID_ROUTES = new Set([
   '/', '/aboutus', '/news', '/activities', '/financial', '/schedule',

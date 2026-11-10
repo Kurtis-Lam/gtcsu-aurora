@@ -2,6 +2,7 @@
 // Returns a signed Cloudinary upload payload. Uploads are stored with
 // type=authenticated, so they can only be displayed through signed URLs that
 // Browsers receive images only through the authenticated server-side photo proxy.
+import { randomUUID } from 'node:crypto';
 import { v2 as cloudinary } from 'cloudinary';
 import { guard, bearerToken } from './_lib/http.js';
 import { verifiedAdmin } from './_lib/auth.js';
@@ -30,6 +31,8 @@ export default async function handler(req, res) {
     const params = {
       timestamp: Math.round(Date.now() / 1000),
       folder: 'aurora/gallery',
+      public_id: `img_${randomUUID().replace(/-/g, '')}`,
+      overwrite: false,
       type: 'authenticated',
       allowed_formats: 'jpg,jpeg,png,webp'
     };

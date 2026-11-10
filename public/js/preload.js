@@ -1,11 +1,12 @@
-import { collection, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { db } from './firebase-config.js';
+import { collection, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import { db, auth } from './firebase-config.js';
 import { API_BASE } from './api-config.js';
 
 const NEWS_KEY = 'aurora_news_cache_v1';
 const PHOTOS_KEY = 'aurora_photos_cache_v1:';
 const THUMB_CACHE = 'aurora-photo-thumbs-v1';
 const THUMB_PRELOAD_COUNT = 12;
+let photoCacheGeneration = 0;
 
 const ts = value => (value?.toMillis ? value.toMillis() : (Number(value) || 0));
 
@@ -104,19 +105,40 @@ export async function readCachedThumb(imageId) {
   }
 }
 
-export async function storeCachedThumb(imageId, blob) {
-  if (!('caches' in window) || !blob) return;
+export function getPhotoCacheGeneration() {
+  return photoCacheGeneration;
+}
+
+export function isPhotoCacheSessionCurrent(user, generation = photoCacheGeneration) {
+  return !!user && generation === photoCacheGeneration && auth.currentUser?.uid === user.uid;
+}
+
+export async function storeCachedThumb(imageId, blob, generation = photoCacheGeneration, uid = auth.currentUser?.uid) {
+  if (!('caches' in window) || !blob || generation !== photoCacheGeneration || auth.currentUser?.uid !== uid) return;
   try {
     const cache = await caches.open(THUMB_CACHE);
-    await cache.put(thumbCacheKey(imageId), new Response(blob, { headers: { 'Content-Type': blob.type || 'image/jpeg' } }));
+    if (generation !== photoCacheGeneration || auth.currentUser?.uid !== uid) return;
+    const key = thumbCacheKey(imageId);
+    await cache.put(key, new Response(blob, { headers: { 'Content-Type': blob.type || 'image/jpeg' } }));
+    // A logout can race with an in-flight Cache API write. Recheck after the
+    // write and remove the entry if the session changed while it was pending.
+    if (generation !== photoCacheGeneration || auth.currentUser?.uid !== uid) {
+      await cache.delete(key);
+    }
   } catch {}
 }
 
 export async function clearPhotoCaches() {
+  photoCacheGeneration += 1;
+  photoPromiseFor = null;
+  photoPromise = null;
   try {
     const store = storage('session');
     if (store) {
-      for (const key of Object.keys(store)) if (key.startsWith(PHOTOS_KEY)) store.removeItem(key);
+      for (let index = store.length - 1; index >= 0; index -= 1) {
+        const key = store.key(index);
+        if (key?.startsWith(PHOTOS_KEY)) store.removeItem(key);
+      }
     }
     if ('caches' in window) await caches.delete(THUMB_CACHE);
   } catch {}
@@ -129,8 +151,10 @@ export function preloadPhotos(user) {
   if (!user) return Promise.resolve(null);
   if (photoPromiseFor === user.uid && photoPromise) return photoPromise;
   photoPromiseFor = user.uid;
-  photoPromise = (async () => {
+  const generation = photoCacheGeneration;
+  const request = (async () => {
     try {
+      if (!isPhotoCacheSessionCurrent(user, generation)) return null;
       const token = await user.getIdToken();
       const [response, foldersSnap] = await Promise.all([
         fetch(`${API_BASE}/api/list-photos`, {
@@ -141,31 +165,39 @@ export function preloadPhotos(user) {
         }),
         getDocs(collection(db, 'galleryFolders'))
       ]);
-      if (!response.ok) return null;
+      if (!response.ok || !isPhotoCacheSessionCurrent(user, generation)) return null;
       const data = await response.json();
+      if (!isPhotoCacheSessionCurrent(user, generation)) return null;
       const images = Array.isArray(data.images) ? data.images : [];
       const folders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (!isPhotoCacheSessionCurrent(user, generation)) return null;
       writePhotoCache(user.uid, images, folders);
-      warmThumbnails(user, images.slice(0, THUMB_PRELOAD_COUNT));
+      void warmThumbnails(user, images.slice(0, THUMB_PRELOAD_COUNT), generation);
       return { images, folders };
     } catch {
       return null;
     }
-  })().then(result => {
-    if (!result) photoPromise = null;
+  })();
+  const tracked = request.then(result => {
+    if (!result && photoPromise === tracked) {
+      photoPromise = null;
+      photoPromiseFor = null;
+    }
     return result;
   });
-  return photoPromise;
+  photoPromise = tracked;
+  return tracked;
 }
 
-async function warmThumbnails(user, images) {
+async function warmThumbnails(user, images, generation) {
   if (!('caches' in window)) return;
   const queue = images.slice();
   const worker = async () => {
-    while (queue.length) {
+    while (queue.length && isPhotoCacheSessionCurrent(user, generation)) {
       const image = queue.shift();
       try {
         if (await readCachedThumb(image.id)) continue;
+        if (!isPhotoCacheSessionCurrent(user, generation)) return;
         const token = await user.getIdToken();
         const response = await fetch(thumbCacheKey(image.id), {
           headers: { Authorization: `Bearer ${token}` },
@@ -173,7 +205,12 @@ async function warmThumbnails(user, images) {
           credentials: 'omit',
           referrerPolicy: 'no-referrer'
         });
-        if (response.ok) await storeCachedThumb(image.id, await response.blob());
+        if (response.ok && isPhotoCacheSessionCurrent(user, generation)) {
+          const blob = await response.blob();
+          if (isPhotoCacheSessionCurrent(user, generation)) {
+            await storeCachedThumb(image.id, blob, generation, user.uid);
+          }
+        }
       } catch {}
     }
   };

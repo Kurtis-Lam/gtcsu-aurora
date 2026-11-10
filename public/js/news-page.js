@@ -1,4 +1,4 @@
-import { collection, doc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, doc, onSnapshot, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import { AuroraAuth } from './load-components.js';
 import { db } from './firebase-config.js';
 import { getLocalReads, rememberLocalRead, readRevision } from './news-reads.js';

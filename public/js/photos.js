@@ -1,6 +1,6 @@
 import { AuroraAuth } from './load-components.js';
 import { API_BASE } from './api-config.js';
-import { readPhotoCache, readCachedThumb, storeCachedThumb, preloadPhotos } from './preload.js';
+import { readPhotoCache, readCachedThumb, storeCachedThumb, preloadPhotos, getPhotoCacheGeneration, isPhotoCacheSessionCurrent } from './preload.js';
 
 const CONSENT_VERSION = '2026-10-v1';
 
@@ -112,6 +112,7 @@ AuroraAuth.onChange((user) => {
     selectedImageIds.clear();
     pendingDownload = null;
     lightboxImage = null;
+    lightboxFetchSequence++;
     closeConsent();
     lightbox.classList.remove('active');
     revokeImageObjectUrls();
@@ -164,8 +165,9 @@ function revokeImageObjectUrls() {
   lightboxImg.removeAttribute('src');
 }
 
-async function fetchProtectedImage(imageId, variant) {
-  const token = await AuroraAuth.getIdToken();
+async function fetchProtectedImage(imageId, variant, user) {
+  if (!user) throw new Error('A verified school account is required.');
+  const token = await user.getIdToken();
   const response = await fetch(`${API_BASE}/api/photo-image?imageId=${encodeURIComponent(imageId)}&variant=${encodeURIComponent(variant)}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
@@ -182,15 +184,21 @@ async function fetchProtectedImage(imageId, variant) {
 async function loadThumbnail(imageEl) {
   if (imageEl.dataset.loading === 'true' || imageEl.dataset.loaded === 'true') return;
   imageEl.dataset.loading = 'true';
+  const user = AuroraAuth.getUser();
+  const generation = getPhotoCacheGeneration();
   try {
+    if (!isPhotoCacheSessionCurrent(user, generation)) return;
     const imageId = imageEl.dataset.photoImage;
     let blob = await readCachedThumb(imageId);
+    if (!isPhotoCacheSessionCurrent(user, generation)) return;
     if (!blob) {
-      blob = await fetchProtectedImage(imageId, 'thumb');
-      storeCachedThumb(imageId, blob);
+      blob = await fetchProtectedImage(imageId, 'thumb', user);
+      if (!isPhotoCacheSessionCurrent(user, generation)) return;
+      await storeCachedThumb(imageId, blob, generation, user.uid);
     }
+    if (!isPhotoCacheSessionCurrent(user, generation)) return;
     const objectUrl = URL.createObjectURL(blob);
-    if (!imageEl.isConnected) { URL.revokeObjectURL(objectUrl); return; }
+    if (!imageEl.isConnected || !isPhotoCacheSessionCurrent(user, generation)) { URL.revokeObjectURL(objectUrl); return; }
     imageObjectUrls.add(objectUrl);
     imageEl.src = objectUrl;
     imageEl.dataset.loaded = 'true';
@@ -231,7 +239,7 @@ async function initGallery() {
   }
   try {
     const fresh = await preloadPhotos(user);
-    if (!fresh) throw new Error('Could not load photos');
+    if (!fresh || AuroraAuth.getUser()?.uid !== user?.uid) throw new Error('Could not load photos');
     const changed = !cached || JSON.stringify(cached.images) !== JSON.stringify(fresh.images)
       || JSON.stringify(cached.folders) !== JSON.stringify(fresh.folders);
     allImages = fresh.images;
@@ -241,6 +249,7 @@ async function initGallery() {
       renderGallery();
     }
   } catch (err) {
+    if (AuroraAuth.getUser()?.uid !== user?.uid) return;
     console.error("Failed to load gallery:", err);
     if (!cached) {
       galleryLoaded = false;
@@ -374,6 +383,9 @@ clearBtn.addEventListener('click', () => {
 
 async function openLightbox(img) {
   const sequence = ++lightboxFetchSequence;
+  const user = AuroraAuth.getUser();
+  const generation = getPhotoCacheGeneration();
+  if (!isPhotoCacheSessionCurrent(user, generation)) return;
   lightboxImage = img;
   if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
   lightboxObjectUrl = null;
@@ -382,8 +394,8 @@ async function openLightbox(img) {
   lightbox.classList.add('active');
   updateToolbar();
   try {
-    const blob = await fetchProtectedImage(img.id, 'view');
-    if (sequence !== lightboxFetchSequence) return;
+    const blob = await fetchProtectedImage(img.id, 'view', user);
+    if (sequence !== lightboxFetchSequence || !isPhotoCacheSessionCurrent(user, generation)) return;
     lightboxObjectUrl = URL.createObjectURL(blob);
     lightboxImg.src = lightboxObjectUrl;
   } catch {

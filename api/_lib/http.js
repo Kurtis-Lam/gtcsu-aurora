@@ -16,7 +16,7 @@ function originAllowed(origin) {
   return (
     STATIC_ORIGINS.includes(origin) ||
     extraOrigins().includes(origin) ||
-    (process.env.VERCEL_ENV !== 'production' && LOCAL_ORIGIN.test(origin))
+    ((process.env.VERCEL_ENV === 'development' || (!process.env.VERCEL_ENV && process.env.NODE_ENV === 'development')) && LOCAL_ORIGIN.test(origin))
   );
 }
 

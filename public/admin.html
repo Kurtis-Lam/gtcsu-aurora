@@ -1432,12 +1432,12 @@
       query,
       orderBy,
       limit
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
     import {
       signInWithPopup,
       signOut,
       onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
     import { db, auth, googleProvider } from './js/firebase-config.js';
     import { API_BASE } from './js/api-config.js';
     import { initAdminNews } from './js/admin-news.js';
@@ -2612,7 +2612,7 @@
       const form = new FormData();
       form.append('file', file);
       form.append('api_key', s.apiKey);
-      ['timestamp', 'signature', 'folder', 'type', 'allowed_formats'].forEach(k => form.append(k, s[k]));
+      ['timestamp', 'signature', 'folder', 'public_id', 'overwrite', 'type', 'allowed_formats'].forEach(k => form.append(k, String(s[k])));
 
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();

@@ -3,8 +3,8 @@ import './fx.js';
 import { NEWS_READ_EVENT, getLocalReads, readRevision } from './news-reads.js';
 import { API_BASE } from './api-config.js';
 
-const FIREBASE_AUTH_URL = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-const FIREBASE_FIRESTORE_URL = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+const FIREBASE_AUTH_URL = 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
+const FIREBASE_FIRESTORE_URL = 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 
 // Firebase is large, so it is loaded on demand and never blocks the page shell
 // (navigation, background and floating buttons mount without waiting for it).
@@ -306,13 +306,14 @@ async function createNewsSubscription(user) {
 function startAuthWatch() {
   const { auth, isSchoolUser } = fb.config;
   fb.authApi.onAuthStateChanged(auth, (user) => {
+    const previousUid = currentUser?.uid || null;
     currentUser = isSchoolUser(user) ? user : null;
+    if (!currentUser || previousUid !== currentUser.uid) fb.preload.clearPhotoCaches();
     authResolved = true;
     authListeners.forEach(cb => { try { cb(currentUser); } catch (e) { console.error(e); } });
     updateNavAuthUI(currentUser);
     watchUnreadNews(currentUser);
     if (currentUser) createNewsSubscription(currentUser);
-    else fb.preload.clearPhotoCaches();
     if (canPrefetch()) {
       runWhenQuiet(() => {
         fb.preload.preloadNews();
