@@ -1,8 +1,9 @@
 import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
-import { bearerToken, body, guard } from './_lib/http.js';
+import { bearerToken, body, clientIp, guard, hashIp } from './_lib/http.js';
 import { verifySchoolUser, verifiedAdmin } from './_lib/auth.js';
+import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 const VALID_ROUTES = new Set([
   '/', '/aboutus', '/news', '/activities', '/financial', '/schedule',
@@ -14,7 +15,7 @@ const MAX_DURATION = 86400;
 
 function analyticsSecret() {
   const secret = process.env.ANALYTICS_HMAC_SECRET;
-  if (!secret || secret.length < 32) throw new Error('ANALYTICS_HMAC_SECRET is not configured securely');
+  if (!secret || Buffer.byteLength(secret, 'utf8') < 32) throw new Error('ANALYTICS_HMAC_SECRET is not configured securely');
   return secret;
 }
 
@@ -56,9 +57,18 @@ async function attachIdentity(req, res, payload) {
   }
 
   const { db } = getServices();
+  const quota = await takeRateLimit(db, RATE_LIMITS.pageviewWrite, pageviewId);
+  if (!quota.allowed) {
+    res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+    return res.status(429).json({ error: 'Too many analytics updates.' });
+  }
   const ref = db.collection('pageviews').doc(pageviewId);
   const snap = await ref.get();
   if (!snap.exists) return res.status(404).json({ error: 'Analytics session not found.' });
+  const openedAt = snap.get('openedAt')?.toDate?.();
+  if (!openedAt || Date.now() - openedAt.getTime() > MAX_DURATION * 1000) {
+    return res.status(410).json({ error: 'Analytics session has expired.' });
+  }
 
   await ref.update({
     userEmail: user.email || '',
@@ -85,14 +95,26 @@ export default async function handler(req, res) {
     const ref = db.collection('pageviews').doc(pageviewId);
 
     if (action === 'open') {
-      await ref.set({
-        path,
-        durationSeconds: 0,
-        dateStr: hktDateString(),
-        timestamp: FieldValue.serverTimestamp(),
-        openedAt: FieldValue.serverTimestamp(),
-        lastActiveAt: FieldValue.serverTimestamp()
-      });
+      const quota = await takeRateLimit(db, RATE_LIMITS.pageviewOpen, hashIp(clientIp(req)));
+      if (!quota.allowed) {
+        res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+        return res.status(429).json({ error: 'Too many analytics sessions. Try again later.' });
+      }
+      try {
+        await ref.create({
+          path,
+          durationSeconds: 0,
+          dateStr: hktDateString(),
+          timestamp: FieldValue.serverTimestamp(),
+          openedAt: FieldValue.serverTimestamp(),
+          lastActiveAt: FieldValue.serverTimestamp()
+        });
+      } catch (error) {
+        if (error.code === 6 || error.code === 'already-exists') {
+          return res.status(409).json({ error: 'Analytics session already exists.' });
+        }
+        throw error;
+      }
       return res.status(200).json({ ok: true, token: signId(pageviewId) });
     }
 
@@ -100,9 +122,30 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Invalid analytics session.' });
     }
 
+    const quota = await takeRateLimit(db, RATE_LIMITS.pageviewWrite, pageviewId);
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      return res.status(429).json({ error: 'Too many analytics updates.' });
+    }
+
     const duration = Number(payload.durationSeconds);
     if (!Number.isFinite(duration) || duration < 0 || duration > MAX_DURATION) {
       return res.status(400).json({ error: 'Invalid duration.' });
+    }
+
+    const session = await ref.get();
+    if (!session.exists) return res.status(404).json({ error: 'Analytics session not found.' });
+    const sessionData = session.data() || {};
+    const openedAt = sessionData.openedAt?.toDate?.();
+    if (!openedAt || Date.now() - openedAt.getTime() > MAX_DURATION * 1000) {
+      return res.status(410).json({ error: 'Analytics session has expired.' });
+    }
+    if (sessionData.closedAt && action !== 'exit') {
+      return res.status(409).json({ error: 'Analytics session is already closed.' });
+    }
+    const maxPlausibleDuration = Math.max(0, Math.floor((Date.now() - openedAt.getTime()) / 1000)) + 30;
+    if (duration > maxPlausibleDuration) {
+      return res.status(400).json({ error: 'Duration exceeds the session age.' });
     }
 
     const update = {

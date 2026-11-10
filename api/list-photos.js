@@ -2,6 +2,7 @@ import { guard, bearerToken } from './_lib/http.js';
 import { authenticateGalleryUser } from './_lib/auth.js';
 import { getServices } from './_lib/firebase.js';
 import { GALLERY_ID_PATTERN, IMAGE_DOC_ID_PATTERN } from './_lib/photos.js';
+import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 function safeString(value, maxLength, fallback = '') {
   return typeof value === 'string' ? value.slice(0, maxLength) : fallback;
@@ -15,6 +16,11 @@ export default async function handler(req, res) {
     if (!session) return res.status(403).json({ error: 'A verified school account is required.' });
 
     const { db } = getServices();
+    const quota = await takeRateLimit(db, RATE_LIMITS.photoList, String(session.decoded.uid));
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      return res.status(429).json({ error: 'Too many gallery requests. Try again shortly.' });
+    }
 
     const snapshot = await db.collection('galleryImages').get();
     const images = snapshot.docs.flatMap((document) => {

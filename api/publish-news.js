@@ -34,9 +34,17 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[character]));
 
+function isSchoolRecipient(value) {
+  return typeof value === 'string'
+    && value.length <= 254
+    && /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@gtcollege[.]edu[.]hk$/i.test(value);
+}
+
 function unsubscribeUrl(uid) {
   const secret = process.env.NEWS_UNSUBSCRIBE_SECRET;
-  if (!secret) throw new Error('NEWS_UNSUBSCRIBE_SECRET is not configured');
+  if (!secret || Buffer.byteLength(secret, 'utf8') < 32) {
+    throw new Error('NEWS_UNSUBSCRIBE_SECRET must contain at least 32 bytes');
+  }
   const payload = Buffer.from(uid).toString('base64url');
   const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
   return `https://gtcsu-aurora.vercel.app/api/unsubscribe-news?token=${payload}.${signature}`;
@@ -150,7 +158,7 @@ export default async function handler(req, res) {
 
     const gmailUser = process.env.GMAIL_USER?.trim();
     const appPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, '');
-    if (!gmailUser || !appPassword || !process.env.NEWS_UNSUBSCRIBE_SECRET) {
+    if (!gmailUser || !appPassword || Buffer.byteLength(process.env.NEWS_UNSUBSCRIBE_SECRET || '', 'utf8') < 32) {
       return res.status(503).json({ error: 'Gmail delivery is not configured. Set GMAIL_USER, GMAIL_APP_PASSWORD, and NEWS_UNSUBSCRIBE_SECRET.' });
     }
 
@@ -168,7 +176,9 @@ export default async function handler(req, res) {
     const revision = Number(article.revision) || 1;
     const counters = { total: subscribers.size, sent: 0, failed: 0, skipped: 0, deferred: 0 };
     const pending = subscribers.docs.filter((subscriber) => (
-      typeof subscriber.data().email === 'string' && subscriber.data().email.includes('@')
+      /^[A-Za-z0-9:_-]{1,128}$/.test(subscriber.id)
+      && subscriber.data().uid === subscriber.id
+      && isSchoolRecipient(subscriber.data().email)
     ));
     counters.failed += subscribers.size - pending.length;
 

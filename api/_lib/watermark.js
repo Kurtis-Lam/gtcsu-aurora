@@ -156,8 +156,19 @@ function blockCoefficient(plane, width, originX, originY, slot) {
 }
 
 async function decodeRaw(input) {
-  const pipeline = sharp(input, { limitInputPixels: MAX_PIXELS, failOn: 'error' }).rotate().removeAlpha().toColourspace('srgb');
+  if (!Buffer.isBuffer(input) || input.length < 4 || input[0] !== 0xff || input[1] !== 0xd8 || input[2] !== 0xff) {
+    throw new Error('Only JPEG image data can be watermarked');
+  }
+  const pipeline = sharp(input, {
+    limitInputPixels: MAX_PIXELS,
+    failOn: 'error',
+    animated: false,
+    pages: 1
+  }).rotate().removeAlpha().toColourspace('srgb');
   const { data, info } = await pipeline.raw().toBuffer({ resolveWithObject: true });
+  if (info.format !== 'raw' || info.channels < 3 || info.channels > 4) {
+    throw new Error('Unsupported image data');
+  }
   return { data, width: info.width, height: info.height, channels: info.channels };
 }
 

@@ -24,6 +24,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getServices } from './_lib/firebase.js';
 import { guard, body, hashIp, clientIp } from './_lib/http.js';
 import { encryptField } from './_lib/crypto.js';
+import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 const COOLDOWN_MS = 10 * 60 * 1000;
 const DEVICE_ID_RE = /^[A-Za-z0-9_-]{16,64}$/;
@@ -78,6 +79,12 @@ export default async function handler(req, res) {
 
   try {
     const { db } = getServices(); // also initialises firebase-admin for getAuth()
+    const ipIdentity = hashIp(clientIp(req));
+    const readQuota = await takeRateLimit(db, RATE_LIMITS.supportRead, ipIdentity);
+    if (!readQuota.allowed) {
+      res.setHeader('Retry-After', String(readQuota.retryAfterSeconds));
+      return res.status(429).json({ ok: false, error: 'Too many requests. Try again shortly.' });
+    }
 
     const deviceId = getDeviceId(req);
     if (!deviceId) {
@@ -105,6 +112,12 @@ export default async function handler(req, res) {
         remainingMs(ipSnap.data())
       );
       return res.status(200).json({ ok: true, remainingMs: remaining });
+    }
+
+    const voteQuota = await takeRateLimit(db, RATE_LIMITS.supportVote, ipIdentity);
+    if (!voteQuota.allowed) {
+      res.setHeader('Retry-After', String(voteQuota.retryAfterSeconds));
+      return res.status(429).json({ ok: false, error: 'Too many support attempts. Try again shortly.' });
     }
 
     const counterRef = db.collection('counters').doc('supportCounter');

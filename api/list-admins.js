@@ -1,6 +1,7 @@
 import { guard, bearerToken } from './_lib/http.js';
 import { verifiedAdmin } from './_lib/auth.js';
 import { getServices } from './_lib/firebase.js';
+import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 // Lists every Firebase account that carries the `admin: true` custom claim.
 // Admins only: the caller is verified through the same Firestore-rules check
@@ -13,7 +14,12 @@ export default async function handler(req, res) {
     const caller = await verifiedAdmin(bearerToken(req));
     if (!caller) return res.status(403).json({ error: 'Admins only.' });
 
-    const { auth } = getServices();
+    const { auth, db } = getServices();
+    const quota = await takeRateLimit(db, RATE_LIMITS.listAdmins, String(caller.uid));
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      return res.status(429).json({ error: 'Too many admin-list requests.' });
+    }
     const admins = [];
     let pageToken;
     do {

@@ -13,7 +13,7 @@ function getToken(req) {
 function verifyToken(token) {
   const [payload, signature, extra] = token.split('.');
   const secret = process.env.NEWS_UNSUBSCRIBE_SECRET;
-  if (!payload || !signature || extra || !secret) return null;
+  if (!payload || !signature || extra || !secret || Buffer.byteLength(secret, 'utf8') < 32) return null;
   const expected = crypto.createHmac('sha256', secret).update(payload).digest();
   let actual;
   try {

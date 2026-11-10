@@ -2,6 +2,7 @@ import { guard, body, bearerToken } from './_lib/http.js';
 import { verifiedAdmin } from './_lib/auth.js';
 import { getServices } from './_lib/firebase.js';
 import { cloudinaryClient, GALLERY_ID_PATTERN, IMAGE_DOC_ID_PATTERN } from './_lib/photos.js';
+import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
@@ -16,6 +17,11 @@ export default async function handler(req, res) {
     }
 
     const { db } = getServices();
+    const quota = await takeRateLimit(db, RATE_LIMITS.deletePhoto, String(admin.uid));
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      return res.status(429).json({ error: 'Too many photo deletion requests.' });
+    }
     const imageRef = db.collection('galleryImages').doc(imageId);
     const snapshot = await imageRef.get();
     if (!snapshot.exists) return res.status(404).json({ error: 'Photo not found.' });

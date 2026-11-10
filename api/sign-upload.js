@@ -5,6 +5,8 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { guard, bearerToken } from './_lib/http.js';
 import { verifiedAdmin } from './_lib/auth.js';
+import { getServices } from './_lib/firebase.js';
+import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -18,12 +20,18 @@ export default async function handler(req, res) {
   try {
     const admin = await verifiedAdmin(bearerToken(req));
     if (!admin) return res.status(403).json({ error: 'Admins only.' });
+    const { db } = getServices();
+    const quota = await takeRateLimit(db, RATE_LIMITS.signUpload, String(admin.uid));
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      return res.status(429).json({ error: 'Too many upload signatures requested.' });
+    }
 
     const params = {
       timestamp: Math.round(Date.now() / 1000),
       folder: 'aurora/gallery',
       type: 'authenticated',
-      allowed_formats: 'jpg,jpeg,png,webp,gif'
+      allowed_formats: 'jpg,jpeg,png,webp'
     };
     const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);
 

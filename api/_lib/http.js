@@ -16,7 +16,7 @@ function originAllowed(origin) {
   return (
     STATIC_ORIGINS.includes(origin) ||
     extraOrigins().includes(origin) ||
-    LOCAL_ORIGIN.test(origin)
+    (process.env.VERCEL_ENV !== 'production' && LOCAL_ORIGIN.test(origin))
   );
 }
 
@@ -90,7 +90,9 @@ export function clientIp(req) {
 
 export function hashIp(value) {
   const secret = process.env.IP_HASH_SECRET;
-  if (!secret) throw new Error('IP_HASH_SECRET is not set');
+  if (!secret || Buffer.byteLength(secret, 'utf8') < 32) {
+    throw new Error('IP_HASH_SECRET must contain at least 32 bytes');
+  }
   return crypto.createHmac('sha256', secret).update(String(value)).digest('hex').slice(0, 24);
 }
 

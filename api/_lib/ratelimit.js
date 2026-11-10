@@ -2,15 +2,31 @@ import crypto from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 const HOUR_MS = 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
 export const RATE_LIMITS = {
   photoDownload: { scope: 'photo-download', limit: 10, windowMs: HOUR_MS },
-  feedback: { scope: 'feedback', limit: 3, windowMs: DAY_MS }
+  feedback: { scope: 'feedback', limit: 3, windowMs: DAY_MS },
+  pageviewOpen: { scope: 'pageview-open', limit: 1200, windowMs: 10 * MINUTE_MS },
+  pageviewWrite: { scope: 'pageview-write', limit: 40, windowMs: MINUTE_MS },
+  photoImage: { scope: 'photo-image', limit: 120, windowMs: MINUTE_MS },
+  photoList: { scope: 'photo-list', limit: 60, windowMs: MINUTE_MS },
+  signUpload: { scope: 'sign-upload', limit: 60, windowMs: MINUTE_MS },
+  deletePhoto: { scope: 'delete-photo', limit: 10, windowMs: MINUTE_MS },
+  listAdmins: { scope: 'list-admins', limit: 10, windowMs: MINUTE_MS },
+  translateNews: { scope: 'translate-news', limit: 10, windowMs: MINUTE_MS },
+  supportRead: { scope: 'support-read', limit: 300, windowMs: MINUTE_MS },
+  supportVote: { scope: 'support-vote', limit: 60, windowMs: MINUTE_MS }
 };
 
 function rateKey(scope, identity) {
-  const secret = process.env.ANALYTICS_HMAC_SECRET || process.env.IP_HASH_SECRET || 'aurora-rate-limit';
+  const secret = [process.env.ANALYTICS_HMAC_SECRET, process.env.IP_HASH_SECRET]
+    .find((value) => typeof value === 'string' && Buffer.byteLength(value, 'utf8') >= 32);
+  if (!secret) throw new Error('A rate-limit HMAC secret of at least 32 bytes is required');
+  if (typeof identity !== 'string' || identity.length < 1 || identity.length > 256) {
+    throw new Error('Invalid rate-limit identity');
+  }
   return crypto.createHmac('sha256', secret).update(`${scope}:${identity}`).digest('hex').slice(0, 40);
 }
 

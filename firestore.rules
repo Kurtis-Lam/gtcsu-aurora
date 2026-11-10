@@ -33,12 +33,11 @@ service cloud.firestore {
     }
 
     match /publicFeedbacks/{feedbackId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
     match /counters/{counterId} {
-      allow get: if true;
+      allow get: if counterId == 'supportCounter';
       allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
     }

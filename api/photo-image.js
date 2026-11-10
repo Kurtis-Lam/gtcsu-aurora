@@ -1,6 +1,8 @@
 import { guard, bearerToken } from './_lib/http.js';
 import { authenticateGalleryUser } from './_lib/auth.js';
+import { getServices } from './_lib/firebase.js';
 import { getGalleryImage, getOrCreatePhotoVariantUrl, fetchCloudinaryImage } from './_lib/photos.js';
+import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 export default async function handler(req, res) {
   if (!guard(req, res, 'GET')) return;
@@ -8,6 +10,12 @@ export default async function handler(req, res) {
   try {
     const session = await authenticateGalleryUser(bearerToken(req));
     if (!session) return res.status(403).json({ error: 'A verified school account is required.' });
+    const { db } = getServices();
+    const quota = await takeRateLimit(db, RATE_LIMITS.photoImage, String(session.decoded.uid));
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      return res.status(429).json({ error: 'Too many photo requests. Try again shortly.' });
+    }
 
     const url = new URL(req.url, 'https://aurora.invalid');
     const imageId = url.searchParams.get('imageId');

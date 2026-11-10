@@ -1,5 +1,7 @@
 import { verifiedAdmin } from './_lib/auth.js';
 import { bearerToken, body, guard } from './_lib/http.js';
+import { getServices } from './_lib/firebase.js';
+import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 const MAX_TEXT_LENGTH = 10000;
 export const config = { maxDuration: 30 };
@@ -11,6 +13,13 @@ export default async function handler(req, res) {
     const admin = await verifiedAdmin(bearerToken(req));
     if (!admin) {
       return res.status(403).json({ error: 'Admin access is required.', code: 'FORBIDDEN' });
+    }
+
+    const { db } = getServices();
+    const quota = await takeRateLimit(db, RATE_LIMITS.translateNews, String(admin.uid));
+    if (!quota.allowed) {
+      res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+      return res.status(429).json({ error: 'Translation limit reached. Try again shortly.', code: 'RATE_LIMITED' });
     }
 
     const { text, targetLanguage } = body(req);

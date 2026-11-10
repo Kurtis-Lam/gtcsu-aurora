@@ -75,16 +75,51 @@ function isCloudinaryUrl(value) {
 
 export async function fetchCloudinaryImage(url, maxBytes = MAX_IMAGE_BYTES) {
   if (!isCloudinaryUrl(url)) throw new Error('Image provider URL is not trusted');
-  const upstream = await fetch(url, { signal: AbortSignal.timeout(20000) });
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_IMAGE_BYTES) {
+    throw new Error('Invalid image size limit');
+  }
+
+  const upstream = await fetch(url, {
+    signal: AbortSignal.timeout(20000),
+    redirect: 'error',
+    headers: { Accept: 'image/jpeg' }
+  });
   if (!upstream.ok) throw new Error(`Image provider returned ${upstream.status}`);
-  if (!isCloudinaryUrl(upstream.url || url)) throw new Error('Image provider redirected to an untrusted host');
-  const upstreamType = (upstream.headers.get('content-type') || '').toLowerCase();
-  if (!upstreamType.startsWith('image/')) throw new Error('Image provider returned a non-image response');
-  const announcedSize = Number(upstream.headers.get('content-length') || 0);
-  if (announcedSize > maxBytes) throw new Error('Image exceeds size limit');
-  const buffer = Buffer.from(await upstream.arrayBuffer());
-  if (buffer.length === 0 || buffer.length > maxBytes) throw new Error('Image exceeds size limit');
-  return { buffer, contentType: upstreamType };
+  if (!isCloudinaryUrl(upstream.url || url)) throw new Error('Image provider returned an untrusted URL');
+
+  const upstreamType = (upstream.headers.get('content-type') || '').split(';', 1)[0].trim().toLowerCase();
+  if (upstreamType !== 'image/jpeg' && upstreamType !== 'image/jpg') {
+    throw new Error('Image provider returned an unexpected image format');
+  }
+
+  const contentLength = upstream.headers.get('content-length');
+  if (contentLength !== null) {
+    if (!/^\d+$/.test(contentLength) || Number(contentLength) > maxBytes) {
+      throw new Error('Image exceeds size limit');
+    }
+  }
+  if (!upstream.body) throw new Error('Image provider returned an empty response');
+
+  const reader = upstream.body.getReader();
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        throw new Error('Image exceeds size limit');
+      }
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (totalBytes === 0) throw new Error('Image provider returned an empty response');
+  return { buffer: Buffer.concat(chunks, totalBytes), contentType: 'image/jpeg' };
 }
 
 export async function fetchDownloadSource(image) {
