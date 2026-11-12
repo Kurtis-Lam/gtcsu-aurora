@@ -1,16 +1,43 @@
+# Dependencies & Build Outputs
+node_modules/
+dist/
+build/
+coverage/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+.env.local
+credentials/
+secrets/
+**/service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Hosting & Deployment Config
 .firebase/
 .firebaserc
-.DS_Store
-.vercel
-.env*
-node_modules/
+.vercel/
+
+# Logs
+*.log
 firebase-debug.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
-credentials/
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
 
-public/assets/unused-profiles
+# Project-Specific Assets & Archives
+aurora.zip
 public/assets/aurora-legacy-logo.png
 public/assets/promo_vid.mp4
-
-aurora.zip
-.env.local
+public/assets/unused-profiles
