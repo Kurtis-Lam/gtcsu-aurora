@@ -1,3 +1,4 @@
+import { verifyRequestAppCheck } from './_lib/app-check.js';
 import crypto from 'node:crypto';
 import { bearerToken, body, guard } from './_lib/http.js';
 
@@ -122,6 +123,7 @@ async function claimDelivery(db, deliveryRef, details) {
 export default async function handler(req, res) {
   // Handles the CORS preflight and sets CORS headers before anything can fail.
   if (!guard(req, res, 'POST')) return;
+  if (!(await verifyRequestAppCheck(req, res))) return;
 
   let services;
   try {

@@ -1,3 +1,4 @@
+import { verifyRequestAppCheck } from './_lib/app-check.js';
 // GET  /api/support?device=<id> -> { ok, remainingMs }   (cooldown left for this visitor)
 // POST /api/support?device=<id> -> records one support vote
 //
@@ -71,6 +72,7 @@ async function getUser(req) {
 
 export default async function handler(req, res) {
   if (!guard(req, res, ['GET', 'POST'])) return;
+  if (!(await verifyRequestAppCheck(req, res))) return;
 
   res.setHeader('Content-Type', 'application/json');
 

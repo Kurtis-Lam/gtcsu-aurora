@@ -1,5 +1,5 @@
 import { AuroraAuth } from './load-components.js';
-import { API_BASE } from './api-config.js';
+import { API_BASE, apiFetch } from './api-config.js';
 import { readPhotoCache, readCachedThumb, storeCachedThumb, preloadPhotos, getPhotoCacheGeneration, isPhotoCacheSessionCurrent } from './preload.js';
 
 const CONSENT_VERSION = '2026-10-v1';
@@ -168,7 +168,7 @@ function revokeImageObjectUrls() {
 async function fetchProtectedImage(imageId, variant, user) {
   if (!user) throw new Error('A verified school account is required.');
   const token = await user.getIdToken();
-  const response = await fetch(`${API_BASE}/api/photo-image?imageId=${encodeURIComponent(imageId)}&variant=${encodeURIComponent(variant)}`, {
+  const response = await apiFetch(`${API_BASE}/api/photo-image?imageId=${encodeURIComponent(imageId)}&variant=${encodeURIComponent(variant)}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
     credentials: 'omit',
@@ -485,7 +485,7 @@ function saveBlob(blob, filename) {
 
 async function fetchProtectedDownload(img, batchId) {
   const token = await AuroraAuth.getIdToken();
-  const response = await fetch(`${API_BASE}/api/photo-download`, {
+  const response = await apiFetch(`${API_BASE}/api/photo-download`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ imageId: img.id, batchId, consent: true, consentVersion: CONSENT_VERSION }),

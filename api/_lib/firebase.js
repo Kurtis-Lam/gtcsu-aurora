@@ -5,6 +5,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { getAppCheck } from 'firebase-admin/app-check';
 
 let services = null;
 
@@ -21,6 +22,7 @@ export function getServices() {
   services = {
     db: getFirestore(app),
     auth: getAuth(app),
+    appCheck: getAppCheck(app),
     projectId: account.project_id
   };
   return services;

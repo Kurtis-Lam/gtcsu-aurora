@@ -1,3 +1,4 @@
+import { verifyRequestAppCheck } from './_lib/app-check.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getServices } from './_lib/firebase.js';
 import { guard, body, bearerToken, hashIp } from './_lib/http.js';
@@ -253,6 +254,7 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (!(await verifyRequestAppCheck(req, res))) return;
   try {
     const { db } = getServices();
     const { title: rawTitle, description: rawDesc } = body(req);

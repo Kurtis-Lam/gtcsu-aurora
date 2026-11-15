@@ -1439,7 +1439,7 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
     import { db, auth, googleProvider } from './js/firebase-config.js';
-    import { API_BASE } from './js/api-config.js';
+    import { API_BASE, apiFetch } from './js/api-config.js';
     import { initAdminNews } from './js/admin-news.js';
 
     const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000;
@@ -1584,7 +1584,7 @@
       status.textContent = 'Loading…';
       try {
         const token = await auth.currentUser.getIdToken();
-        const res = await fetch(`${API_BASE}/api/list-admins`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await apiFetch(`${API_BASE}/api/list-admins`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
         const admins = data.admins || [];
@@ -2447,7 +2447,7 @@
 
     async function apiPost(path, payload) {
       const token = await auth.currentUser.getIdToken();
-      const res = await fetch(API_BASE + path, {
+      const res = await apiFetch(API_BASE + path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload || {})
@@ -2463,7 +2463,7 @@
       imageEl.dataset.loading = 'true';
       try {
         const token = await auth.currentUser.getIdToken();
-        const res = await fetch(`${API_BASE}/api/photo-image?imageId=${encodeURIComponent(imageEl.dataset.adminPhotoImage)}&variant=thumb`, {
+        const res = await apiFetch(`${API_BASE}/api/photo-image?imageId=${encodeURIComponent(imageEl.dataset.adminPhotoImage)}&variant=thumb`, {
           headers: { Authorization: `Bearer ${token}` }, cache: 'no-store'
         });
         if (!res.ok) throw new Error(`Photo preview unavailable (${res.status})`);

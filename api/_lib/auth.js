@@ -1,4 +1,3 @@
-
 import { getServices } from './firebase.js';
 
 export const SCHOOL_DOMAIN = 'gtcollege.edu.hk';

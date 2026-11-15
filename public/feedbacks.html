@@ -445,7 +445,7 @@
 
   <script type="module">
     import { AuroraAuth } from './js/load-components.js';
-    import { API_BASE } from './js/api-config.js';
+    import { API_BASE, apiFetch } from './js/api-config.js';
     import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
     import { db, auth } from './js/firebase-config.js';
 
@@ -535,7 +535,7 @@
         headers['Content-Type'] = 'application/json';
         init.body = JSON.stringify({ deviceInfo: await collectDeviceInfo() });
       }
-      return fetch(`${API_BASE}/api/support?device=${encodeURIComponent(device)}`, init);
+      return apiFetch(`${API_BASE}/api/support?device=${encodeURIComponent(device)}`, init);
     }
 
     function getSupportDeviceId() {
@@ -733,7 +733,7 @@
           Authorization: `Bearer ${await AuroraAuth.getIdToken()}`
         };
 
-        const response = await fetch(`${API_BASE}/api/feedback`, {
+        const response = await apiFetch(`${API_BASE}/api/feedback`, {
           method: 'POST',
           headers,
           body: JSON.stringify({ title, description })

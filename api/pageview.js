@@ -41,9 +41,8 @@ function hktDateString(date = new Date()) {
 }
 
 // action "identity": attaches the signed-in account to an existing pageview.
-// School accounts are accepted everywhere; verified administrators (who may
-// sign in with a non-school Google account) are accepted too, so the admin
-// activity log can always show who opened the admin panel.
+// Only verified Google accounts on the school domain can attach their identity
+// to an analytics session; administrators use the same school-domain policy.
 // Merged in from the former api/pageview-identity.js to stay under the
 // Hobby plan's 12-function limit.
 async function attachIdentity(req, res, payload) {

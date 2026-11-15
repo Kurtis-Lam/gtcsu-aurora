@@ -1,3 +1,4 @@
+import { verifyRequestAppCheck } from './_lib/app-check.js';
 import crypto from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { guard, body, bearerToken, clientIp, hashIp } from './_lib/http.js';
@@ -38,6 +39,7 @@ function hongKongTime(date) {
 
 export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
+  if (!(await verifyRequestAppCheck(req, res))) return;
 
   try {
     const session = await authenticateGalleryUser(bearerToken(req));
