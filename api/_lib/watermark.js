@@ -18,7 +18,7 @@ const ELIGIBLE_LOW = 4;
 const ELIGIBLE_HIGH = 251;
 const MIN_VOTES = PAYLOAD_BITS * 3;
 const MIN_CONFIDENCE = 0.2;
-const MAX_PIXELS = 40_000_000;
+const MAX_PIXELS = 20_000_000;
 
 const BASIS = COEFFICIENTS.map(([u, v]) => {
   const table = new Float64Array(BLOCK * BLOCK);
