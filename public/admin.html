@@ -1731,6 +1731,7 @@
     }
 
     onAuthStateChanged(auth, async (user) => {
+      currentUser = null;
       stopListeners();
       if (!user) { showLogin(); return; }
 
@@ -1792,9 +1793,35 @@
       '/admin'
     ]);
 
+    function showAnalyticsLoadError(error) {
+      const preview = document.getElementById('log-preview-list');
+      if (!preview) return;
+
+      const code = typeof error?.code === 'string' ? error.code : 'unknown';
+      const message = code === 'permission-denied'
+        ? 'Access to page activity was denied. Sign out and back in with an administrator account, then try again.'
+        : `Page activity could not be loaded (${code}). Check the connection and retry.`;
+
+      preview.replaceChildren();
+      const text = document.createElement('p');
+      text.style.cssText = 'text-align:center;color:rgba(223,246,242,0.75);padding:14px 12px;';
+      text.textContent = message;
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'dest-btn';
+      retry.textContent = 'Retry';
+      retry.style.cssText = 'display:block;margin:0 auto 14px;';
+      retry.addEventListener('click', loadAnalyticsData);
+      preview.append(text, retry);
+    }
+
     function loadAnalyticsData() {
-      if (analyticsUnsub) analyticsUnsub();
+      if (analyticsUnsub) { analyticsUnsub(); analyticsUnsub = null; }
       if (analyticsRetryTimer) { clearTimeout(analyticsRetryTimer); analyticsRetryTimer = null; }
+      const preview = document.getElementById('log-preview-list');
+      if (preview && !allActivityLogs.length) {
+        preview.textContent = 'Connecting to live page activity…';
+      }
       analyticsUnsub = onSnapshot(collection(db, "pageviews"), (querySnapshot) => {
         analyticsRetryAttempts = 0;
         let totalViews = 0;
@@ -1905,16 +1932,15 @@
         renderLogPreview();
 
       }, (err) => {
-        console.error("Error subscribing to pageviews:", err);
-        const preview = document.getElementById('log-preview-list');
-        if (preview && !allActivityLogs.length) {
-          preview.innerHTML = '<p style="text-align:center; color:rgba(223,246,242,0.7); padding:20px;">Page activity is temporarily unavailable. Reconnecting…</p>';
-        }
+        console.error('Error subscribing to pageviews:', err);
+        showAnalyticsLoadError(err);
+
         const retryableErrors = new Set([
           'cancelled', 'deadline-exceeded', 'internal', 'resource-exhausted',
           'unavailable', 'unknown'
         ]);
         if (!retryableErrors.has(err?.code) || !currentUser || analyticsRetryTimer) return;
+
         const delay = Math.min(30000, 2000 * (2 ** Math.min(analyticsRetryAttempts, 4)));
         analyticsRetryAttempts += 1;
         analyticsRetryTimer = setTimeout(() => {
