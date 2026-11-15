@@ -65,14 +65,14 @@ if (path) {
     if (useBeacon && navigator.sendBeacon) {
       return navigator.sendBeacon(
         `${API_BASE}/api/pageview`,
-        new Blob([body], { type: 'application/json' })
+        new Blob([body], { type: 'text/plain;charset=UTF-8' })
       );
     }
 
     try {
       const response = await fetch(`${API_BASE}/api/pageview`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
         body,
         keepalive: true
       });
@@ -86,7 +86,7 @@ if (path) {
     try {
       const response = await fetch(`${API_BASE}/api/pageview`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
         body: JSON.stringify({ action: 'open', pageviewId, path }),
         keepalive: true
       });
@@ -108,11 +108,8 @@ if (path) {
       const token = await user.getIdToken();
       const response = await fetch(`${API_BASE}/api/pageview`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ action: 'identity', pageviewId, sessionToken }),
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify({ action: 'identity', pageviewId, sessionToken, idToken: token }),
         keepalive: true
       });
       if (!response.ok) identitySentFor = null;
