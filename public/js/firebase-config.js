@@ -34,9 +34,7 @@ export async function getAppCheckToken() {
   return result.token || null;
 }
 
-// Force Firestore's request/response transport for networks whose security
-// proxies interrupt WebChannel streaming. This is slightly less efficient
-// than streaming but keeps the admin activity listener reliable on those networks.
+// Use Firestore's HTTP long-polling transport on networks that interrupt WebChannel streams.
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true
 });
