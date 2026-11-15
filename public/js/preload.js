@@ -1,6 +1,6 @@
 import { collection, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import { db, auth } from './firebase-config.js';
-import { API_BASE } from './api-config.js';
+import { API_BASE, apiFetch } from './api-config.js';
 
 const NEWS_KEY = 'aurora_news_cache_v1';
 const PHOTOS_KEY = 'aurora_photos_cache_v1:';
@@ -157,7 +157,7 @@ export function preloadPhotos(user) {
       if (!isPhotoCacheSessionCurrent(user, generation)) return null;
       const token = await user.getIdToken();
       const [response, foldersSnap] = await Promise.all([
-        fetch(`${API_BASE}/api/list-photos`, {
+        apiFetch(`${API_BASE}/api/list-photos`, {
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
           credentials: 'omit',
@@ -199,7 +199,7 @@ async function warmThumbnails(user, images, generation) {
         if (await readCachedThumb(image.id)) continue;
         if (!isPhotoCacheSessionCurrent(user, generation)) return;
         const token = await user.getIdToken();
-        const response = await fetch(thumbCacheKey(image.id), {
+        const response = await apiFetch(thumbCacheKey(image.id), {
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
           credentials: 'omit',

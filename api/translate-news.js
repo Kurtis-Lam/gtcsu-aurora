@@ -1,3 +1,4 @@
+import { verifyRequestAppCheck } from './_lib/app-check.js';
 import { verifiedAdmin } from './_lib/auth.js';
 import { bearerToken, body, guard } from './_lib/http.js';
 import { getServices } from './_lib/firebase.js';
@@ -8,6 +9,7 @@ export const config = { maxDuration: 30 };
 
 export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
+  if (!(await verifyRequestAppCheck(req, res))) return;
 
   try {
     const admin = await verifiedAdmin(bearerToken(req));

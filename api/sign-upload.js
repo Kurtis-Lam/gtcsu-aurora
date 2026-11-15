@@ -1,3 +1,4 @@
+import { verifyRequestAppCheck } from './_lib/app-check.js';
 // POST /api/sign-upload  (admins only)
 // Returns a signed Cloudinary upload payload. Uploads are stored with
 // type=authenticated, so they can only be displayed through signed URLs that
@@ -17,6 +18,7 @@ cloudinary.config({
 
 export default async function handler(req, res) {
   if (!guard(req, res, 'POST')) return;
+  if (!(await verifyRequestAppCheck(req, res))) return;
 
   try {
     const admin = await verifiedAdmin(bearerToken(req));

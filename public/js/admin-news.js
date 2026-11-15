@@ -1,3 +1,5 @@
+import { apiFetch } from './api-config.js';
+
 import {
   addDoc,
   collection,
@@ -404,7 +406,7 @@ async function showLogs(newsId) {
 
 async function translateText(text) {
   const token = await services.auth.currentUser.getIdToken();
-  const response = await fetch(`${services.apiBase}/api/translate-news`, {
+  const response = await apiFetch(`${services.apiBase}/api/translate-news`, {
     method:'POST',
     headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
     body:JSON.stringify({ text, targetLanguage:'zh' })
@@ -457,7 +459,7 @@ async function translateChinese() {
 
 async function sendNewsEmails(newsId, report = true) {
   const token = await services.auth.currentUser.getIdToken();
-  const response = await fetch(`${services.apiBase}/api/publish-news`, {
+  const response = await apiFetch(`${services.apiBase}/api/publish-news`, {
     method:'POST',
     headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
     body:JSON.stringify({ newsId })

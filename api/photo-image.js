@@ -1,3 +1,4 @@
+import { verifyRequestAppCheck } from './_lib/app-check.js';
 import { guard, bearerToken } from './_lib/http.js';
 import { authenticateGalleryUser } from './_lib/auth.js';
 import { getServices } from './_lib/firebase.js';
@@ -6,6 +7,7 @@ import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 export default async function handler(req, res) {
   if (!guard(req, res, 'GET')) return;
+  if (!(await verifyRequestAppCheck(req, res))) return;
 
   try {
     const session = await authenticateGalleryUser(bearerToken(req));

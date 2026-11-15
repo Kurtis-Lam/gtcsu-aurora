@@ -4,6 +4,7 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js";
 
 export const firebaseConfig = {
   apiKey: "AIzaSyB-Uo9IaoMgXK5Kujj4c4idqUImpz_P5WY",
@@ -16,6 +17,23 @@ export const firebaseConfig = {
 };
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
+// reCAPTCHA Enterprise site keys are public. Set this after registering the
+// web app in Firebase App Check; leave blank until that setup is complete.
+export const APP_CHECK_SITE_KEY = '6LfXqCEuAAAAAMbjXsVA7oZS3lJhRr2MvT-1VGtC';
+export const appCheck = APP_CHECK_SITE_KEY.trim()
+  ? initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY.trim()),
+      isTokenAutoRefreshEnabled: true
+    })
+  : null;
+
+export async function getAppCheckToken() {
+  if (!appCheck) return null;
+  const result = await getToken(appCheck, false);
+  return result.token || null;
+}
+
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 

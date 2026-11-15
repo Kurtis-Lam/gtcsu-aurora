@@ -54,7 +54,7 @@ export function applyCors(req, res, methods = ['GET', 'POST']) {
   const allowed = Array.from(new Set([...methods, 'OPTIONS']));
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', allowed.join(', '));
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-AppCheck');
   res.setHeader('Access-Control-Max-Age', '600');
   return true;
 }
