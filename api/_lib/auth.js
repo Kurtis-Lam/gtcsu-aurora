@@ -39,7 +39,12 @@ export async function verifySchoolUser(idToken) {
 // The token must also be unrevoked and carry the signed admin claim.
 export async function verifiedAdmin(idToken) {
   const decoded = await verifyActiveToken(idToken);
-  if (!decoded || decoded.admin !== true || decoded.email_verified !== true) return null;
+  if (
+    !decoded
+    || decoded.admin !== true
+    || decoded.email_verified !== true
+    || decoded.firebase?.sign_in_provider !== 'google.com'
+  ) return null;
   const { projectId } = getServices();
   const url =
     `https://firestore.googleapis.com/v1/projects/${projectId}` +
