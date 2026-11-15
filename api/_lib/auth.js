@@ -1,3 +1,4 @@
+
 import { getServices } from './firebase.js';
 
 export const SCHOOL_DOMAIN = 'gtcollege.edu.hk';
@@ -30,13 +31,9 @@ export async function verifySchoolUser(idToken) {
   return ok ? decoded : null;
 }
 
-// Admins are defined ONLY in firestore.rules (isAdmin()). To ask "is this
-// caller an admin?" without duplicating that list, we read a doc that only
-// isAdmin() may read, using the caller's own ID token. The Firestore REST API
-// evaluates the rules for that user:
-//   200 / 404 (doc simply doesn't exist) -> rules allowed the read -> admin
-//   403                                  -> rules denied           -> not admin
-// The token must also be unrevoked and carry the signed admin claim.
+// Admins are defined by the signed admin claim plus verified Google-account
+// requirements in firestore.rules. Admin accounts may use any email domain;
+// the Firestore REST read independently confirms that deployed rules allow access.
 export async function verifiedAdmin(idToken) {
   const decoded = await verifyActiveToken(idToken);
   if (
