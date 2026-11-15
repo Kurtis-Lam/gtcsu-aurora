@@ -102,11 +102,21 @@ export function clientIp(req) {
 }
 
 export function hashIp(value) {
-  const secret = process.env.IP_HASH_SECRET;
+  let secret = process.env.IP_HASH_SECRET;
   if (!secret || Buffer.byteLength(secret, 'utf8') < 32) {
-    throw new Error('IP_HASH_SECRET must contain at least 32 bytes');
+    const analyticsSecret = process.env.ANALYTICS_HMAC_SECRET;
+    if (!analyticsSecret || Buffer.byteLength(analyticsSecret, 'utf8') < 32) {
+      throw new Error('IP_HASH_SECRET or ANALYTICS_HMAC_SECRET must contain at least 32 bytes');
+    }
+    // Derive a separate IP-hashing key; never reuse the analytics signing key directly.
+    secret = crypto.createHmac('sha256', analyticsSecret)
+      .update('gtcsu-aurora:ip-hash:v1')
+      .digest();
   }
-  return crypto.createHmac('sha256', secret).update(String(value)).digest('hex').slice(0, 24);
+  return crypto.createHmac('sha256', secret)
+    .update(String(value))
+    .digest('hex')
+    .slice(0, 24);
 }
 
 export function bearerToken(req) {
