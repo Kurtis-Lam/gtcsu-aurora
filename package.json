@@ -17,5 +17,8 @@
   },
   "allowScripts": {
     "protobufjs@7.6.6": true
+  },
+  "overrides": {
+    "jwks-rsa": "3.2.2"
   }
 }
