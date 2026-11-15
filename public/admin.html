@@ -1655,6 +1655,11 @@
 
     function showLogDetailsModal(info) {
       const modalBody = document.getElementById('detail-modal-body');
+      const cooldownHtml = info.isOnCooldown === true
+        ? '<span class="event-tag closed">On cooldown</span>'
+        : info.isOnCooldown === false
+          ? '<span class="event-tag opened">Ready</span>'
+          : 'N/A';
       modalBody.innerHTML = `
         <div class="detail-field">
           <label>${escapeHtml(info.idLabel || 'Supporter ID')}</label>
@@ -1667,7 +1672,7 @@
         </div>` : ''}
         <div class="detail-field">
           <label>Total Votes Cast</label>
-          <span style="color: var(--support-blue); font-weight: 700;">${info.clicks !== undefined ? info.clicks : 'N/A'}</span>
+          <span style="color: var(--support-blue); font-weight: 700;">${escapeHtml(info.clicks !== undefined ? String(info.clicks) : 'N/A')}</span>
         </div>
         <div class="detail-field">
           <label>Timestamp / Last Action</label>
@@ -1675,7 +1680,7 @@
         </div>
         <div class="detail-field">
           <label>Cooldown Status</label>
-          <div>${info.cooldownHtml || 'N/A'}</div>
+          <div>${cooldownHtml}</div>
         </div>
         ${info.note ? `
         <div class="detail-field">
@@ -2243,6 +2248,11 @@
     function supporterEmail(s) {
       return supporterKind(s) === 'account' ? (s.email || null) : (s.lastEmail || null);
     }
+
+    function supporterClicks(s) {
+      const value = Number(s?.clicks);
+      return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+    }
     function supporterCellHtml(s) {
       const kind = supporterKind(s);
       const email = supporterEmail(s);
@@ -2272,7 +2282,7 @@
         const isCooldownA = lastA ? (SUPPORT_COOLDOWN_MS - (Date.now() - lastA)) > 0 : false;
         const isCooldownB = lastB ? (SUPPORT_COOLDOWN_MS - (Date.now() - lastB)) > 0 : false;
 
-        if (currentSortMode === 'votes') return (b.clicks || 0) - (a.clicks || 0) || lastB - lastA;
+        if (currentSortMode === 'votes') return supporterClicks(b) - supporterClicks(a) || lastB - lastA;
         if (currentSortMode === 'cooldown') {
           if (isCooldownA !== isCooldownB) return isCooldownA ? -1 : 1;
           return lastB - lastA;
@@ -2295,7 +2305,7 @@
         rows += `
           <tr class="clickable-row" data-id="${escapeHtml(s.id)}">
             <td title="Click to view details">${supporterCellHtml(s)}</td>
-            <td>${s.clicks || 0}</td>
+            <td>${supporterClicks(s).toLocaleString()}</td>
             <td><strong style="color: var(--support-blue);">${lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A'}</strong></td>
             <td>${cooldownLabel}</td>
             <td onclick="event.stopPropagation();">
@@ -2325,10 +2335,10 @@
             emailLabel: kind === 'account' ? 'Account Email' : 'Last Signed-in Email',
             email: supporterEmail(s),
             deviceId: kind === 'account' ? s.id.replace(/^user_/, '') : s.id,
-            clicks: s.clicks || 0,
+            clicks: supporterClicks(s),
             timeStr: lastClickDate ? formatHKTTime(lastClickDate) : 'N/A',
             timeAgo: lastClickDate ? getRelativeTimeAgo(lastClickDate) : 'N/A',
-            cooldownHtml: remainingMs > 0 ? `<span class="event-tag closed">On cooldown</span>` : `<span class="event-tag opened">Ready</span>`,
+            isOnCooldown: remainingMs > 0,
             note: s.note
           });
         });
