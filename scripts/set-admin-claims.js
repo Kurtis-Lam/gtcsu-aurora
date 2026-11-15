@@ -22,9 +22,21 @@ try {
   
   const user = await auth.getUserByEmail(email);
   const claims = { ...(user.customClaims || {}) };
-  
-  if (revoke) delete claims.admin;
-  else claims.admin = true;
+
+  if (revoke) {
+    delete claims.admin;
+  } else {
+    const isVerifiedGoogleAccount =
+      typeof user.email === 'string'
+      && user.emailVerified === true
+      && user.disabled !== true
+      && Array.isArray(user.providerData)
+      && user.providerData.some((provider) => provider.providerId === 'google.com');
+    if (!isVerifiedGoogleAccount) {
+      throw new Error('Admin access can only be granted to an active, verified Google account.');
+    }
+    claims.admin = true;
+  }
   
   await auth.setCustomUserClaims(user.uid, claims);
   process.stdout.write(`${revoke ? 'Revoked' : 'Granted'} admin claim for ${email}. The user must sign out, sign in again, and refresh the ID token.\n`);
