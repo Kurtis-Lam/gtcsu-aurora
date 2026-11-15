@@ -1,22 +1,35 @@
 import crypto from 'node:crypto';
 
-const STATIC_ORIGINS = [
+const STATIC_ORIGINS = new Set([
   'https://gtcsu-aurora.web.app',
   'https://gtcsu-aurora.firebaseapp.com'
-];
+]);
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+function normaliseOrigin(value) {
+  if (typeof value !== 'string' || value.length > 512) return null;
+  try {
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
 
 const extraOrigins = () =>
   (process.env.ALLOWED_ORIGINS || '')
     .split(',')
-    .map((s) => s.trim().replace(/\/+$/, ''))
+    .map((value) => normaliseOrigin(value.trim()))
     .filter(Boolean);
 
 function originAllowed(origin) {
+  const normalised = normaliseOrigin(origin);
+  if (!normalised) return false;
   return (
-    STATIC_ORIGINS.includes(origin) ||
-    extraOrigins().includes(origin) ||
-    ((process.env.VERCEL_ENV === 'development' || (!process.env.VERCEL_ENV && process.env.NODE_ENV === 'development')) && LOCAL_ORIGIN.test(origin))
+    STATIC_ORIGINS.has(normalised) ||
+    extraOrigins().includes(normalised) ||
+    ((process.env.VERCEL_ENV === 'development' || (!process.env.VERCEL_ENV && process.env.NODE_ENV === 'development')) && LOCAL_ORIGIN.test(normalised))
   );
 }
 
@@ -52,7 +65,7 @@ export function applyCors(req, res, methods = ['GET', 'POST']) {
   }
 
   const allowed = Array.from(new Set([...methods, 'OPTIONS']));
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Origin', normaliseOrigin(origin));
   res.setHeader('Access-Control-Allow-Methods', allowed.join(', '));
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-AppCheck');
   res.setHeader('Access-Control-Max-Age', '600');
@@ -132,10 +145,11 @@ export function body(req) {
     }
     return clean;
   }
-  if (typeof raw === 'string') {
-    if (Buffer.byteLength(raw) > MAX_BODY_BYTES) return {};
+  if (typeof raw === 'string' || Buffer.isBuffer(raw)) {
+    const text = Buffer.isBuffer(raw) ? raw.toString('utf8') : raw;
+    if (Buffer.byteLength(text) > MAX_BODY_BYTES) return {};
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(text);
       if (!plainObject(parsed)) return {};
       const clean = Object.create(null);
       for (const key of Object.keys(parsed)) {
