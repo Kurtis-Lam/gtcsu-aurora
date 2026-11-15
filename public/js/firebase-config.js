@@ -20,7 +20,7 @@ export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfi
 
 // reCAPTCHA Enterprise site keys are public. Set this after registering the
 // web app in Firebase App Check; leave blank until that setup is complete.
-export const APP_CHECK_SITE_KEY = '';
+export const APP_CHECK_SITE_KEY = '6LfXqCEuAAAAAMbjXsVA7oZS3lJhRr2MvT-1VGtC';
 export const appCheck = APP_CHECK_SITE_KEY.trim()
   ? initializeAppCheck(app, {
       provider: new ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY.trim()),
