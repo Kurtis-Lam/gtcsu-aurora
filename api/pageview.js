@@ -46,7 +46,10 @@ function hktDateString(date = new Date()) {
 // Merged in from the former api/pageview-identity.js to stay under the
 // Hobby plan's 12-function limit.
 async function attachIdentity(req, res, payload) {
-  const token = bearerToken(req);
+  // Accept the ID token in the body as well as the Authorization header. The
+  // body form lets the browser use a CORS-safelisted content type, avoiding a
+  // fragile OPTIONS preflight for this small, same-origin-allowlisted API call.
+  const token = bearerToken(req) || (typeof payload.idToken === 'string' ? payload.idToken : null);
   const user = (await verifySchoolUser(token)) || (await verifiedAdmin(token));
   if (!user) return res.status(403).json({ error: 'Signed-in account required.' });
 
