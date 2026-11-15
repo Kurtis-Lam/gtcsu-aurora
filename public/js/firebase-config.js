@@ -2,7 +2,7 @@
 // These values are NOT secrets: they identify the Firebase project and ship
 // to every browser. Access is enforced by firestore.rules, not by hiding them.
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import { initializeFirestore } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js";
 
@@ -34,7 +34,12 @@ export async function getAppCheckToken() {
   return result.token || null;
 }
 
-export const db = getFirestore(app);
+// Force Firestore's request/response transport for networks whose security
+// proxies interrupt WebChannel streaming. This is slightly less efficient
+// than streaming but keeps the admin activity listener reliable on those networks.
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true
+});
 export const auth = getAuth(app);
 
 // Used by the admin portal only. Who counts as an admin is decided by
