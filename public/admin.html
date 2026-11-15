@@ -1445,6 +1445,8 @@
     const SUPPORT_COOLDOWN_MS = 10 * 60 * 1000;
     let currentUser = null;
     let analyticsUnsub = null;
+    let analyticsRetryTimer = null;
+    let analyticsRetryAttempts = 0;
     let photoAuditUnsubs = [];
     let photoAuditLoaded = false;
     let photoAuditLogs = [];
@@ -1715,6 +1717,8 @@
 
     function stopListeners() {
       if (analyticsUnsub) { analyticsUnsub(); analyticsUnsub = null; }
+      if (analyticsRetryTimer) { clearTimeout(analyticsRetryTimer); analyticsRetryTimer = null; }
+      analyticsRetryAttempts = 0;
       if (supportersUnsubCounter) { supportersUnsubCounter(); supportersUnsubCounter = null; }
       if (supportersUnsubList) { supportersUnsubList(); supportersUnsubList = null; }
       photoAuditUnsubs.forEach(unsubscribe => unsubscribe());
@@ -1790,7 +1794,9 @@
 
     function loadAnalyticsData() {
       if (analyticsUnsub) analyticsUnsub();
+      if (analyticsRetryTimer) { clearTimeout(analyticsRetryTimer); analyticsRetryTimer = null; }
       analyticsUnsub = onSnapshot(collection(db, "pageviews"), (querySnapshot) => {
+        analyticsRetryAttempts = 0;
         let totalViews = 0;
         let totalTimeSeconds = 0;
 
@@ -1898,7 +1904,24 @@
         renderCharts(pageMetrics);
         renderLogPreview();
 
-      }, (err) => console.error("Error subscribing to pageviews:", err));
+      }, (err) => {
+        console.error("Error subscribing to pageviews:", err);
+        const preview = document.getElementById('log-preview-list');
+        if (preview && !allActivityLogs.length) {
+          preview.innerHTML = '<p style="text-align:center; color:rgba(223,246,242,0.7); padding:20px;">Page activity is temporarily unavailable. Reconnecting…</p>';
+        }
+        const retryableErrors = new Set([
+          'cancelled', 'deadline-exceeded', 'internal', 'resource-exhausted',
+          'unavailable', 'unknown'
+        ]);
+        if (!retryableErrors.has(err?.code) || !currentUser || analyticsRetryTimer) return;
+        const delay = Math.min(30000, 2000 * (2 ** Math.min(analyticsRetryAttempts, 4)));
+        analyticsRetryAttempts += 1;
+        analyticsRetryTimer = setTimeout(() => {
+          analyticsRetryTimer = null;
+          if (currentUser && auth.currentUser?.uid === currentUser.uid) loadAnalyticsData();
+        }, delay);
+      });
     }
     document.querySelectorAll('#range-filter-container .dest-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
