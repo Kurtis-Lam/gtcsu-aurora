@@ -14,9 +14,17 @@ const TOKEN_RE = /^[a-f0-9]{64}$/;
 const MAX_DURATION = 86400;
 
 function analyticsSecret() {
-  const secret = process.env.ANALYTICS_HMAC_SECRET;
-  if (!secret || Buffer.byteLength(secret, 'utf8') < 32) throw new Error('ANALYTICS_HMAC_SECRET is not configured securely');
-  return secret;
+  const analyticsKey = process.env.ANALYTICS_HMAC_SECRET;
+  if (analyticsKey && Buffer.byteLength(analyticsKey, 'utf8') >= 32) return analyticsKey;
+
+  const ipHashKey = process.env.IP_HASH_SECRET;
+  if (ipHashKey && Buffer.byteLength(ipHashKey, 'utf8') >= 32) {
+    return crypto.createHmac('sha256', ipHashKey)
+      .update('gtcsu-aurora:pageview-session-signing:v1')
+      .digest();
+  }
+
+  throw new Error('ANALYTICS_HMAC_SECRET or IP_HASH_SECRET must contain at least 32 bytes');
 }
 
 function signId(id) {
@@ -46,9 +54,6 @@ function hktDateString(date = new Date()) {
 // Merged in from the former api/pageview-identity.js to stay under the
 // Hobby plan's 12-function limit.
 async function attachIdentity(req, res, payload) {
-  // Accept the ID token in the body as well as the Authorization header. The
-  // body form lets the browser use a CORS-safelisted content type, avoiding a
-  // fragile OPTIONS preflight for this small, same-origin-allowlisted API call.
   const token = bearerToken(req) || (typeof payload.idToken === 'string' ? payload.idToken : null);
   const user = (await verifySchoolUser(token)) || (await verifiedAdmin(token));
   if (!user) return res.status(403).json({ error: 'Signed-in account required.' });
@@ -93,6 +98,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid analytics request.' });
     }
 
+    // Resolve the signing key before writing anything. Otherwise a missing
+    // key can leave a pageview document that the browser cannot update.
+    const sessionToken = action === 'open' ? signId(pageviewId) : null;
     const { db } = getServices();
     const ref = db.collection('pageviews').doc(pageviewId);
 
@@ -117,7 +125,7 @@ export default async function handler(req, res) {
         }
         throw error;
       }
-      return res.status(200).json({ ok: true, token: signId(pageviewId) });
+      return res.status(200).json({ ok: true, token: sessionToken });
     }
 
     if (!validToken(pageviewId, payload.token)) {
