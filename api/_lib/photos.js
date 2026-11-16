@@ -13,14 +13,38 @@ export const IMAGE_DOC_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 export const cloudinaryClient = cloudinary;
 
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
+const IMAGE_DOC_CACHE_MS = 60 * 1000;
+const VARIANT_CACHE_MS = 10 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 2000;
+const imageDocCache = new Map();
+const variantUrlCache = new Map();
+
+function readCache(map, key) {
+  const entry = map.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    map.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function writeCache(map, key, value, ttlMs) {
+  if (map.size >= CACHE_MAX_ENTRIES) map.clear();
+  map.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
 
 export async function getGalleryImage(imageId) {
   if (typeof imageId !== 'string' || !IMAGE_DOC_ID_PATTERN.test(imageId)) return null;
+  const cachedImage = readCache(imageDocCache, imageId);
+  if (cachedImage) return cachedImage;
   const snapshot = await getServices().db.collection('galleryImages').doc(imageId).get();
   if (!snapshot.exists) return null;
   const data = snapshot.data() || {};
   if (typeof data.publicId !== 'string' || !GALLERY_ID_PATTERN.test(data.publicId)) return null;
-  return { ...data, id: snapshot.id };
+  const image = { ...data, id: snapshot.id };
+  writeCache(imageDocCache, imageId, image, IMAGE_DOC_CACHE_MS);
+  return image;
 }
 
 function fixedTransformation(variant) {
@@ -33,12 +57,16 @@ function fixedTransformation(variant) {
 
 export async function getOrCreatePhotoVariantUrl(image, variant) {
   if (!['thumb', 'view'].includes(variant)) throw new Error('Unsupported photo variant');
+  const memoryKey = `${image.id}_${variant}_${image.publicId}`;
+  const memoryUrl = readCache(variantUrlCache, memoryKey);
+  if (memoryUrl) return memoryUrl;
   const db = getServices().db;
   const cacheRef = db.collection('photoDerivativeCache').doc(`${image.id}_${variant}`);
   const cached = await cacheRef.get();
   if (cached.exists) {
     const value = cached.data() || {};
     if (value.publicId === image.publicId && typeof value.secureUrl === 'string' && value.secureUrl.startsWith('https://')) {
+      writeCache(variantUrlCache, memoryKey, value.secureUrl, VARIANT_CACHE_MS);
       return value.secureUrl;
     }
   }
@@ -61,6 +89,7 @@ export async function getOrCreatePhotoVariantUrl(image, variant) {
     format: eager.format || 'jpg',
     bytes: Number(eager.bytes || 0)
   });
+  writeCache(variantUrlCache, memoryKey, eager.secure_url, VARIANT_CACHE_MS);
   return eager.secure_url;
 }
 
