@@ -1,7 +1,4 @@
 #!/bin/sh
-# Refresh LAST_UPDATED in public/js/info.js and include it in this commit.
-# Never blocks a commit: if the script fails, the commit goes ahead unchanged.
-if node scripts/version.js stamp; then
-  git add public/js/info.js
-fi
-exit 0
+# Refresh LAST_UPDATED on every commit. Never touches APP_VERSION
+# (versions are bumped manually with: npm run bump <patch|minor|major|x.y.z>).
+node scripts/version.js stamp && git add public/js/info.js
