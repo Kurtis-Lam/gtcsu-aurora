@@ -11,7 +11,10 @@ let services = null;
 
 function createFirestore(app) {
   try {
-    return initializeFirestore(app, {});
+    // preferRest: use HTTP/1.1 instead of gRPC. gRPC channels go stale when a
+    // serverless instance is frozen and thawed, and the next Firestore call then
+    // hangs until Vercel kills the function ("Task timed out after 30 seconds").
+    return initializeFirestore(app, { preferRest: true });
   } catch (error) {
     if (/already (been )?initiali[sz]ed/i.test(String(error?.message))) return getFirestore(app);
     throw error;
