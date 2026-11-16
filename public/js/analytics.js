@@ -133,9 +133,11 @@ if (path) {
     updateDuration();
   });
 
+  // One backup write a minute (was every 15 s) keeps Firestore writes within quota;
+  // the real duration is still sent on blur and on exit.
   setInterval(() => {
     if (isEngaged()) send('update');
-  }, 15000);
+  }, 60000);
 
   window.addEventListener('pagehide', () => {
     refreshEngagementState();
