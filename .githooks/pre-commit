@@ -1,4 +1,0 @@
-#!/bin/sh
-# Refresh LAST_UPDATED on every commit. Never touches APP_VERSION
-# (versions are bumped manually with: npm run bump <patch|minor|major|x.y.z>).
-node scripts/version.js stamp && git add public/js/info.js
