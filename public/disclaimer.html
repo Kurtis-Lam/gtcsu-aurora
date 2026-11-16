@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora - Disclaimer</title>
+<link rel="icon" type="image/jpeg" href="assets/aurora-logo.png">
+
+<script type="module" src="js/analytics.js"></script>
+
+<!-- Asset & Component Preloading --> 
+<link rel="preload" href="panel.html" as="fetch" crossorigin>
+<link rel="preload" href="assets/aurora-logo.png" as="image">
+<link rel="preload" href="assets/background.mp4" as="video" type="video/mp4">
+
+<script type="module" src="js/load-components.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --void: #050b12;
+    --deep: #0a1a20;
+    --ink: #dff6f2;
+    --aurora-teal: #2fe6b8;
+    --aurora-cyan: #7fe9f0;
+    --aurora-violet: #8f8cf0;
+    --star: #ffffff;
+    --line: rgba(223, 246, 242, 0.18);
+    --glass-bg: rgba(10, 26, 32, 0.65);
+    --glass-border: rgba(127, 233, 240, 0.22);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    min-height: 100%;
+    background: var(--void);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+  }
+
+  body {
+    min-height: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .navbar, .page-container, footer, .lang-toggle {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.35s ease-in, transform 0.35s ease-in;
+    pointer-events: none;
+  }
+
+  body.is-loaded .navbar,
+  body.is-loaded .page-container,
+  body.is-loaded footer,
+  body.is-loaded .lang-toggle {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.is-loaded .navbar { transition-delay: 0.15s; }
+  body.is-loaded .page-container { transition-delay: 0.35s; }
+  body.is-loaded footer, body.is-loaded .lang-toggle { transition-delay: 0.55s; }
+
+  .fade-in {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .fade-in.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 4vw; background: rgba(6, 13, 22, 0.75);
+    border-bottom: 1px solid rgba(223, 246, 242, 0.12);
+  }
+
+  .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .nav-logo { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(127, 233, 240, 0.4); }
+  .nav-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 1.15rem; color: #eafffb; }
+  .nav-links { display: flex; align-items: center; gap: 1rem; }
+  .nav-btn {
+    color: rgba(223, 246, 242, 0.85); text-decoration: none; font-size: 0.9rem;
+    font-weight: 500; padding: 8px 16px; border-radius: 999px; border: 1px solid transparent; transition: all 0.3s ease;
+  }
+  .nav-btn:hover, .nav-btn.active {
+    color: #ffffff; border-color: rgba(127, 233, 240, 0.4); background: rgba(127, 233, 240, 0.1);
+  }
+
+  .hamburger-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    padding: 0;
+    z-index: 102;
+  }
+
+  .hamburger-btn span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--ink);
+    border-radius: 2px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  }
+
+  .hamburger-btn.open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .hamburger-btn.open span:nth-child(2) { opacity: 0; }
+  .hamburger-btn.open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 11, 18, 0.7);
+    z-index: 98;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+  }
+
+  .nav-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .lang-toggle {
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    display: flex; align-items: center; gap: 8px; padding: 10px 18px;
+    border-radius: 999px; border: 1px solid rgba(127, 233, 240, 0.35);
+    background: rgba(10, 26, 32, 0.75);
+    color: #eafffb; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); transition: all 0.35s ease;
+  }
+  .lang-toggle:hover {
+    border-color: rgba(127, 233, 240, 0.8); background: rgba(18, 42, 50, 0.85);
+    box-shadow: 0 0 16px rgba(46, 230, 184, 0.3); transform: translateY(-2px);
+  }
+
+  .sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--void); }
+  .bg-video {
+    position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%;
+    transform: translate(-50%, -50%); object-fit: cover;
+  }
+  .sky-overlay {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at center, rgba(5, 11, 18, 0.25) 0%, rgba(5, 11, 18, 0.75) 100%),
+                linear-gradient(180deg, rgba(5, 11, 18, 0.3) 0%, rgba(5, 11, 18, 0.8) 100%);
+    pointer-events: none;
+  }
+
+  .page-container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 140px 5vw 80px; }
+  .header-section { text-align: center; margin-bottom: 50px; }
+  .page-subtitle { font-size: 0.85rem; letter-spacing: 0.2em; color: var(--aurora-cyan); text-transform: uppercase; margin-bottom: 12px; }
+  .page-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 5vw, 3.8rem); color: #ffffff; margin-bottom: 16px; }
+  .page-description { max-width: 720px; margin: 0 auto; font-size: 1.05rem; line-height: 1.8; color: rgba(223, 246, 242, 0.85); }
+
+  .disclaimer-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 28px 32px; margin: 0 auto 28px; max-width: 820px; }
+  .disclaimer-card h2 { font-family: 'Cinzel', serif; font-size: 1.25rem; color: var(--aurora-teal); margin-bottom: 14px; }
+  .disclaimer-card ul { padding-left: 20px; }
+  .disclaimer-card li { font-size: 0.95rem; line-height: 1.75; color: rgba(223, 246, 242, 0.88); margin-bottom: 10px; }
+  .disclaimer-note { max-width: 820px; margin: 0 auto 28px; font-size: 0.85rem; line-height: 1.6; color: rgba(223, 246, 242, 0.6); text-align: center; }
+
+  footer { position: relative; z-index: 1; text-align: center; padding: 0 6vw 40px; font-size: 0.78rem; color: rgba(223, 246, 242, 0.4); }
+
+  @media (max-width: 768px) {
+    .hamburger-btn { display: flex; }
+    .navbar { justify-content: flex-start; gap: 16px; padding: 0.8rem 1rem; }
+    .nav-title { display: inline-block; }
+    .nav-links {
+      position: fixed; top: 0; left: 0; width: 260px; height: 100vh; height: 100dvh;
+      background: rgba(10, 26, 32, 0.95);
+      border-right: 1px solid rgba(127, 233, 240, 0.25); box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+      flex-direction: column; align-items: flex-start; padding: 80px 20px 24px; gap: 0.8rem;
+      transform: translateX(-100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); z-index: 99;
+    }
+    .nav-links.active { transform: translateX(0); }
+    .nav-btn { width: 100%; text-align: left; padding: 10px 16px; font-size: 0.95rem; }
+    .lang-toggle { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 0.8rem; }
+    .disclaimer-card { padding: 20px 18px; }
+  }
+</style>
+</head>
+<body class="is-loaded">
+
+  <div id="panel-container"></div>
+
+  <div id="background-container"></div>
+
+  <main class="page-container">
+    <div class="header-section fade-in">
+      <p class="page-subtitle i18n" data-en="Operator's Undertaking" data-zh="營運者承諾書">Operator's Undertaking</p>
+      <h1 class="page-title i18n" data-en="Disclaimer" data-zh="免責聲明">Disclaimer</h1>
+      <p class="page-description i18n" data-en="How this student-run website is operated under the school's supervision." data-zh="本學生營運網站如何在學校監督下運作。">How this student-run website is operated under the school's supervision.</p>
+    </div>
+
+    <p class="disclaimer-note i18n" data-en="This website is operated by student members of the Students' Union Cabinet Aurora and is not the official website, agent or representative of G.T. (Ellen Yeung) College." data-zh="本網站由學生會內閣 Aurora 之學生成員營運，並非優才（楊殷有娣）書院之官方網站、代理或代表。">This website is operated by student members of the Students' Union Cabinet Aurora and is not the official website, agent or representative of G.T. (Ellen Yeung) College.</p>
+
+          <div class="disclaimer-card fade-in">
+<h2 class="i18n" data-en="1. The school makes the final decision" data-zh="1. 學校擁有最終決定權">1. The school makes the final decision</h2>
+          <ul>
+            <li class="i18n" data-en="I understand that the Website is a student project operated under the school&#x27;s supervision, and that the school has the final decision on whether the Website goes live, continues to operate, is suspended or is terminated." data-zh="本人明白本網站為在學校監督下營運的學生項目，學校對網站是否上線、繼續營運、暫停或終止擁有最終決定權。">I understand that the Website is a student project operated under the school&#x27;s supervision, and that the school has the final decision on whether the Website goes live, continues to operate, is suspended or is terminated.</li>
+            <li class="i18n" data-en="I agree that the school, the Teacher-in-Charge or their designated person may at any time require me to amend, suspend, take down or delete any content or feature of the Website. I will act promptly on such a request." data-zh="本人同意學校、負責老師或其指定人員可隨時要求本人修改、暫停、下架或刪除網站的任何內容或功能，本人將迅速跟進。">I agree that the school, the Teacher-in-Charge or their designated person may at any time require me to amend, suspend, take down or delete any content or feature of the Website. I will act promptly on such a request.</li>
+            <li class="i18n" data-en="I will not treat my technical administrative access as authority to approve content or decide operating arrangements myself. Content that requires teacher or school approval will be published only after approval is given." data-zh="本人不會把技術管理權限視為批准內容或自行決定營運安排的權力。需經老師或學校批准的內容，須在獲批准後方會發布。">I will not treat my technical administrative access as authority to approve content or decide operating arrangements myself. Content that requires teacher or school approval will be published only after approval is given.</li>
+          </ul>
+          </div>
+          <div class="disclaimer-card fade-in">
+<h2 class="i18n" data-en="2. Account and system ownership" data-zh="2. 帳戶及系統擁有權">2. Account and system ownership</h2>
+          <ul>
+            <li class="i18n" data-en="I will add, remove or change administrators only with the approval of the Teacher-in-Charge and School IT." data-zh="本人只會在負責老師及學校資訊科技人員批准下，新增、移除或更改管理員。">I will add, remove or change administrators only with the approval of the Teacher-in-Charge and School IT.</li>
+            <li class="i18n" data-en="I will not share any administrator account, secret or access right with any unapproved person." data-zh="本人不會向未獲批准的人士分享任何管理員帳戶、密鑰或存取權限。">I will not share any administrator account, secret or access right with any unapproved person.</li>
+          </ul>
+          </div>
+          <div class="disclaimer-card fade-in">
+<h2 class="i18n" data-en="3. Content and approval workflow" data-zh="3. 內容及審批流程">3. Content and approval workflow</h2>
+          <ul>
+            <li class="i18n" data-en="I will follow the agreed workflow: the content team drafts, the Website PIC conducts the first review, the teacher or school reviews where required, and an authorized person publishes." data-zh="本人會遵從既定流程：內容小組撰稿，網站負責人作首次審閱，需要時由老師或學校審閱，最後由獲授權人士發布。">I will follow the agreed workflow: the content team drafts, the Website PIC conducts the first review, the teacher or school reviews where required, and an authorized person publishes.</li>
+            <li class="i18n" data-en="I will not publish on my own any content that requires teacher or school approval, including sensitive matters, official announcements, financial information and content involving students&#x27; personal data." data-zh="本人不會自行發布需經老師或學校批准的內容，包括敏感事項、正式公告、財務資料及涉及學生個人資料的內容。">I will not publish on my own any content that requires teacher or school approval, including sensitive matters, official announcements, financial information and content involving students&#x27; personal data.</li>
+            <li class="i18n" data-en="If the school considers any content inappropriate, inaccurate or unauthorized, I will immediately take it down or correct it and record the reason." data-zh="若學校認為任何內容不適當、不準確或未獲授權，本人會立即下架或更正，並記錄原因。">If the school considers any content inappropriate, inaccurate or unauthorized, I will immediately take it down or correct it and record the reason.</li>
+          </ul>
+          </div>
+          <div class="disclaimer-card fade-in">
+<h2 class="i18n" data-en="4. Data, privacy and third-party services" data-zh="4. 資料、私隱及第三方服務">4. Data, privacy and third-party services</h2>
+          <ul>
+            <li class="i18n" data-en="I will process data only for purposes necessary to operate the Website and will keep data collection to a minimum." data-zh="本人只會為營運網站所需的目的處理資料，並將資料收集減至最低。">I will process data only for purposes necessary to operate the Website and will keep data collection to a minimum.</li>
+            <li class="i18n" data-en="I understand that some features involve third-party services (including Firebase, Vercel, Cloudinary, OpenRouter and Gmail). I will continue using them only after the school approves the services and data flows. If the school does not approve, I will disable or modify the relevant features." data-zh="本人明白部分功能涉及第三方服務（包括 Firebase、Vercel、Cloudinary、OpenRouter 及 Gmail）。本人只會在學校批准有關服務及資料流後繼續使用；若學校不批准，本人會停用或修改相關功能。">I understand that some features involve third-party services (including Firebase, Vercel, Cloudinary, OpenRouter and Gmail). I will continue using them only after the school approves the services and data flows. If the school does not approve, I will disable or modify the relevant features.</li>
+            <li class="i18n" data-en="I will cooperate with the school in setting data-retention and deletion policies (including photo-download records, support records, analytics and subscription data), and implement and test them as approved." data-zh="本人會配合學校制定資料保留及刪除政策（包括相片下載紀錄、支援紀錄、分析數據及訂閱資料），並按批准內容實施及測試。">I will cooperate with the school in setting data-retention and deletion policies (including photo-download records, support records, analytics and subscription data), and implement and test them as approved.</li>
+            <li class="i18n" data-en="I will make clear to users that feedback submissions are linked to their school accounts, and I will not describe the feedback form as anonymous until a genuinely anonymous feature has been built and tested." data-zh="本人會向用戶清楚說明意見提交與其學校帳戶有關聯；在真正匿名的功能開發及測試完成前，本人不會把意見表格稱為匿名。">I will make clear to users that feedback submissions are linked to their school accounts, and I will not describe the feedback form as anonymous until a genuinely anonymous feature has been built and tested.</li>
+            <li class="i18n" data-en="I will not use data collected through the Website for any purpose beyond its operation, and I will not disclose it to any third party without the school&#x27;s approval." data-zh="本人不會將透過網站收集的資料用於營運以外的任何用途，亦不會在未經學校批准下向任何第三方披露。">I will not use data collected through the Website for any purpose beyond its operation, and I will not disclose it to any third party without the school&#x27;s approval.</li>
+          </ul>
+          </div>
+          <div class="disclaimer-card fade-in">
+<h2 class="i18n" data-en="5. Photo-download records and investigations" data-zh="5. 相片下載紀錄及調查">5. Photo-download records and investigations</h2>
+          <ul>
+            <li class="i18n" data-en="I understand that the watermark and download records are tracing aids, not conclusive proof. They can support an investigation but cannot by themselves prove that a particular student edited or posted an image." data-zh="本人明白水印及下載紀錄只是追蹤輔助工具，並非確證。它們可支援調查，但本身不能證明某名學生編輯或發布了圖片。">I understand that the watermark and download records are tracing aids, not conclusive proof. They can support an investigation but cannot by themselves prove that a particular student edited or posted an image.</li>
+            <li class="i18n" data-en="I will not publicly accuse any student on the basis of a watermark or download record alone. Any investigation and any follow-up action are for the school to decide under school procedures." data-zh="本人不會僅憑水印或下載紀錄公開指控任何學生。任何調查及跟進行動，均由學校按校方程序決定。">I will not publicly accuse any student on the basis of a watermark or download record alone. Any investigation and any follow-up action are for the school to decide under school procedures.</li>
+            <li class="i18n" data-en="I will access, export or use photo-download records only when requested or approved by the Teacher-in-Charge, and I will restrict access to investigation materials." data-zh="本人只會在負責老師要求或批准下，查閱、匯出或使用相片下載紀錄，並會限制調查資料的存取。">I will access, export or use photo-download records only when requested or approved by the Teacher-in-Charge, and I will restrict access to investigation materials.</li>
+          </ul>
+          </div>
+          <div class="disclaimer-card fade-in">
+<h2 class="i18n" data-en="6. Security and incident response" data-zh="6. 安全及事故應對">6. Security and incident response</h2>
+          <ul>
+            <li class="i18n" data-en="I understand that no website can be guaranteed to be unhackable, and I will not give the school or students any such guarantee." data-zh="本人明白沒有任何網站能保證不會被入侵，亦不會向學校或學生作出此等保證。">I understand that no website can be guaranteed to be unhackable, and I will not give the school or students any such guarantee.</li>
+            <li class="i18n" data-en="I will maintain security on an ongoing basis, including weekly, monthly and post-release checks, and test changes before release." data-zh="本人會持續維護安全，包括每週、每月及發布後的檢查，並在發布前測試更改。">I will maintain security on an ongoing basis, including weekly, monthly and post-release checks, and test changes before release.</li>
+            <li class="i18n" data-en="If a security or privacy incident occurs (for example a compromised account, data exposure, leaked secret, unauthorized access or service outage), I will immediately notify the Teacher-in-Charge and School IT, and as needed contain the impact, preserve records and assist recovery." data-zh="若發生安全或私隱事故（例如帳戶被入侵、資料外洩、密鑰洩漏、未經授權存取或服務中斷），本人會立即通知負責老師及學校資訊科技人員，並按需要控制影響、保存紀錄及協助復原。">If a security or privacy incident occurs (for example a compromised account, data exposure, leaked secret, unauthorized access or service outage), I will immediately notify the Teacher-in-Charge and School IT, and as needed contain the impact, preserve records and assist recovery.</li>
+            <li class="i18n" data-en="I will address the priority findings listed in the report as soon as possible (admin-claim governance, the public security report page, feedback privacy wording, data retention, third-party data processing, upload limits, secret hygiene and production verification), and I will cooperate with School IT on verification and testing." data-zh="本人會盡快處理報告所列的優先事項（管理員權限治理、公開的安全報告頁面、意見私隱字眼、資料保留、第三方資料處理、上傳限制、密鑰管理及正式環境驗證），並配合學校資訊科技人員進行驗證及測試。">I will address the priority findings listed in the report as soon as possible (admin-claim governance, the public security report page, feedback privacy wording, data retention, third-party data processing, upload limits, secret hygiene and production verification), and I will cooperate with School IT on verification and testing.</li>
+          </ul>
+          </div>
+          <div class="disclaimer-card fade-in">
+<h2 class="i18n" data-en="7. Handover and termination" data-zh="7. 交接及終止">7. Handover and termination</h2>
+          <ul>
+            <li class="i18n" data-en="I will keep complete technical documentation and change records, and on handover or termination I will transfer source code, documentation and access rights, rotate the relevant credentials and confirm that the school can continue to control the Website." data-zh="本人會保存完整技術文件及變更紀錄；於交接或終止時，移交源代碼、文件及存取權限，更換相關憑證，並確認學校能繼續掌控網站。">I will keep complete technical documentation and change records, and on handover or termination I will transfer source code, documentation and access rights, rotate the relevant credentials and confirm that the school can continue to control the Website.</li>
+            <li class="i18n" data-en="If I leave my role, graduate or cease to be responsible for the Website, I will cooperate with the school on handover and remove my own administrative and access rights." data-zh="若本人離任、畢業或不再負責網站，本人會配合學校交接，並移除本人的管理及存取權限。">If I leave my role, graduate or cease to be responsible for the Website, I will cooperate with the school on handover and remove my own administrative and access rights.</li>
+          </ul>
+          </div>
+          <div class="disclaimer-card fade-in">
+<h2 class="i18n" data-en="8. Declaration" data-zh="8. 聲明">8. Declaration</h2>
+          <ul>
+            <li class="i18n" data-en="I confirm that this undertaking and the &quot;Website Security, Photo Traceability &amp; Operations Plan&quot; are based on the code and configuration I developed. I understand that the plan is not a penetration-test or compliance certificate, and that approval must be completed after School IT verifies the live deployment." data-zh="本人確認本承諾書及《網站安全、相片可追溯性及營運計劃》乃根據本人開發的代碼及配置而撰寫。本人明白該計劃並非滲透測試或合規證書，且須在學校資訊科技人員驗證正式部署後方可完成批准。">I confirm that this undertaking and the &quot;Website Security, Photo Traceability &amp; Operations Plan&quot; are based on the code and configuration I developed. I understand that the plan is not a penetration-test or compliance certificate, and that approval must be completed after School IT verifies the live deployment.</li>
+            <li class="i18n" data-en="I will operate the Website honestly, transparently and responsibly, and I accept the school&#x27;s supervision, review and instructions." data-zh="本人會以誠實、透明及負責任的態度營運網站，並接受學校的監督、審閱及指示。">I will operate the Website honestly, transparently and responsibly, and I accept the school&#x27;s supervision, review and instructions.</li>
+          </ul>
+          </div>
+  </main>
+
+  <footer class="i18n" data-en="G.T. (Ellen Yeung) College - 2026–27 Student Union Aurora" data-zh="優才（楊殷有娣）書院  -  2026–27 學生會 Aurora">
+    G.T. (Ellen Yeung) College - 2026–27 Student Union Aurora
+  </footer>
+
+  <script>
+    let currentLang = localStorage.getItem('aurora_lang') || 'en';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('aurora_lang', lang);
+      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+
+      document.querySelectorAll('.i18n').forEach(el => {
+        const text = el.getAttribute(`data-${lang}`);
+        if (text) el.innerHTML = text;
+      });
+
+      const langText = document.getElementById('lang-text');
+      if (langText) langText.textContent = lang === 'en' ? '繁體中文' : 'English';
+    }
+
+    setLanguage(currentLang);
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const video = document.getElementById('bg-video');
+      let pageRevealed = false;
+
+      const fadeObserver = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08 });
+
+      function revealPage() {
+        if (pageRevealed) return;
+        pageRevealed = true;
+        if (video) video.play().catch(() => {});
+        document.body.classList.add('is-loaded');
+        document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+      }
+
+      revealPage();
+    });
+  </script>
+</body>
+</html>
