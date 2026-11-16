@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     return res.status(200).json({ images });
   } catch (err) {
-    console.error('list-photos error:', err.message);
+    console.error('list-photos error:', err?.code || '', err?.stack || err);
     if (err.code === 'FIRESTORE_TIMEOUT') return res.status(503).json({ error: 'The gallery database is temporarily unavailable.' });
     return res.status(500).json({ error: 'Could not retrieve gallery photos.' });
   }
