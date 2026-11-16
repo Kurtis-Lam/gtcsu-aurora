@@ -3,7 +3,7 @@
 //
 // Env: FIREBASE_SERVICE_ACCOUNT = the service-account JSON (raw or base64).
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getAppCheck } from 'firebase-admin/app-check';
 
@@ -20,7 +20,10 @@ export function getServices() {
 
   const app = getApps()[0] ?? initializeApp({ credential: cert(account) });
   services = {
-    db: getFirestore(app),
+    // preferRest: use HTTP/1.1 instead of gRPC. gRPC channels go stale when a
+    // serverless instance is frozen and thawed, and the next Firestore call then
+    // hangs until Vercel kills the function ("Task timed out after 30 seconds").
+    db: initializeFirestore(app, { preferRest: true }),
     auth: getAuth(app),
     appCheck: getAppCheck(app),
     projectId: account.project_id
