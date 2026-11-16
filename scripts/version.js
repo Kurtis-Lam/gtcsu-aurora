@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 // Keeps APP_VERSION / LAST_UPDATED in public/js/info.js up to date.
 //
-//   node scripts/version.js stamp                          refresh LAST_UPDATED only
+//   node scripts/version.js stamp                          refresh LAST_UPDATED only (run by the pre-commit hook)
 //   node scripts/version.js bump patch|minor|major|1.2.3   bump APP_VERSION and refresh LAST_UPDATED
-//   node scripts/version.js commit                         bump according to the last commit message
-//                                                          (#major / #minor at the end, otherwise patch)
+//                                                          (manual only: npm run bump <patch|minor|major|x.y.z>)
 //
-// Also keeps the "Current version" line in README.md and README.zh-HK.md in sync (if present).
+// Commits never change APP_VERSION. Versions are bumped by hand.
+// A bump also keeps the "Current version" line in README.md and README.zh-HK.md in sync (if present).
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -41,29 +40,11 @@ function nextVersion(current, arg) {
   return `${major}.${minor}.${patch}`;
 }
 
-function git(args) {
-  return execSync('git ' + args, { cwd: root, encoding: 'utf8' });
-}
-
-function levelFromLastCommit() {
-  const m = git('log -1 --format=%B').trim().match(/#(major|minor)\s*$/i);
-  return m ? m[1].toLowerCase() : 'patch';
-}
-
-function lastCommitAlreadyBumped() {
-  return /^\+export const APP_VERSION/m.test(git('show --format= HEAD -- public/js/info.js'));
-}
-
 function main() {
-  let [cmd, arg] = process.argv.slice(2);
-  if (!['stamp', 'bump', 'commit'].includes(cmd) || (cmd === 'bump' && !arg)) {
-    console.error('Usage:\n  node scripts/version.js stamp\n  node scripts/version.js bump patch|minor|major|<x.y.z>\n  node scripts/version.js commit');
+  const [cmd, arg] = process.argv.slice(2);
+  if (!['stamp', 'bump'].includes(cmd) || (cmd === 'bump' && !arg)) {
+    console.error('Usage:\n  node scripts/version.js stamp\n  node scripts/version.js bump patch|minor|major|<x.y.z>');
     process.exit(1);
-  }
-  if (cmd === 'commit') {
-    if (lastCommitAlreadyBumped()) { console.log('Version already bumped in this commit, skipping'); return; }
-    cmd = 'bump';
-    arg = levelFromLastCommit();
   }
   if (!existsSync(INFO)) throw new Error(`Not found: ${INFO}`);
 
