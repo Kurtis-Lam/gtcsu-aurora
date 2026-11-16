@@ -8,7 +8,7 @@
   <b>English</b> | <a href="README.zh-HK.md">繁體中文</a>
 </p>
 
-The official website of **Aurora**, the Student Union Candidate Cabinet No. 1 of G.T. (Ellen Yeung) College, 2026–27.
+The official website of **Aurora**, the 2026–27 Student Union Cabinet of G.T. (Ellen Yeung) College.
 
 **Current version: v3.0.0**
 
