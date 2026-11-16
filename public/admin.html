@@ -1465,7 +1465,8 @@
       '/schedule',
       '/welfare',
       '/photos',
-      '/feedbacks'
+      '/feedbacks',
+      '/disclaimer'
     ];
     const DESTINATION_LABELS = {
       '/':'Home',
@@ -1476,11 +1477,13 @@
       '/schedule':'Schedule',
       '/welfare':'Welfare',
       '/photos':'Photos',
-      '/feedbacks':'Feedbacks'
+      '/feedbacks':'Feedbacks',
+      '/disclaimer':'Disclaimer'
     };
 
-    // Nine destinations, hues spaced evenly (33.75 degrees apart) from
-    // yellow through orange, red, pink, purple, blue and cyan to green.
+    // Nine main destinations, hues spaced evenly (33.75 degrees apart) from
+    // yellow through orange, red, pink, purple, blue and cyan to green;
+    // the disclaimer page gets its own amber.
     const routeColors = {
       'all': '#2fe6b8',
       '/admin': '#ffffff',
@@ -1495,7 +1498,8 @@
       '/welfare': '#2591f4',    // Sky blue
       '/photos': '#25f4e1',     // Cyan
       '/feedbacks': '#25f46d',  // Green
-      '/feedback': '#25f46d'
+      '/feedback': '#25f46d',
+      '/disclaimer': '#ff9f1c'  // Amber
     };
 
     const FALLBACK_PALETTE = ['#f77f00', '#06d6a0', '#ef476f', '#118ab2', '#ffd166', '#8338ec', '#3a86ff', '#fb5607'];
@@ -1790,6 +1794,7 @@
       '/photos',
       '/feedbacks',
       '/feedback',
+      '/disclaimer',
       '/admin'
     ]);
 
