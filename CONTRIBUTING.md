@@ -1,7 +1,7 @@
 # Contributing to GTCSU Aurora
 
 Thanks for taking the time to contribute! 💫
-This is the website for the **G.T. (Ellen Yeung) College 2026–27 Candidate Cabinet No. 1 – Aurora**, and I'd love for people to help make it better. Bug fixes, translation fixes, accessibility improvements, performance work, new ideas, and documentation tweaks are all welcome.
+This is the website for the **G.T. (Ellen Yeung) College 2026–27 Student Union Cabinet – Aurora**, and I'd love for people to help make it better. Bug fixes, translation fixes, accessibility improvements, performance work, new ideas, and documentation tweaks are all welcome.
 
 ## Ways to contribute
 
@@ -110,7 +110,7 @@ Otherwise the browser will block your code in production. Prefer external script
 - Don't commit real photos, member data or exports from the admin portal.
 - Found a security problem? Please **don't** open a public issue. Use GitHub's private vulnerability reporting (the repository's *Security* tab) or contact the maintainer directly.
 
-**Versioning.** If your change is user-visible, bump `APP_VERSION` and `LAST_UPDATED` in `public/js/info.js` (the maintainer may do this when merging). The version also busts the cache of the shared components, so a bump is needed for edits to `panel.html`, `background.html` or `info.html` to reach returning visitors.
+**Versioning.** Committing and pushing never change the version. If your change is user-visible, the maintainer bumps it with `npm run bump patch|minor|major|<x.y.z>` (this updates `APP_VERSION` and `LAST_UPDATED` in `public/js/info.js` and the version line in both READMEs); please don't edit those by hand. The version also busts the cache of the shared components, so a bump is needed for edits to `panel.html`, `background.html` or `info.html` to reach returning visitors.
 
 ## Pull request checklist
 
@@ -119,7 +119,7 @@ Otherwise the browser will block your code in production. Prefer external script
 - [ ] Checked on a narrow (mobile) screen, with keyboard navigation, and with reduced motion
 - [ ] No console errors, including CSP violations (`python3 scripts/update-csp-hashes.py` run if inline scripts changed)
 - [ ] No secrets, personal data, or large binary files added (the repo is not the place for big videos or photo sets)
-- [ ] `APP_VERSION` / `LAST_UPDATED` bumped if user-visible (or left for the maintainer)
+- [ ] If the change is user-visible, mention it in the PR so the maintainer can run `npm run bump`
 
 ## Commit messages
 
