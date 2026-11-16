@@ -7,7 +7,7 @@ import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
 const VALID_ROUTES = new Set([
   '/', '/aboutus', '/news', '/activities', '/financial', '/schedule',
-  '/welfare', '/photos', '/feedbacks', '/admin'
+  '/welfare', '/photos', '/feedbacks', '/disclaimer', '/admin'
 ]);
 const ID_RE = /^[A-Za-z0-9_-]{20,64}$/;
 const TOKEN_RE = /^[a-f0-9]{64}$/;
