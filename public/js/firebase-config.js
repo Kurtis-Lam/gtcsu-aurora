@@ -28,9 +28,16 @@ export const appCheck = APP_CHECK_SITE_KEY.trim()
     })
   : null;
 
+// App Check must never block a request: if reCAPTCHA cannot load (blocked by CSP,
+// offline, ad blocker) give up after a few seconds and let the caller continue.
+const APP_CHECK_TIMEOUT_MS = 5000;
+
 export async function getAppCheckToken() {
   if (!appCheck) return null;
-  const result = await getToken(appCheck, false);
+  const result = await Promise.race([
+    getToken(appCheck, false),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('App Check token request timed out')), APP_CHECK_TIMEOUT_MS))
+  ]);
   return result.token || null;
 }
 
