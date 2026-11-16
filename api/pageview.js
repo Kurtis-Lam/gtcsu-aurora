@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getServices } from './_lib/firebase.js';
+import { getServices, withTimeout } from './_lib/firebase.js';
 import { bearerToken, body, clientIp, guard, hashIp } from './_lib/http.js';
 import { verifySchoolUser, verifiedAdmin } from './_lib/auth.js';
 import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
@@ -70,17 +70,17 @@ async function attachIdentity(req, res, payload) {
     return res.status(429).json({ error: 'Too many analytics updates.' });
   }
   const ref = db.collection('pageviews').doc(pageviewId);
-  const snap = await ref.get();
+  const snap = await withTimeout(ref.get(), 8000, 'pageview read');
   if (!snap.exists) return res.status(404).json({ error: 'Analytics session not found.' });
   const openedAt = snap.get('openedAt')?.toDate?.();
   if (!openedAt || Date.now() - openedAt.getTime() > MAX_DURATION * 1000) {
     return res.status(410).json({ error: 'Analytics session has expired.' });
   }
 
-  await ref.update({
+  await withTimeout(ref.update({
     userEmail: user.email || '',
     userName: user.name || user.email || ''
-  });
+  }), 8000, 'pageview identity update');
   return res.status(200).json({ ok: true });
 }
 
@@ -111,14 +111,14 @@ export default async function handler(req, res) {
         return res.status(429).json({ error: 'Too many analytics sessions. Try again later.' });
       }
       try {
-        await ref.create({
+        await withTimeout(ref.create({
           path,
           durationSeconds: 0,
           dateStr: hktDateString(),
           timestamp: FieldValue.serverTimestamp(),
           openedAt: FieldValue.serverTimestamp(),
           lastActiveAt: FieldValue.serverTimestamp()
-        });
+        }), 8000, 'pageview create');
       } catch (error) {
         if (error.code === 6 || error.code === 'already-exists') {
           return res.status(409).json({ error: 'Analytics session already exists.' });
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid duration.' });
     }
 
-    const session = await ref.get();
+    const session = await withTimeout(ref.get(), 8000, 'pageview read');
     if (!session.exists) return res.status(404).json({ error: 'Analytics session not found.' });
     const sessionData = session.data() || {};
     const openedAt = sessionData.openedAt?.toDate?.();
@@ -164,10 +164,11 @@ export default async function handler(req, res) {
     };
     if (action === 'exit') update.closedAt = FieldValue.serverTimestamp();
 
-    await ref.update(update);
+    await withTimeout(ref.update(update), 8000, 'pageview update');
     return res.status(200).json({ ok: true });
   } catch (error) {
     console.error('pageview error:', error);
+    if (error.code === 'FIRESTORE_TIMEOUT') return res.status(503).json({ error: 'Analytics unavailable.' });
     return res.status(500).json({ error: 'Analytics unavailable.' });
   }
 }
