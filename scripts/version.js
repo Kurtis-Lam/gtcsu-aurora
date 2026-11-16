@@ -1,12 +1,11 @@
 #!/usr/bin/env node
-// Keeps APP_VERSION / LAST_UPDATED in public/js/info.js up to date.
+// Releases are cut by hand. Nothing here runs on git commit or git push.
 //
-//   node scripts/version.js stamp                          refresh LAST_UPDATED only (run by the pre-commit hook)
-//   node scripts/version.js bump patch|minor|major|1.2.3   bump APP_VERSION and refresh LAST_UPDATED
-//                                                          (manual only: npm run bump <patch|minor|major|x.y.z>)
+//   npm run bump patch|minor|major|<x.y.z>
+//   (same as: node scripts/version.js bump patch|minor|major|<x.y.z>)
 //
-// Commits never change APP_VERSION. Versions are bumped by hand.
-// A bump also keeps the "Current version" line in README.md and README.zh-HK.md in sync (if present).
+// A bump updates APP_VERSION and LAST_UPDATED in public/js/info.js and the
+// "Current version" line in README.md and README.zh-HK.md.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -42,8 +41,8 @@ function nextVersion(current, arg) {
 
 function main() {
   const [cmd, arg] = process.argv.slice(2);
-  if (!['stamp', 'bump'].includes(cmd) || (cmd === 'bump' && !arg)) {
-    console.error('Usage:\n  node scripts/version.js stamp\n  node scripts/version.js bump patch|minor|major|<x.y.z>');
+  if (cmd !== 'bump' || !arg) {
+    console.error('Usage:\n  npm run bump patch|minor|major|<x.y.z>\n  node scripts/version.js bump patch|minor|major|<x.y.z>');
     process.exit(1);
   }
   if (!existsSync(INFO)) throw new Error(`Not found: ${INFO}`);
@@ -54,7 +53,7 @@ function main() {
   }
 
   const oldVersion = src.match(VERSION_RE)[2];
-  const newVersion = cmd === 'bump' ? nextVersion(oldVersion, arg) : oldVersion;
+  const newVersion = nextVersion(oldVersion, arg);
   const stamp = nowHongKong();
 
   src = src
@@ -62,18 +61,14 @@ function main() {
     .replace(UPDATED_RE, (_, a, __, c) => a + stamp + c);
   writeFileSync(INFO, src);
 
-  if (cmd === 'bump') {
-    for (const [file, re] of READMES) {
-      if (!existsSync(file)) continue;
-      const text = readFileSync(file, 'utf8');
-      const updated = text.replace(re, (_, a, b) => a + newVersion + b);
-      if (updated !== text) writeFileSync(file, updated);
-    }
+  for (const [file, re] of READMES) {
+    if (!existsSync(file)) continue;
+    const text = readFileSync(file, 'utf8');
+    const updated = text.replace(re, (_, a, b) => a + newVersion + b);
+    if (updated !== text) writeFileSync(file, updated);
   }
 
-  console.log(cmd === 'bump'
-    ? `Version ${oldVersion} -> ${newVersion} (updated ${stamp})`
-    : `LAST_UPDATED -> ${stamp}`);
+  console.log(`Version ${oldVersion} -> ${newVersion} (updated ${stamp})`);
 }
 
 try { main(); } catch (e) { console.error(e.message); process.exit(1); }
