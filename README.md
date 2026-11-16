@@ -1,160 +1,174 @@
-# Aurora — Student Union Candidate Cabinet Website
+# Aurora — Student Union Website
 
-Official website for **Aurora**, the No. 1 candidate cabinet for the Student Union of G.T. (Ellen Yeung) College, 2026–27.
+The official website of **Aurora**, the Student Union Candidate Cabinet No. 1 of G.T. (Ellen Yeung) College, 2026–27.
 
-**Current version: v3.0.0** (see `public/js/info.js`)
+**Current version: v2.5.0**
 
-A multi‑page, bilingual (English / Traditional Chinese) website with a static front end on Firebase Hosting and a serverless API on Vercel. Beyond the campaign pages it includes school‑account sign‑in, public news with email subscriptions, a protected photo gallery with traceable downloads, a feedback form with automated spam screening, a support counter, and an admin portal.
+Here you can find out who we are, what we plan to do this year, how the budget is spent, what perks you get, and how to reach us. You can also read announcements, browse event photos and send feedback straight to the Student Union.
 
----
-
-## ✨ Features
-
-- **Bilingual interface** – Toggle between English and Traditional Chinese on every page; the choice is saved in `localStorage`. Content cross‑fades on switch and respects reduced‑motion settings.
-- **Immersive design** – Looping video background, glass‑morphism cards, scroll‑reveal effects and a shared visual layer (`css/aurora-fx.css` + `js/fx.js`) with ripple and hover feedback. A **lite mode** switches off heavy effects automatically on low‑end devices, data‑saver mode, or when the visitor prefers reduced motion.
-- **Shared navigation** – `panel.html` (navigation bar with an **Info** dropdown for Activities, Financial, Schedule and Welfare, the Photos and Feedbacks links, Google sign‑in, language and info buttons), `background.html` and `info.html` (the "About this site" popup showing the version and last‑updated time) are injected by `load-components.js`. Components are cached per release.
-- **School‑account sign‑in** – Sign in with Google from any page. Only verified `@gtcollege.edu.hk` accounts count as signed in; other accounts are ignored rather than signed out.
-- **Latest News** – Public bilingual announcements. Signed‑in school users can mark items as read (with an unread dot in the navigation), and are subscribed to announcement emails automatically; every email carries a signed one‑click unsubscribe link. Admins draft, translate (AI‑assisted), review, publish, edit and delete announcements, with a per‑article activity log.
-- **Photo Gallery** – School‑account‑only gallery organised in folders and subfolders, with a lightbox, select‑all / multi‑select, and ZIP download. Images are served through an authenticated proxy (thumbnails and 1800px previews), never as public links. Every download requires accepting an audit notice, is recorded against the verified account, and carries an **invisible digital watermark** so a leaked image can be traced. Downloads are rate‑limited.
-- **Feedbacks & Support** – Feedback requires a school account (title of at least 3 words, description of at least 20 words). Your name and school email are stored with the submission and are visible to Student Union administrators only; submissions are not published. Submissions are screened for spam and are rate‑limited. The support counter and FAQ sit on the same page.
-- **Support Us counter** – Real‑time global counter with a 10‑minute cooldown per device and, when signed in, per account. To prevent abuse, each vote stores an encrypted IP address and device details for the school's records, readable only by authorised administrators.
-- **Activities & Schedule** – Expandable activity cards (festive, regular, post‑exam, inter‑school) and a month‑by‑month calendar.
-- **Welfare & Discounts** – Student benefits, merchant discounts and campus welfares.
-- **Financial Transparency** – Full budget breakdown of planned activities and election expenses.
-- **Admin portal** – Site analytics (page views, time on page, open/close logs), feedback inbox, supporter records, encrypted support logs, photo upload and folder management, photo‑download audit, news management and a read‑only list of current admins.
+🌐 **Open the site:** <https://gtcsu-aurora.web.app>
+It works on phones, tablets and computers. No app or download needed.
 
 ---
 
-## 📄 Pages
+## 🚀 Quick start
 
-| File | Description |
-|------|-------------|
-| `index.html` | Landing page with cabinet name, slogan and Instagram link. |
-| `aboutus.html` | Vision, promotion video and cabinet member profiles. |
-| `news.html` | Public bilingual announcements with read tracking. |
-| `activities.html` | Detailed descriptions of all planned activities. |
-| `financial.html` | Complete budget breakdown with itemised costs. |
-| `schedule.html` | Month‑by‑month calendar of events for 2026–27. |
-| `welfare.html` | Student welfare offers, merchant discounts and external benefits. |
-| `photos.html` | Protected photo gallery (school account required). |
-| `feedbacks.html` | Feedback form, FAQ and support counter. `/supportus` redirects to its support section. |
-| `admin.html` | Admin portal (admin accounts only). |
-| `security_report.html` | School security and operations report, served at `/report`. |
-
-Shared fragments (not standalone pages): `panel.html`, `background.html`, `info.html`.
+1. Open the site and pick your language with the 🌐 button in the top bar (**English** or **繁體中文**). The site remembers your choice.
+2. Look around. Most pages are open to everyone.
+3. Want to read photos, send feedback or get news emails? Tap **Sign In** and use your **school Google account** (`@gtcollege.edu.hk`).
 
 ---
 
-## 🧱 Tech Stack & Architecture
+## 🔑 Signing in
 
-| Layer | Details |
-|-------|---------|
-| Front end | Plain HTML, CSS and JavaScript (ES modules), no build step. Served from `public/` by **Firebase Hosting** (clean URLs). |
-| Auth & data | **Firebase Authentication** (Google) and **Cloud Firestore**. Access is enforced by `firestore.rules` (admin custom claim, verified school account, per‑user receipts). |
-| API | Serverless functions in `api/` on **Vercel** (`gtcsu-aurora.vercel.app`), Node ≥ 20.3. |
-| Images | **Cloudinary** (authenticated delivery) and **sharp** for the DCT‑based invisible watermark. |
-| Email | **Nodemailer** over Gmail for news announcements. |
-| AI assistance | **OpenRouter** for news translation and feedback spam screening. |
-
-### API endpoints (`api/`)
-
-| Endpoint | Purpose |
-|----------|---------|
-| `pageview` | Privacy‑conscious page analytics. |
-| `support` | Support counter cooldown check and vote. |
-| `feedback` | Validate, screen and store feedback. |
-| `translate-news`, `publish-news` | Admin: AI translation, publish and email announcements. |
-| `unsubscribe-news` | Signed email unsubscribe link. |
-| `list-photos`, `photo-image`, `photo-download` | School accounts: gallery listing, image proxy, watermarked and audited download. |
-| `sign-upload`, `delete-photo` | Admin: signed Cloudinary uploads and photo removal. |
-| `list-admins` | Admin: list accounts with the admin claim. |
-
-Shared helpers live in `api/_lib/` (auth, CORS and request guards, rate limiting, Firebase, photos, crypto, watermark).
+- Tap **Sign In** in the top bar and choose your school Google account. Tap **Sign Out** when you are done.
+- Only `@gtcollege.edu.hk` accounts count. If you pick a personal Gmail, the site simply ignores it and you stay signed out.
+- You need to sign in for: the **Photo Gallery**, **sending feedback**, and **marking news as read / getting news emails**.
+- Everything else (About Us, Activities, Financial, Schedule, Welfare, News, Support Us) can be used without signing in.
 
 ---
 
-## 🚀 Getting Started
+## 🧭 Moving around
 
-```bash
-# Front end only
-python3 -m http.server 3000 --directory public
-# or
-npx serve public
-```
+The bar at the top of every page has:
 
-Open <http://localhost:3000>. Pages must be served over HTTP; `file://` will not work.
+| Button | What it does |
+|--------|--------------|
+| **Aurora** | Back to the home page. |
+| **About Us** | Who we are. |
+| **Latest News** | Announcements. |
+| **Info ▾** | A drop-down with **Activities**, **Financial**, **Schedule** and **Welfare**. |
+| **Photos** | Event photo gallery (school account needed). |
+| **Feedbacks** | Feedback form, FAQ and the Support Us button. |
+| **Sign In / Sign Out** | Log in or out with your school account. |
+| **🌐 繁體中文 / English** | Switch language. |
 
-Notes for local work:
-- The front end talks to the production API set in `public/js/api-config.js`. The API only accepts known origins, so API‑backed features (feedback, support, photos, admin) may be refused from `localhost` unless the origin is added to `ALLOWED_ORIGINS` on a deployment you control.
-- Google sign‑in needs `localhost` among the authorised domains of your Firebase project.
-- To run the API, install dependencies with `npm install` and deploy to your own Vercel project.
-
-### Environment variables (Vercel)
-
-| Variable | Used for |
-|----------|----------|
-| `FIREBASE_SERVICE_ACCOUNT` | Firebase Admin access |
-| `ANALYTICS_HMAC_SECRET`, `IP_HASH_SECRET` | Keyed hashing for analytics, rate limits and audit records (≥ 32 bytes) |
-| `SUPPORT_ENCRYPTION_KEY` | AES‑256‑GCM encryption of support logs |
-| `WATERMARK_SECRET` | Photo watermark (falls back to `ANALYTICS_HMAC_SECRET`) |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Photo storage |
-| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | News emails |
-| `NEWS_UNSUBSCRIBE_SECRET` | Signing unsubscribe links |
-| `OPENROUTER_API_KEY` | Translation and feedback screening |
-| `ALLOWED_ORIGINS` | Extra comma‑separated CORS origins |
-
-Never commit these values. See `CONTRIBUTING.md`.
-
-### Maintenance scripts (`scripts/`)
-
-| Script | Purpose |
-|--------|---------|
-| `python3 scripts/update-csp-hashes.py` | Recompute CSP hashes for inline scripts and handlers and write them to `vercel.json` and `firebase.json`. **Run after editing any inline script or `on…` handler.** |
-| `node scripts/set-admin-claims.js <email>` / `--revoke <email>` | Grant or revoke the admin claim (needs `credentials/service-account.json`). |
-| `npm run extract-watermark -- <image> [--widths=…] [--local-env]` | Identify which download a leaked image came from. |
-| `node scripts/upload-profiles.mjs <image>` | Upload a profile image to Cloudinary. |
+There is also a small **ⓘ** button on the page. It opens an "About this site" box showing the site version, when it was last updated, and our disclaimer.
 
 ---
 
-## 🌐 Deployment
+## 📄 What each page shows
 
-- **Firebase Hosting** – front end (`public/`), Firestore rules and indexes (`firebase.json`, `firestore.rules`).
-- **Vercel** – serverless API (`api/`) and security headers (`vercel.json`).
+### 🏠 Home
+The cabinet name, our slogan *"Sparked by Aurora, united with Harmonia"*, and a link to our Instagram **@gteyc_aurora2627**.
 
-Both configs ship a strict Content‑Security‑Policy; remember to refresh the hashes (see above) before deploying changes to inline scripts.
+### 👥 About Us
+Our vision (why we chose the name Aurora), the **SU promotion video**, and profiles of all 12 cabinet members with their roles, class and Instagram handles.
+
+### 📰 Latest News
+Announcements from the Student Union in English and Traditional Chinese.
+- Signed in? You can mark announcements as **read**, and a small dot on the **Latest News** button tells you when something new is waiting.
+- Signed-in school users also receive announcement **emails** automatically. Every email has a one-click **unsubscribe** link at the bottom if you don't want them.
+
+### 🎉 Activities
+All the activities we plan to run, grouped into:
+- **Festive:** Halloween, Christmas, Chinese New Year & Easter
+- **Regular:** sports and e-sports tournaments, culture, music & arts, mind games and skill competitions
+- **Post-exam:** after-exam fun
+
+Tap any card to expand the full description and what it is for.
+
+### 🗓️ Schedule
+A month-by-month calendar from **October 2026 to September 2027**, listing which events happen in each month.
+
+### 🎁 Welfare
+Perks for students, in two parts:
+- **Campus welfare:** free heat packs, hot drinks, ice cream and watermelon, umbrella borrowing, Sports Day drinks and tattoos, and festive instant photo booths.
+- **Merchant discounts:** deals with outside shops. Categories include theme parks, transport, food & drinks, class T-shirt printing, tutoring and study spaces, party rooms and escape rooms, clothing and accessories, stationery, and more.
+
+Tap **Click for Details** on a card to see the offer, how to claim it, and any promo code. Many offers need you to show your **student ID**.
+
+### 💰 Financial
+A full budget breakdown of every planned activity and welfare, with itemised costs and subtotals. All spending is checked by our Treasurer and President before it goes to the school for approval.
+
+### 📸 Photos *(school account needed)*
+A gallery of photos from our events, organised in folders.
+- Click a photo to open it larger.
+- Use **Select all** or tick several photos, then **Download selected**. Multiple photos come as a single ZIP file.
+- Before each download you must read and accept a short notice. Please read it. In short:
+  - Every download is recorded against your school account, the photo, the time and limited device details.
+  - Each downloaded photo carries an invisible watermark so it can be traced if it is shared or edited.
+  - Photos are for **personal, school-related use**. Do not edit them to harass, mock or misrepresent anyone.
+- If you are not signed in with a school account, you will see a sign-in prompt instead of the photos.
+
+### 💬 Feedbacks
+Three things on one page:
+1. **Feedback form:** tell the Student Union what you think.
+2. **FAQ:** answers to the most common questions.
+3. **Support Us:** a button and live counter. See below.
+
+You can also reach this section from the short link **/supportus**.
+
+### 📑 School report
+Our school-facing report about how the website is run and kept safe. It is available at **/report**, can be switched between English and Chinese, and can be saved as a PDF.
 
 ---
 
-## 🔒 Privacy & Security
+## ✍️ Sending feedback
 
-- Firestore rules deny everything by default; admin and school‑account checks are verified server‑side.
-- Feedback, support votes and photo downloads record limited account, device and network details, stored in hashed or encrypted form, and are accessible only to authorised administrators and the school.
-- Found a vulnerability? Please do **not** open a public issue. Use GitHub's private vulnerability reporting (the repository's *Security* tab) or contact the maintainer.
+1. Go to **Feedbacks** and sign in with your school account.
+2. Write a **title** of at least **3 words** and a **description** of at least **20 words**. A counter under each box shows your progress.
+3. Press **Submit Feedback**.
 
----
-
-## 🙌 Credits
-
-- **Contents:** Aurora Cabinet 2026–27 Vice President and Members
-- **Development:** Kurtis ([@Kurtis-Lam](https://github.com/Kurtis-Lam))
-
----
-
-## 📄 License
-
-Released under the MIT License (see `LICENSE`).
-
-The Aurora name, branding, member photos and campaign content belong to G.T. (Ellen Yeung) College Student Union Candidate Cabinet No. 1 – Aurora and are not covered by that license.
-
-This website is operated by student members of the Cabinet Aurora and is not the official website, agent or representative of G.T. (Ellen Yeung) College.
+Good to know:
+- Only the Student Union executive team can read your feedback. **Nothing is published** on the website.
+- It is **not anonymous.** Your name and school email are attached so the team can understand and follow up.
+- The executive team goes through submissions regularly to improve welfare, events and planning.
+- Submissions are checked for spam. If yours is flagged, make sure it is constructive, follows school rules, and meets the word minimum, then try again.
+- If you send many in a short time, you may be asked to wait a moment.
 
 ---
 
-## 📬 Contact & Contributing
+## ❤️ Support Us
 
-For any enquiries, reach out via Aurora's Official Instagram [@gteyc_aurora2627](https://www.instagram.com/gteyc_aurora2627/) or email `kurtislam100@gmail.com`.
+Tap the support button to cast a vote of confidence. The big number shows how many people have supported us in total, updated live.
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. Repository: <https://github.com/Kurtis-Lam/gtcsu-aurora>
+- You can support **once every 10 minutes**. A countdown shows when you can tap again.
+- If you are signed in, the site also shows **your own** number of supports.
+- To stop misuse, each support records your IP address and device details in encrypted form. They are used only for that purpose and can be read only by authorised administrators.
+
+---
+
+## 🌍 Language and comfort
+
+- **Two languages** on every page: English and Traditional Chinese.
+- The site uses smooth animations, a video background and glowing effects. On slower phones, in data-saver mode, or if your device is set to **reduce motion**, these are turned down automatically so the site stays fast and comfortable.
+
+---
+
+## ❓ Common questions
+
+**I can't see the photos.**
+Sign in with your `@gtcollege.edu.hk` account. Other Google accounts do not work.
+
+**I signed in but nothing changed.**
+Check that you used your school email. Personal accounts are ignored.
+
+**Can I send feedback without my name?**
+No. A verified school account is required and your name and school email are attached. Only Student Union administrators can see it.
+
+**Why do I have to agree before downloading photos?**
+So every download can be traced if a photo is misused. It is the same for everyone.
+
+**Why can't I press Support again?**
+There is a 10-minute wait between supports. Come back when the timer finishes.
+
+**How do I stop getting news emails?**
+Use the **unsubscribe** link at the bottom of any announcement email.
+
+**Where can I get the latest updates?**
+Here on the website and on our Instagram **@gteyc_aurora2627**. Check our Stories too.
+
+**Is this the school's official website?**
+No. It is run by student members of Cabinet Aurora and is not the official website, agent or representative of G.T. (Ellen Yeung) College.
+
+---
+
+## 📬 Contact us
+
+- Instagram: [@gteyc_aurora2627](https://www.instagram.com/gteyc_aurora2627/)
+- Email: kurtislam100@gmail.com
+- Or use the **Feedbacks** page on the site.
 
 ---
 
