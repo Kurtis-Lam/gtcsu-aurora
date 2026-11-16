@@ -10,7 +10,7 @@
 
 The official website of **Aurora**, the Student Union Candidate Cabinet No. 1 of G.T. (Ellen Yeung) College, 2026–27.
 
-**Current version: v3.0.3**
+**Current version: v3.0.4**
 
 Here you can find out who we are, what we plan to do this year, how the budget is spent, what perks you get, and how to reach us. You can also read announcements, browse event photos and send feedback straight to the Student Union.
 
