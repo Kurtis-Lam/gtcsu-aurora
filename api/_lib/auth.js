@@ -31,8 +31,8 @@ export async function verifySchoolUser(idToken) {
 }
 
 // Admins are defined by the signed admin claim plus verified Google-account
-// requirements in firestore.rules. Admin accounts may use any email domain;
-// the Firestore REST read independently confirms that deployed rules allow access.
+// requirements, the same conditions firestore.rules (isAdmin()) enforces. The
+// ID token is verified with revocation and disabled-account checks above.
 export async function verifiedAdmin(idToken) {
   const decoded = await verifyActiveToken(idToken);
   if (
@@ -41,19 +41,7 @@ export async function verifiedAdmin(idToken) {
     || decoded.email_verified !== true
     || decoded.firebase?.sign_in_provider !== 'google.com'
   ) return null;
-  const { projectId } = getServices();
-  const url =
-    `https://firestore.googleapis.com/v1/projects/${projectId}` +
-    `/databases/(default)/documents/adminCheck/ping`;
-  try {
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${idToken}` },
-      signal: AbortSignal.timeout(6000)
-    });
-    return res.status === 200 || res.status === 404 ? decoded : null;
-  } catch {
-    return null;
-  }
+  return decoded;
 }
 
 export async function isAdminByRules(idToken) {
