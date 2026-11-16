@@ -13,7 +13,9 @@
   },
   "scripts": {
     "extract-watermark": "node scripts/extract-watermark.js",
-    "clear-download-history": "node scripts/clear-download-history.js"
+    "clear-download-history": "node scripts/clear-download-history.js",
+    "prepare": "node scripts/install-hooks.js",
+    "bump": "node scripts/version.js bump"
   },
   "allowScripts": {
     "protobufjs@7.6.6": true
