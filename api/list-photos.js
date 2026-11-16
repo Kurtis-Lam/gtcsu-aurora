@@ -1,7 +1,7 @@
 import { verifyRequestAppCheck } from './_lib/app-check.js';
 import { guard, bearerToken } from './_lib/http.js';
 import { authenticateGalleryUser } from './_lib/auth.js';
-import { getServices } from './_lib/firebase.js';
+import { getServices, withTimeout } from './_lib/firebase.js';
 import { GALLERY_ID_PATTERN, IMAGE_DOC_ID_PATTERN } from './_lib/photos.js';
 import { RATE_LIMITS, takeRateLimit } from './_lib/ratelimit.js';
 
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Too many gallery requests. Try again shortly.' });
     }
 
-    const snapshot = await db.collection('galleryImages').get();
+    const snapshot = await withTimeout(db.collection('galleryImages').get(), 10000, 'gallery listing');
     const images = snapshot.docs.flatMap((document) => {
       const data = document.data() || {};
       if (!IMAGE_DOC_ID_PATTERN.test(document.id) || typeof data.publicId !== 'string' || !GALLERY_ID_PATTERN.test(data.publicId)) return [];
@@ -43,6 +43,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ images });
   } catch (err) {
     console.error('list-photos error:', err.message);
+    if (err.code === 'FIRESTORE_TIMEOUT') return res.status(503).json({ error: 'The gallery database is temporarily unavailable.' });
     return res.status(500).json({ error: 'Could not retrieve gallery photos.' });
   }
 }
