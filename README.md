@@ -2,7 +2,7 @@
 
 Official website for **Aurora**, the No. 1 candidate cabinet for the Student Union of G.T. (Ellen Yeung) College, 2026–27.
 
-**Current version: v2.3.0** (see `public/js/info.js`)
+**Current version: v3.0.0** (see `public/js/info.js`)
 
 A multi‑page, bilingual (English / Traditional Chinese) website with a static front end on Firebase Hosting and a serverless API on Vercel. Beyond the campaign pages it includes school‑account sign‑in, public news with email subscriptions, a protected photo gallery with traceable downloads, a feedback form with automated spam screening, a support counter, and an admin portal.
 
