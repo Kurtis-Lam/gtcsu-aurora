@@ -44,6 +44,16 @@ function normalisePath(value) {
   return VALID_ROUTES.has(path) ? path : null;
 }
 
+function isQuotaError(error) {
+  return error?.code === 8
+    || error?.code === 'resource-exhausted'
+    || /RESOURCE_EXHAUSTED/.test(String(error?.message || ''));
+}
+
+function isNotFound(error) {
+  return error?.code === 5 || error?.code === 'not-found';
+}
+
 function hktDateString(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Hong_Kong' }).format(date);
 }
@@ -70,17 +80,15 @@ async function attachIdentity(req, res, payload) {
     return res.status(429).json({ error: 'Too many analytics updates.' });
   }
   const ref = db.collection('pageviews').doc(pageviewId);
-  const snap = await withTimeout(ref.get(), 8000, 'pageview read');
-  if (!snap.exists) return res.status(404).json({ error: 'Analytics session not found.' });
-  const openedAt = snap.get('openedAt')?.toDate?.();
-  if (!openedAt || Date.now() - openedAt.getTime() > MAX_DURATION * 1000) {
-    return res.status(410).json({ error: 'Analytics session has expired.' });
+  try {
+    await withTimeout(ref.update({
+      userEmail: user.email || '',
+      userName: user.name || user.email || ''
+    }), 8000, 'pageview identity update');
+  } catch (error) {
+    if (isNotFound(error)) return res.status(404).json({ error: 'Analytics session not found.' });
+    throw error;
   }
-
-  await withTimeout(ref.update({
-    userEmail: user.email || '',
-    userName: user.name || user.email || ''
-  }), 8000, 'pageview identity update');
   return res.status(200).json({ ok: true });
 }
 
@@ -143,31 +151,25 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid duration.' });
     }
 
-    const session = await withTimeout(ref.get(), 8000, 'pageview read');
-    if (!session.exists) return res.status(404).json({ error: 'Analytics session not found.' });
-    const sessionData = session.data() || {};
-    const openedAt = sessionData.openedAt?.toDate?.();
-    if (!openedAt || Date.now() - openedAt.getTime() > MAX_DURATION * 1000) {
-      return res.status(410).json({ error: 'Analytics session has expired.' });
-    }
-    if (sessionData.closedAt && action !== 'exit') {
-      return res.status(409).json({ error: 'Analytics session is already closed.' });
-    }
-    const maxPlausibleDuration = Math.max(0, Math.floor((Date.now() - openedAt.getTime()) / 1000)) + 30;
-    if (duration > maxPlausibleDuration) {
-      return res.status(400).json({ error: 'Duration exceeds the session age.' });
-    }
-
     const update = {
       durationSeconds: Math.round(duration),
       lastActiveAt: FieldValue.serverTimestamp()
     };
     if (action === 'exit') update.closedAt = FieldValue.serverTimestamp();
 
-    await withTimeout(ref.update(update), 8000, 'pageview update');
+    try {
+      await withTimeout(ref.update(update), 8000, 'pageview update');
+    } catch (error) {
+      if (isNotFound(error)) return res.status(404).json({ error: 'Analytics session not found.' });
+      throw error;
+    }
     return res.status(200).json({ ok: true });
   } catch (error) {
     console.error('pageview error:', error?.code || '', error?.stack || error);
+    if (isQuotaError(error)) {
+      res.setHeader('Retry-After', '3600');
+      return res.status(503).json({ error: 'Analytics unavailable.' });
+    }
     if (error.code === 'FIRESTORE_TIMEOUT') return res.status(503).json({ error: 'Analytics unavailable.' });
     return res.status(500).json({ error: 'Analytics unavailable.' });
   }
