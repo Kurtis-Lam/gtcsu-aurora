@@ -4,7 +4,7 @@ const FIREBASE_AUTH_URL = 'https://www.gstatic.com/firebasejs/13.2.0/firebase-au
 
 const VALID_ROUTES = new Set([
   '/', '/aboutus', '/news', '/activities', '/financial', '/schedule',
-  '/welfare', '/photos', '/feedbacks', '/admin'
+  '/welfare', '/photos', '/feedbacks', '/disclaimer', '/admin'
 ]);
 
 function normalisePath() {
