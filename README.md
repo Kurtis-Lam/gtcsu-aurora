@@ -1,8 +1,16 @@
-# Aurora — Student Union Website
+<p align="center">
+  <img src="https://gtcsu-aurora.web.app/assets/aurora-logo.png" alt="Aurora logo" width="160">
+</p>
+
+<h1 align="center">Aurora — Student Union Website</h1>
+
+<p align="center">
+  <b>English</b> | <a href="README.zh-HK.md">繁體中文</a>
+</p>
 
 The official website of **Aurora**, the Student Union Candidate Cabinet No. 1 of G.T. (Ellen Yeung) College, 2026–27.
 
-**Current version: v2.5.0**
+**Current version: v3.0.1**
 
 Here you can find out who we are, what we plan to do this year, how the budget is spent, what perks you get, and how to reach us. You can also read announcements, browse event photos and send feedback straight to the Student Union.
 
@@ -167,7 +175,7 @@ No. It is run by student members of Cabinet Aurora and is not the official websi
 ## 📬 Contact us
 
 - Instagram: [@gteyc_aurora2627](https://www.instagram.com/gteyc_aurora2627/)
-- Email: kurtislam100@gmail.com
+- Email: gtcsu2627aurora@gmail.com
 - Or use the **Feedbacks** page on the site.
 
 ---
