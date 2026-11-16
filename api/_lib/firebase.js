@@ -30,3 +30,18 @@ export function getServices() {
   };
   return services;
 }
+
+// Rejects with code FIRESTORE_TIMEOUT if a Firestore/Google call does not settle in
+// time. Firestore retries throttled or over-quota requests for up to a minute,
+// longer than a Vercel function may run, so callers fail fast and log the cause.
+export function withTimeout(promise, ms, label = 'operation') {
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      const error = new Error(`${label} timed out after ${ms}ms (Firestore may be throttled or over its daily quota)`);
+      error.code = 'FIRESTORE_TIMEOUT';
+      reject(error);
+    }, ms);
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
