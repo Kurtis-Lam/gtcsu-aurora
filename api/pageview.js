@@ -167,7 +167,7 @@ export default async function handler(req, res) {
     await withTimeout(ref.update(update), 8000, 'pageview update');
     return res.status(200).json({ ok: true });
   } catch (error) {
-    console.error('pageview error:', error);
+    console.error('pageview error:', error?.code || '', error?.stack || error);
     if (error.code === 'FIRESTORE_TIMEOUT') return res.status(503).json({ error: 'Analytics unavailable.' });
     return res.status(500).json({ error: 'Analytics unavailable.' });
   }
