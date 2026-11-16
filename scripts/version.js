@@ -3,15 +3,21 @@
 //
 //   node scripts/version.js stamp                          refresh LAST_UPDATED only
 //   node scripts/version.js bump patch|minor|major|1.2.3   bump APP_VERSION and refresh LAST_UPDATED
+//   node scripts/version.js commit                         bump according to the last commit message
+//                                                          (#major / #minor at the end, otherwise patch)
 //
-// Also keeps the "Current version" line in README.md in sync (if present).
+// Also keeps the "Current version" line in README.md and README.zh-HK.md in sync (if present).
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const INFO = resolve(root, 'public/js/info.js');
-const README = resolve(root, 'README.md');
+const READMES = [
+  [resolve(root, 'README.md'), /(\*\*Current version: v)[\d.]+(\*\*)/],
+  [resolve(root, 'README.zh-HK.md'), /(\*\*目前版本：v)[\d.]+(\*\*)/],
+];
 
 const VERSION_RE = /(export const APP_VERSION = ')([^']*)(')/;
 const UPDATED_RE = /(export const LAST_UPDATED = ')([^']*)(')/;
@@ -35,11 +41,29 @@ function nextVersion(current, arg) {
   return `${major}.${minor}.${patch}`;
 }
 
+function git(args) {
+  return execSync('git ' + args, { cwd: root, encoding: 'utf8' });
+}
+
+function levelFromLastCommit() {
+  const m = git('log -1 --format=%B').trim().match(/#(major|minor)\s*$/i);
+  return m ? m[1].toLowerCase() : 'patch';
+}
+
+function lastCommitAlreadyBumped() {
+  return /^\+export const APP_VERSION/m.test(git('show --format= HEAD -- public/js/info.js'));
+}
+
 function main() {
-  const [cmd, arg] = process.argv.slice(2);
-  if (!['stamp', 'bump'].includes(cmd) || (cmd === 'bump' && !arg)) {
-    console.error('Usage:\n  node scripts/version.js stamp\n  node scripts/version.js bump patch|minor|major|<x.y.z>');
+  let [cmd, arg] = process.argv.slice(2);
+  if (!['stamp', 'bump', 'commit'].includes(cmd) || (cmd === 'bump' && !arg)) {
+    console.error('Usage:\n  node scripts/version.js stamp\n  node scripts/version.js bump patch|minor|major|<x.y.z>\n  node scripts/version.js commit');
     process.exit(1);
+  }
+  if (cmd === 'commit') {
+    if (lastCommitAlreadyBumped()) { console.log('Version already bumped in this commit, skipping'); return; }
+    cmd = 'bump';
+    arg = levelFromLastCommit();
   }
   if (!existsSync(INFO)) throw new Error(`Not found: ${INFO}`);
 
@@ -57,10 +81,13 @@ function main() {
     .replace(UPDATED_RE, (_, a, __, c) => a + stamp + c);
   writeFileSync(INFO, src);
 
-  if (cmd === 'bump' && existsSync(README)) {
-    const readme = readFileSync(README, 'utf8');
-    const updated = readme.replace(/(\*\*Current version: v)[\d.]+(\*\*)/, (_, a, b) => a + newVersion + b);
-    if (updated !== readme) writeFileSync(README, updated);
+  if (cmd === 'bump') {
+    for (const [file, re] of READMES) {
+      if (!existsSync(file)) continue;
+      const text = readFileSync(file, 'utf8');
+      const updated = text.replace(re, (_, a, b) => a + newVersion + b);
+      if (updated !== text) writeFileSync(file, updated);
+    }
   }
 
   console.log(cmd === 'bump'

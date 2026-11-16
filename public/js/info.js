@@ -1,5 +1,5 @@
-export const APP_VERSION = '3.0.1';
-export const LAST_UPDATED = '2026-11-16T20:49:55+08:00'; // ISO 8601, Hong Kong time (+08:00)
+export const APP_VERSION = '3.0.2';
+export const LAST_UPDATED = '2026-11-16T20:49:58+08:00'; // ISO 8601, Hong Kong time (+08:00)
 
 const currentLang = () => (localStorage.getItem('aurora_lang') === 'zh' ? 'zh' : 'en');
 
