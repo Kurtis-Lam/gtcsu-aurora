@@ -21,7 +21,7 @@ It works on phones, tablets and computers. No app or download needed.
 
 ## 🚀 Quick start
 
-1. Open the site and pick your language with the 🌐 button in the top bar (**English** or **繁體中文**). The site remembers your choice.
+1. Open the site and pick your language with the 🌐 button located at the bottom right (**English** or **繁體中文**). The site remembers your choice.
 2. Look around. Most pages are open to everyone.
 3. Want to read photos, send feedback or get news emails? Tap **Sign In** and use your **school Google account** (`@gtcollege.edu.hk`).
 
@@ -29,7 +29,7 @@ It works on phones, tablets and computers. No app or download needed.
 
 ## 🔑 Signing in
 
-- Tap **Sign In** in the top bar and choose your school Google account. Tap **Sign Out** when you are done.
+- Tap **Sign In** in the top bar and choose your school Google account.
 - Only `@gtcollege.edu.hk` accounts count. If you pick a personal Gmail, the site simply ignores it and you stay signed out.
 - You need to sign in for: the **Photo Gallery**, **sending feedback**, and **marking news as read / getting news emails**.
 - Everything else (About Us, Activities, Financial, Schedule, Welfare, News, Support Us) can be used without signing in.
